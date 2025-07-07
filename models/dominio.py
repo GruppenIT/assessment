@@ -26,11 +26,12 @@ class Dominio(db.Model):
     def calcular_media_respostas(self, usuario_id=None):
         """Calcula a média das respostas para este domínio"""
         from models.resposta import Resposta
+        from models.pergunta import Pergunta
         
         query = db.session.query(db.func.avg(Resposta.nota)).join(
-            'pergunta'
+            Pergunta
         ).filter(
-            Resposta.pergunta.has(dominio_id=self.id)
+            Pergunta.dominio_id == self.id
         )
         
         if usuario_id:
