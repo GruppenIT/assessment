@@ -8,6 +8,7 @@ from models.resposta import Resposta
 from utils.auth_utils import admin_or_owner_required
 from utils.pdf_utils import gerar_pdf_relatorio
 import json
+from datetime import datetime
 
 relatorio_bp = Blueprint('relatorio', __name__)
 
@@ -67,7 +68,8 @@ def visualizar(usuario_id):
                          media_geral=media_geral,
                          total_respostas=len(respostas),
                          labels_grafico=json.dumps(labels_grafico),
-                         dados_grafico=json.dumps(dados_grafico))
+                         dados_grafico=json.dumps(dados_grafico),
+                         data_relatorio=datetime.now())
 
 @relatorio_bp.route('/pdf/<int:usuario_id>')
 @login_required

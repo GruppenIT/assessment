@@ -74,7 +74,7 @@
                                     </tr>
                                     <tr>
                                         <td class="fw-bold">Data do Relatório:</td>
-                                        <td>{{ moment().format('DD/MM/YYYY') }}</td>
+                                        <td>{{ data_relatorio.strftime('%d/%m/%Y') if data_relatorio else '' }}</td>
                                     </tr>
                                 </tbody>
                             </table>
