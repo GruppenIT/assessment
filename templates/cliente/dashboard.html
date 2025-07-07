@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Cliente - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-primary mb-1">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Dashboard
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Bem-vindo, {{ current_user.nome }} ({{ current_user.nome_empresa }})
+                    </p>
+                </div>
+                {% if not assessment_concluido %}
+                    <a href="{{ url_for('cliente.assessment') }}" class="btn btn-primary">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Continuar Assessment
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cards de estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total de Perguntas</h6>
+                            <h3 class="mb-0">{{ total_perguntas }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-question-circle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Respondidas</h6>
+                            <h3 class="mb-0">{{ respostas_dadas }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Progresso</h6>
+                            <h3 class="mb-0">{{ progresso }}%</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-pie fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card {% if assessment_concluido %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Status</h6>
+                            <h6 class="mb-0">
+                                {% if assessment_concluido %}
+                                    Concluído
+                                {% else %}
+                                    Em Andamento
+                                {% endif %}
+                            </h6>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-{% if assessment_concluido %}trophy{% else %}clock{% endif %} fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Barra de progresso geral -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>
+                        Progresso Geral do Assessment
+                    </h5>
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {{ progresso }}%" 
+                             aria-valuenow="{{ progresso }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ progresso }}%
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        {{ respostas_dadas }} de {{ total_perguntas }} perguntas respondidas
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progresso por domínio -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-layer-group me-2 text-primary"></i>
+                        Progresso por Domínio
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if stats_dominios %}
+                        <div class="row">
+                            {% for stat in stats_dominios %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="border rounded p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0 text-primary">{{ stat.dominio.nome }}</h6>
+                                            <span class="badge bg-primary">{{ stat.progresso }}%</span>
+                                        </div>
+                                        
+                                        {% if stat.dominio.descricao %}
+                                            <p class="text-muted small mb-2">{{ stat.dominio.descricao }}</p>
+                                        {% endif %}
+                                        
+                                        <div class="progress mb-2" style="height: 8px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ stat.progresso }}%" 
+                                                 aria-valuenow="{{ stat.progresso }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between">
+                                            <small class="text-muted">
+                                                {{ stat.respostas_dadas }}/{{ stat.total_perguntas }} perguntas
+                                            </small>
+                                            {% if stat.media > 0 %}
+                                                <small class="text-muted">
+                                                    Média: {{ stat.media }}/5.0
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {% if stat.progresso < 100 %}
+                                            <div class="mt-2">
+                                                <a href="{{ url_for('cliente.assessment_dominio', dominio_id=stat.dominio.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-play me-1"></i>
+                                                    Continuar
+                                                </a>
+                                            </div>
+                                        {% else %}
+                                            <div class="mt-2">
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>
+                                                    Completo
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhum domínio cadastrado</h5>
+                            <p class="text-muted">Aguarde o administrador cadastrar os domínios para começar o assessment.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ações -->
+    {% if assessment_concluido %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success d-flex align-items-center" role="alert">
+                    <i class="fas fa-trophy me-3 fa-2x"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">Parabéns!</h5>
+                        <p class="mb-2">Você concluiu o assessment de cibersegurança.</p>
+                        <a href="{{ url_for('cliente.meu_relatorio') }}" class="btn btn-success">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Visualizar Relatório
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh da página a cada 5 minutos se o assessment não estiver concluído
+    {% if not assessment_concluido %}
+        setTimeout(function() {
+            location.reload();
+        }, 300000); // 5 minutos
+    {% endif %}
+</script>
+{% endblock %}

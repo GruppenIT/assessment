@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-primary mb-1">
+                        <i class="fas fa-user-circle me-2"></i>
+                        Meu Perfil
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Informações da sua conta
+                    </p>
+                </div>
+                {% if current_user.is_admin() %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar ao Dashboard
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('cliente.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar ao Dashboard
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informações do Perfil -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        Informações Pessoais
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">Nome:</td>
+                                        <td>{{ current_user.nome }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Email:</td>
+                                        <td>{{ current_user.email }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Tipo de Conta:</td>
+                                        <td>
+                                            {% if current_user.is_admin() %}
+                                                <span class="badge bg-danger">Administrador</span>
+                                            {% else %}
+                                                <span class="badge bg-primary">Cliente</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    {% if current_user.nome_empresa %}
+                                        <tr>
+                                            <td class="fw-bold">Empresa:</td>
+                                            <td>{{ current_user.nome_empresa }}</td>
+                                        </tr>
+                                    {% endif %}
+                                    <tr>
+                                        <td class="fw-bold">Cadastro em:</td>
+                                        <td>{{ current_user.data_criacao.strftime('%d/%m/%Y às %H:%M') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Status:</td>
+                                        <td>
+                                            {% if current_user.ativo %}
+                                                <span class="badge bg-success">Ativo</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inativo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Ações da Conta
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if current_user.is_cliente() %}
+                            <a href="{{ url_for('cliente.assessment') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-clipboard-check me-2"></i>
+                                Meu Assessment
+                            </a>
+                            {% if current_user.assessment_concluido() %}
+                                <a href="{{ url_for('cliente.meu_relatorio') }}" class="btn btn-outline-success">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    Meu Relatório
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <a href="{{ url_for('admin.dominios') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-layer-group me-2"></i>
+                                Gerenciar Domínios
+                            </a>
+                            <a href="{{ url_for('admin.perguntas') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-question-circle me-2"></i>
+                                Gerenciar Perguntas
+                            </a>
+                            <a href="{{ url_for('admin.assessments') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Ver Assessments
+                            </a>
+                            <a href="{{ url_for('admin.configuracoes') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-cog me-2"></i>
+                                Configurações
+                            </a>
+                        {% endif %}
+                        
+                        <hr>
+                        
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Sair da Conta
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estatísticas (apenas para clientes) -->
+    {% if current_user.is_cliente() %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Meu Progresso no Assessment
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% set progresso = current_user.get_progresso_assessment() %}
+                        {% set assessment_completo = current_user.assessment_concluido() %}
+                        
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <h4 class="text-primary">{{ progresso }}%</h4>
+                                <p class="text-muted">Progresso</p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <h4 class="text-info">{{ current_user.respostas|length }}</h4>
+                                <p class="text-muted">Respostas Dadas</p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                {% if assessment_completo %}
+                                    <h4 class="text-success">Concluído</h4>
+                                    <p class="text-muted">Status</p>
+                                {% else %}
+                                    <h4 class="text-warning">Em Andamento</h4>
+                                    <p class="text-muted">Status</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 text-center">
+                                {% if current_user.respostas %}
+                                    {% set media = (current_user.respostas|sum(attribute='nota') / current_user.respostas|length) %}
+                                    <h4 class="text-primary">{{ "%.1f"|format(media) }}/5</h4>
+                                    <p class="text-muted">Média Atual</p>
+                                {% else %}
+                                    <h4 class="text-muted">N/A</h4>
+                                    <p class="text-muted">Média</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="progress mt-3" style="height: 20px;">
+                            <div class="progress-bar {% if assessment_completo %}bg-success{% else %}bg-primary{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ progresso }}%" 
+                                 aria-valuenow="{{ progresso }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ progresso }}%
+                            </div>
+                        </div>
+                        
+                        {% if not assessment_completo %}
+                            <div class="text-center mt-3">
+                                <a href="{{ url_for('cliente.assessment') }}" class="btn btn-primary">
+                                    <i class="fas fa-play me-2"></i>
+                                    Continuar Assessment
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

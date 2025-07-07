@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Login - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 mt-5">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h4 class="mb-0">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Fazer Login
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Email -->
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label fw-bold") }}
+                            {{ form.email(class="form-control form-control-lg") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.email.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Senha -->
+                        <div class="mb-3">
+                            {{ form.senha.label(class="form-label fw-bold") }}
+                            {{ form.senha(class="form-control form-control-lg") }}
+                            {% if form.senha.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.senha.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Lembrar de mim -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.lembrar(class="form-check-input") }}
+                                {{ form.lembrar.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                        
+                        <!-- Botão de login -->
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center py-3 bg-light">
+                    <p class="mb-0 text-muted">
+                        Não tem uma conta? 
+                        <a href="{{ url_for('auth.cadastro') }}" class="text-primary text-decoration-none fw-bold">
+                            Cadastre-se aqui
+                        </a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Informações de acesso padrão para desenvolvimento -->
+            {% if config.DEBUG %}
+            <div class="card mt-3 border-info">
+                <div class="card-header bg-info text-white">
+                    <small><i class="fas fa-info-circle me-1"></i>Acesso de Desenvolvimento</small>
+                </div>
+                <div class="card-body p-3">
+                    <small class="text-muted">
+                        <strong>Administrador:</strong><br>
+                        Email: admin@sistema.com<br>
+                        Senha: admin123
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

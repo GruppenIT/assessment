@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Domínios - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-primary mb-1">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Gerenciar Domínios
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Cadastre e organize os domínios de cibersegurança
+                    </p>
+                </div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoDominio">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Domínio
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de domínios -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Domínios Cadastrados ({{ dominios|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if dominios %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Ordem</th>
+                                        <th>Nome</th>
+                                        <th>Descrição</th>
+                                        <th>Perguntas</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dominio in dominios %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ dominio.ordem }}</span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ dominio.nome }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if dominio.descricao %}
+                                                    {{ dominio.descricao[:100] }}{% if dominio.descricao|length > 100 %}...{% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">Sem descrição</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ dominio.contar_perguntas() }} perguntas
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if dominio.ativo %}
+                                                    <span class="badge bg-success">Ativo</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inativo</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button type="button" class="btn btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#modalEditarDominio"
+                                                            onclick="editarDominio({{ dominio.id }}, '{{ dominio.nome }}', '{{ dominio.descricao or '' }}', {{ dominio.ordem }})">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <a href="{{ url_for('admin.perguntas', dominio_id=dominio.id) }}" 
+                                                       class="btn btn-outline-info">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" 
+                                                            onclick="confirmarExclusao({{ dominio.id }}, '{{ dominio.nome }}')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-layer-group fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Nenhum domínio cadastrado</h4>
+                            <p class="text-muted">
+                                Comece criando o primeiro domínio de cibersegurança.
+                            </p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoDominio">
+                                <i class="fas fa-plus me-2"></i>
+                                Criar Primeiro Domínio
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Domínio -->
+<div class="modal fade" id="modalNovoDominio" tabindex="-1" aria-labelledby="modalNovoDominioLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.criar_dominio') }}">
+                {{ form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalNovoDominioLabel">
+                        <i class="fas fa-plus me-2"></i>
+                        Novo Domínio
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ form.nome.label(class="form-label fw-bold") }}
+                        {{ form.nome(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.descricao.label(class="form-label fw-bold") }}
+                        {{ form.descricao(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.ordem.label(class="form-label fw-bold") }}
+                        {{ form.ordem(class="form-control") }}
+                        <div class="form-text">Ordem de exibição (números menores aparecem primeiro)</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Salvar Domínio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Domínio -->
+<div class="modal fade" id="modalEditarDominio" tabindex="-1" aria-labelledby="modalEditarDominioLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formEditarDominio">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarDominioLabel">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Domínio
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editNome" class="form-label fw-bold">Nome do Domínio</label>
+                        <input type="text" class="form-control" id="editNome" name="nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDescricao" class="form-label fw-bold">Descrição</label>
+                        <textarea class="form-control" id="editDescricao" name="descricao" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editOrdem" class="form-label fw-bold">Ordem</label>
+                        <input type="number" class="form-control" id="editOrdem" name="ordem" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Atualizar Domínio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Exclusão -->
+<div class="modal fade" id="modalConfirmarExclusao" tabindex="-1" aria-labelledby="modalConfirmarExclusaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalConfirmarExclusaoLabel">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o domínio <strong id="nomeExclusao"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta ação irá excluir todas as perguntas e respostas associadas a este domínio e não pode ser desfeita.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Cancelar
+                </button>
+                <form method="POST" id="formExcluirDominio" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir Domínio
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editarDominio(id, nome, descricao, ordem) {
+    document.getElementById('editNome').value = nome;
+    document.getElementById('editDescricao').value = descricao;
+    document.getElementById('editOrdem').value = ordem;
+    document.getElementById('formEditarDominio').action = `/admin/dominios/${id}/editar`;
+}
+
+function confirmarExclusao(id, nome) {
+    document.getElementById('nomeExclusao').textContent = nome;
+    document.getElementById('formExcluirDominio').action = `/admin/dominios/${id}/excluir`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+    modal.show();
+}
+</script>
+{% endblock %}

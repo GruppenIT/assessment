@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Perguntas - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-primary mb-1">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Gerenciar Perguntas
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Cadastre e organize as perguntas do assessment
+                    </p>
+                </div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovaPergunta">
+                    <i class="fas fa-plus me-2"></i>
+                    Nova Pergunta
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <label for="filtroDominio" class="form-label fw-bold">Filtrar por Domínio:</label>
+                            <select class="form-select" id="filtroDominio" onchange="filtrarPorDominio()">
+                                <option value="">Todos os domínios</option>
+                                {% for dominio in dominios %}
+                                    <option value="{{ dominio.id }}" {% if dominio.id == dominio_selecionado %}selected{% endif %}>
+                                        {{ dominio.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end align-items-end h-100">
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Total: {{ perguntas|length }} perguntas
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de perguntas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Perguntas Cadastradas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if perguntas %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Domínio</th>
+                                        <th>Ordem</th>
+                                        <th>Pergunta</th>
+                                        <th>Respostas</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pergunta in perguntas %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">{{ pergunta.dominio.nome }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ pergunta.ordem }}</span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ pergunta.texto[:100] }}{% if pergunta.texto|length > 100 %}...{% endif %}</strong>
+                                                {% if pergunta.descricao %}
+                                                    <div class="small text-muted mt-1">
+                                                        {{ pergunta.descricao[:150] }}{% if pergunta.descricao|length > 150 %}...{% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ pergunta.contar_respostas() }} respostas
+                                                </span>
+                                                {% if pergunta.contar_respostas() > 0 %}
+                                                    <div class="small text-muted">
+                                                        Média: {{ pergunta.calcular_media_respostas() }}/5
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if pergunta.ativo %}
+                                                    <span class="badge bg-success">Ativa</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inativa</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button type="button" class="btn btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#modalEditarPergunta"
+                                                            onclick="editarPergunta({{ pergunta.id }}, {{ pergunta.dominio_id }}, '{{ pergunta.texto|replace('\'', '\\\'') }}', '{{ (pergunta.descricao or '')|replace('\'', '\\\'') }}', {{ pergunta.ordem }})">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger" 
+                                                            onclick="confirmarExclusao({{ pergunta.id }}, '{{ pergunta.texto[:50] }}{% if pergunta.texto|length > 50 %}...{% endif %}')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-question-circle fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Nenhuma pergunta cadastrada</h4>
+                            {% if dominios %}
+                                <p class="text-muted">
+                                    Comece criando a primeira pergunta para o assessment.
+                                </p>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovaPergunta">
+                                    <i class="fas fa-plus me-2"></i>
+                                    Criar Primeira Pergunta
+                                </button>
+                            {% else %}
+                                <p class="text-muted">
+                                    Você precisa criar pelo menos um domínio antes de adicionar perguntas.
+                                </p>
+                                <a href="{{ url_for('admin.dominios') }}" class="btn btn-primary">
+                                    <i class="fas fa-layer-group me-2"></i>
+                                    Criar Domínio
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Pergunta -->
+<div class="modal fade" id="modalNovaPergunta" tabindex="-1" aria-labelledby="modalNovaPerguntaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.criar_pergunta') }}">
+                {{ form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalNovaPerguntaLabel">
+                        <i class="fas fa-plus me-2"></i>
+                        Nova Pergunta
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ form.dominio_id.label(class="form-label fw-bold") }}
+                        {{ form.dominio_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.texto.label(class="form-label fw-bold") }}
+                        {{ form.texto(class="form-control") }}
+                        <div class="form-text">Texto principal da pergunta que será exibida para o cliente</div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.descricao.label(class="form-label fw-bold") }}
+                        {{ form.descricao(class="form-control") }}
+                        <div class="form-text">Descrição detalhada ou contexto adicional (opcional)</div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.ordem.label(class="form-label fw-bold") }}
+                        {{ form.ordem(class="form-control") }}
+                        <div class="form-text">Ordem de exibição dentro do domínio</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Salvar Pergunta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Pergunta -->
+<div class="modal fade" id="modalEditarPergunta" tabindex="-1" aria-labelledby="modalEditarPerguntaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="formEditarPergunta">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarPerguntaLabel">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Pergunta
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editDominioId" class="form-label fw-bold">Domínio</label>
+                        <select class="form-select" id="editDominioId" name="dominio_id" required>
+                            {% for dominio in dominios %}
+                                <option value="{{ dominio.id }}">{{ dominio.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editTexto" class="form-label fw-bold">Texto da Pergunta</label>
+                        <textarea class="form-control" id="editTexto" name="texto" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDescricaoPergunta" class="form-label fw-bold">Descrição Detalhada</label>
+                        <textarea class="form-control" id="editDescricaoPergunta" name="descricao" rows="4"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editOrdemPergunta" class="form-label fw-bold">Ordem</label>
+                        <input type="number" class="form-control" id="editOrdemPergunta" name="ordem" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Atualizar Pergunta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Exclusão -->
+<div class="modal fade" id="modalConfirmarExclusao" tabindex="-1" aria-labelledby="modalConfirmarExclusaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalConfirmarExclusaoLabel">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir a pergunta:</p>
+                <div class="alert alert-info">
+                    <strong id="textoExclusao"></strong>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta ação irá excluir todas as respostas associadas a esta pergunta e não pode ser desfeita.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Cancelar
+                </button>
+                <form method="POST" id="formExcluirPergunta" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir Pergunta
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filtrarPorDominio() {
+    const dominioId = document.getElementById('filtroDominio').value;
+    const url = new URL(window.location);
+    
+    if (dominioId) {
+        url.searchParams.set('dominio_id', dominioId);
+    } else {
+        url.searchParams.delete('dominio_id');
+    }
+    
+    window.location.href = url.toString();
+}
+
+function editarPergunta(id, dominioId, texto, descricao, ordem) {
+    document.getElementById('editDominioId').value = dominioId;
+    document.getElementById('editTexto').value = texto;
+    document.getElementById('editDescricaoPergunta').value = descricao;
+    document.getElementById('editOrdemPergunta').value = ordem;
+    document.getElementById('formEditarPergunta').action = `/admin/perguntas/${id}/editar`;
+}
+
+function confirmarExclusao(id, texto) {
+    document.getElementById('textoExclusao').textContent = texto;
+    document.getElementById('formExcluirPergunta').action = `/admin/perguntas/${id}/excluir`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+    modal.show();
+}
+</script>
+{% endblock %}

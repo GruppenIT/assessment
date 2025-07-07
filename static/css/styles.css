@@ -1,0 +1,392 @@
+/**
+ * Sistema de Assessment de Cibersegurança
+ * Arquivo de estilos customizados
+ * Paleta de cores: Fundo branco (#FFFFFF), Azul principal (#007BFF), Fontes pretas (#000000)
+ */
+
+/* Variáveis CSS */
+:root {
+    --cor-principal: #007BFF;
+    --cor-fundo: #FFFFFF;
+    --cor-texto: #000000;
+    --cor-secundaria: #6c757d;
+    --cor-sucesso: #28a745;
+    --cor-aviso: #ffc107;
+    --cor-perigo: #dc3545;
+    --cor-info: #17a2b8;
+    --cor-borda: #dee2e6;
+    --cor-hover: #0056b3;
+}
+
+/* Reset e configurações gerais */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
+    line-height: 1.6;
+}
+
+/* Personalização da navbar */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.4rem;
+}
+
+.navbar-brand img {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.navbar-light .navbar-nav .nav-link {
+    color: var(--cor-texto);
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.navbar-light .navbar-nav .nav-link:hover,
+.navbar-light .navbar-nav .nav-link:focus {
+    color: var(--cor-principal);
+}
+
+/* Cards personalizados */
+.card {
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: var(--cor-fundo);
+    border-bottom: 1px solid var(--cor-borda);
+    font-weight: 600;
+}
+
+/* Botões personalizados */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--cor-principal);
+    border-color: var(--cor-principal);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--cor-hover);
+    border-color: var(--cor-hover);
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: var(--cor-principal);
+    border-color: var(--cor-principal);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--cor-principal);
+    border-color: var(--cor-principal);
+    transform: translateY(-1px);
+}
+
+/* Badges personalizados */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Progress bars */
+.progress {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Alertas personalizados */
+.alert {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Formulários */
+.form-control {
+    border-radius: 6px;
+    border: 1px solid var(--cor-borda);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--cor-principal);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-label {
+    color: var(--cor-texto);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* Tabelas */
+.table {
+    color: var(--cor-texto);
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: var(--cor-texto);
+    background-color: #f8f9fa;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Assessment específico */
+.pergunta-card {
+    transition: all 0.3s ease;
+}
+
+.pergunta-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.nota-radio:checked + label {
+    background-color: var(--cor-principal);
+    border-color: var(--cor-principal);
+    color: white;
+    transform: scale(1.05);
+}
+
+.btn-check:focus + .btn,
+.btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Escala de notas com cores */
+.escala-nota-0 { background-color: #dc3545 !important; }
+.escala-nota-1 { background-color: #fd7e14 !important; }
+.escala-nota-2 { background-color: #ffc107 !important; }
+.escala-nota-3 { background-color: #28a745 !important; }
+.escala-nota-4 { background-color: #007bff !important; }
+.escala-nota-5 { background-color: #6f42c1 !important; }
+
+/* Animações */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Loading spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Modais */
+.modal-content {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--cor-borda);
+    background-color: #f8f9fa;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--cor-borda);
+    background-color: #f8f9fa;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    border-top: 1px solid var(--cor-borda);
+    background-color: #f8f9fa !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        border-radius: 6px !important;
+        margin-bottom: 5px;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .card-header h5,
+    .card-header h6 {
+        font-size: 1rem;
+    }
+}
+
+/* Estados de hover para melhor UX */
+.btn-group-sm .btn:hover {
+    transform: translateY(-1px);
+}
+
+.card-header:hover {
+    background-color: #f1f3f4;
+}
+
+/* Melhorias de acessibilidade */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: none;
+}
+
+/* Cores semânticas customizadas */
+.text-primary { color: var(--cor-principal) !important; }
+.bg-primary { background-color: var(--cor-principal) !important; }
+.border-primary { border-color: var(--cor-principal) !important; }
+
+/* Utilitários customizados */
+.shadow-soft {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.shadow-medium {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+.rounded-lg {
+    border-radius: 12px !important;
+}
+
+/* Indicadores de status */
+.status-respondida {
+    position: relative;
+}
+
+.status-respondida::after {
+    content: '✓';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--cor-sucesso);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Melhorias para gráficos */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 20px 0;
+}
+
+/* Scrollbar customizada para webkit */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--cor-principal);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--cor-hover);
+}
+
+/* Print styles para relatórios */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+    
+    .btn {
+        display: none !important;
+    }
+    
+    body {
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+}

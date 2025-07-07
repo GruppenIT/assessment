@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Assessments dos Clientes - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-primary mb-1">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Assessments dos Clientes
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Acompanhe o progresso e resultados dos assessments
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de assessments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Clientes e Progress dos Assessments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if assessments_data %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Responsável</th>
+                                        <th>Progress</th>
+                                        <th>Média Geral</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assessment in assessments_data %}
+                                        <tr {% if assessment.concluido %}class="table-light"{% endif %}>
+                                            <td>
+                                                <strong>{{ assessment.cliente.nome_empresa }}</strong>
+                                                <div class="small text-muted">{{ assessment.cliente.email }}</div>
+                                            </td>
+                                            <td>{{ assessment.cliente.nome }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 100px; height: 20px;">
+                                                        <div class="progress-bar {% if assessment.concluido %}bg-success{% else %}bg-primary{% endif %}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ assessment.progresso }}%" 
+                                                             aria-valuenow="{{ assessment.progresso }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                        </div>
+                                                    </div>
+                                                    <span class="small">{{ assessment.progresso }}%</span>
+                                                </div>
+                                                <div class="small text-muted">
+                                                    {{ assessment.respostas_dadas }}/{{ assessment.total_perguntas }} perguntas
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if assessment.media_geral > 0 %}
+                                                    <span class="badge bg-primary fs-6">
+                                                        {{ assessment.media_geral }}/5.0
+                                                    </span>
+                                                    <div class="small text-muted">
+                                                        {{ "%.1f"|format((assessment.media_geral/5)*100) }}%
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if assessment.concluido %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>
+                                                        Concluído
+                                                    </span>
+                                                {% elif assessment.progresso > 0 %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        Em Andamento
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-pause me-1"></i>
+                                                        Não Iniciado
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    {% if assessment.progresso > 0 %}
+                                                        <a href="{{ url_for('relatorio.visualizar', usuario_id=assessment.cliente.id) }}" 
+                                                           class="btn btn-outline-primary"
+                                                           title="Ver detalhes">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    
+                                                    {% if assessment.concluido %}
+                                                        <a href="{{ url_for('relatorio.gerar_pdf', usuario_id=assessment.cliente.id) }}" 
+                                                           class="btn btn-outline-danger"
+                                                           title="Baixar PDF">
+                                                            <i class="fas fa-file-pdf"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    
+                                                    <button type="button" 
+                                                            class="btn btn-outline-info"
+                                                            title="Detalhes do cliente"
+                                                            onclick="mostrarDetalhesCliente('{{ assessment.cliente.nome_empresa }}', '{{ assessment.cliente.nome }}', '{{ assessment.cliente.email }}', '{{ assessment.cliente.data_criacao.strftime('%d/%m/%Y') }}')">
+                                                        <i class="fas fa-info"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">Nenhum cliente cadastrado</h4>
+                            <p class="text-muted">
+                                Aguarde os clientes se cadastrarem para começar os assessments.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes do Cliente -->
+<div class="modal fade" id="modalDetalhesCliente" tabindex="-1" aria-labelledby="modalDetalhesClienteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalhesClienteLabel">
+                    <i class="fas fa-building me-2"></i>
+                    Detalhes do Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold">Empresa:</td>
+                            <td id="detalheEmpresa"></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Responsável:</td>
+                            <td id="detalheResponsavel"></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Email:</td>
+                            <td id="detalheEmail"></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Data de Cadastro:</td>
+                            <td id="detalheCadastro"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function mostrarDetalhesCliente(empresa, responsavel, email, dataCadastro) {
+    document.getElementById('detalheEmpresa').textContent = empresa;
+    document.getElementById('detalheResponsavel').textContent = responsavel;
+    document.getElementById('detalheEmail').textContent = email;
+    document.getElementById('detalheCadastro').textContent = dataCadastro;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalDetalhesCliente'));
+    modal.show();
+}
+
+// Auto-refresh da página a cada 2 minutos para atualizar o progresso
+setTimeout(function() {
+    location.reload();
+}, 120000); // 2 minutos
+</script>
+{% endblock %}
