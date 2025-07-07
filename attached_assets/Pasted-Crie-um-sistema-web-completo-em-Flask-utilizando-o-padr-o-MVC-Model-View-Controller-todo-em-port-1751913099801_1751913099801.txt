@@ -1,0 +1,78 @@
+Crie um sistema web completo em Flask, utilizando o padrão MVC (Model-View-Controller), todo em português do Brasil.
+
+**Funcionalidade: Sistema de assessment de maturidade em cibersegurança**, com:
+
+🔐 **Autenticação**
+- Cadastro e login de dois perfis de usuário:
+  - Cliente
+  - Administrador
+- Proteção de rotas conforme o perfil
+- Senhas devem ser armazenadas com hash seguro
+- Logout
+
+🏢 **Cadastro de Cliente**
+- Nome da empresa
+- Nome do responsável
+- E-mail (usado como login)
+- Senha
+
+📋 **Assessment de Cibersegurança (Cliente)**
+- Exibe domínios e perguntas cadastradas pelo administrador
+- Cliente responde perguntas com:
+  - Nota de 0 a 5
+  - Comentário opcional
+- Progresso salvo automaticamente
+- Barra de progresso (% respondido)
+- Permitir salvar e retomar depois
+- Botão “Concluir Assessment” ao final
+
+🛠️ **Administração (Admin)**
+- Tela com:
+  - Cadastro, edição e exclusão de **domínios**
+  - Cadastro, edição e exclusão de **perguntas**
+- Visualização de assessments por cliente
+- Geração de relatório completo de um assessment (HTML e PDF)
+  - Relatório com notas por domínio, comentários e média geral
+- Upload do **logo da empresa** (armazenar em `/static/logo_gruppen.png`)
+- Nome do sistema definido por uma variável de configuração: `NOME_SISTEMA`
+
+🎨 **Visual (Interface)**
+- Utilizar **Bootstrap 5** para design responsivo
+- Paleta de cores:
+  - Fundo branco `#FFFFFF`
+  - Azul principal `#007BFF`
+  - Fontes pretas `#000000`
+- Layout com:
+  - Logo da Gruppen no cabeçalho (upload pelo admin)
+  - Nome do sistema visível em todas as páginas
+- Estrutura de pastas:
+  - `/templates` (HTMLs com Jinja2)
+  - `/static` (CSS, imagens, JS)
+  - `/routes` (rotas Flask)
+  - `/models` (modelos ORM genéricos, adaptáveis a qualquer banco)
+  - `/forms` (formularios WTForms)
+  - `/utils` (funções auxiliares como hashing, exportação PDF etc.)
+
+💾 **Persistência**
+- Estrutura de modelos genéricos (ORM com SQLAlchemy)
+- **Não especifique qual banco de dados será usado**, apenas defina a estrutura lógica:
+  - `Usuario`: id, nome, email, senha_hash, tipo (cliente/admin)
+  - `Dominio`: id, nome
+  - `Pergunta`: id, dominio_id, texto
+  - `Resposta`: id, usuario_id, pergunta_id, nota (0–5), comentario, data
+  - `Logo`: id, caminho_arquivo
+
+📤 **Relatórios**
+- Ao concluir o assessment, o admin pode gerar relatório:
+  - Tabela com pontuação por domínio
+  - Comentários do cliente
+  - Gráfico de radar ou barras (opcional)
+  - Exportar para HTML ou PDF com botão “Exportar Relatório”
+
+🗂️ **Extras**
+- Todo o sistema deve estar em **português brasileiro**
+- Comentários no código explicando cada parte
+- Sistema deve ser facilmente adaptável para PostgreSQL, MySQL ou SQLite
+- Código modular, limpo e com separação de responsabilidades
+
+Objetivo: sistema de assessment de maturidade cibernética, totalmente gerenciável por admins, com boa experiência para clientes, foco em clareza visual e facilidade de manutenção.
