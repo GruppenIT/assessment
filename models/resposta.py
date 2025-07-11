@@ -7,7 +7,7 @@ class Resposta(db.Model):
     __tablename__ = 'respostas'
     
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False, comment='Usuário que respondeu')
+    respondente_id = db.Column(db.Integer, db.ForeignKey('respondentes.id'), nullable=False, comment='Respondente que respondeu')
     pergunta_id = db.Column(db.Integer, db.ForeignKey('perguntas.id'), nullable=False, comment='Pergunta respondida')
     nota = db.Column(db.Integer, nullable=False, comment='Nota de 0 a 5')
     comentario = db.Column(db.Text, comment='Comentário opcional')
@@ -17,7 +17,7 @@ class Resposta(db.Model):
     # Constraint para garantir que a nota está entre 0 e 5
     __table_args__ = (
         db.CheckConstraint('nota >= 0 AND nota <= 5', name='check_nota_range'),
-        db.UniqueConstraint('usuario_id', 'pergunta_id', name='unique_usuario_pergunta'),
+        db.UniqueConstraint('respondente_id', 'pergunta_id', name='unique_respondente_pergunta'),
     )
     
     def __repr__(self):

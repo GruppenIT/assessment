@@ -19,7 +19,7 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     
     # Sistema
-    NOME_SISTEMA = "Sistema de Assessment de Cibersegurança"
+    NOME_SISTEMA = "Sistema de Avaliações de Maturidade"
     
     # Extensões permitidas para upload
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}

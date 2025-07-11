@@ -1,8 +1,8 @@
-# Sistema de Assessment de Cibersegurança
+# Sistema de Avaliações de Maturidade
 
 ## Overview
 
-This is a Flask-based web application for cybersecurity maturity assessment. The system allows clients to complete cybersecurity assessments while providing administrators with tools to manage domains, questions, and generate reports. Built using the MVC (Model-View-Controller) pattern, the application features user authentication, role-based access control, and comprehensive reporting capabilities.
+This is a Flask-based web application for multi-type maturity assessments. The system allows administrators to manage different types of assessments (cybersecurity, compliance, etc.), register clients with multiple respondents, and provides comprehensive assessment capabilities. Built using the MVC (Model-View-Controller) pattern, the application features multi-level authentication, role-based access control, CSV bulk import, and comprehensive reporting capabilities.
 
 ## System Architecture
 
@@ -26,27 +26,34 @@ This is a Flask-based web application for cybersecurity maturity assessment. The
 ## Key Components
 
 ### Models (`/models/`)
-- **Usuario**: User management (clients and administrators) with password hashing
-- **Dominio**: Cybersecurity domains for organizing questions
+- **Usuario**: Administrative users only with password hashing
+- **TipoAssessment**: Different types of assessments (Cybersecurity, Compliance, etc.)
+- **Cliente**: Client companies with business information and logo
+- **Respondente**: Client's employees who answer assessments with individual logins
+- **Dominio**: Assessment domains organized by type
 - **Pergunta**: Assessment questions linked to domains
-- **Resposta**: User responses with 0-5 rating scale and optional comments
+- **Resposta**: Respondent answers with 0-5 rating scale and optional comments
+- **ClienteAssessment**: Association between clients and assessment types
 - **Logo**: Company logo management for branding
 
 ### Routes (`/routes/`)
-- **auth**: Authentication (login, registration, logout)
-- **admin**: Administrative functions (domain/question management, user oversight)
-- **cliente**: Client dashboard and assessment interface
+- **auth**: Administrative authentication (admin login only)
+- **admin**: Administrative functions (assessment types, domains, questions, client management, CSV import)
+- **respondente**: Respondent authentication and assessment interface
+- **cliente**: Client management and association with assessment types
 - **relatorio**: Report generation and visualization
 
 ### Forms (`/forms/`)
-- **auth_forms**: Login and registration forms with validation
-- **admin_forms**: Administrative forms for content management
+- **auth_forms**: Administrative login forms with validation
+- **admin_forms**: Administrative forms for content management (domains, questions, types)
+- **cliente_forms**: Client management, respondent creation, and CSV import forms
 - **assessment_forms**: Assessment response forms with rating system
 
 ### Utilities (`/utils/`)
 - **auth_utils**: Role-based access control decorators
 - **pdf_utils**: PDF report generation using ReportLab
 - **upload_utils**: File upload handling with security measures
+- **csv_utils**: CSV bulk import processing for domains and questions
 
 ## Data Flow
 
@@ -116,6 +123,14 @@ This is a Flask-based web application for cybersecurity maturity assessment. The
 
 ## Changelog
 - July 07, 2025. Initial setup
+- July 11, 2025. Major architecture overhaul:
+  - Renamed to "Sistema de Avaliações de Maturidade"
+  - Added TipoAssessment model for multiple assessment types
+  - Created Cliente and Respondente models (separated from Usuario)
+  - Implemented CSV bulk import functionality
+  - Added client-respondent relationship management
+  - Removed public client registration (admin-only now)
+  - Enhanced client data with business fields (razão social, localidade, segmento)
 
 ## User Preferences
 

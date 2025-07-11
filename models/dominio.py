@@ -2,16 +2,21 @@ from app import db
 from datetime import datetime
 
 class Dominio(db.Model):
-    """Modelo para domínios de cibersegurança"""
+    """Modelo para domínios de assessment"""
     
     __tablename__ = 'dominios'
     
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False, unique=True, comment='Nome do domínio')
+    tipo_assessment_id = db.Column(db.Integer, db.ForeignKey('tipos_assessment.id'), nullable=False, comment='Tipo de assessment do domínio')
+    nome = db.Column(db.String(100), nullable=False, comment='Nome do domínio')
     descricao = db.Column(db.Text, comment='Descrição do domínio')
     ordem = db.Column(db.Integer, default=1, comment='Ordem de exibição')
     ativo = db.Column(db.Boolean, default=True, comment='Se o domínio está ativo')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')
+    
+    __table_args__ = (
+        db.UniqueConstraint('tipo_assessment_id', 'nome', name='unique_tipo_dominio_nome'),
+    )
     
     # Relacionamentos
     perguntas = db.relationship('Pergunta', backref='dominio', lazy=True, cascade='all, delete-orphan')

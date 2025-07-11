@@ -5,6 +5,10 @@ from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 class DominioForm(FlaskForm):
     """Formulário para cadastro/edição de domínios"""
+    tipo_assessment_id = SelectField('Tipo de Assessment', validators=[
+        DataRequired(message='Tipo de assessment é obrigatório')
+    ], coerce=int, choices=[])
+    
     nome = StringField('Nome do Domínio', validators=[
         DataRequired(message='Nome é obrigatório'),
         Length(min=2, max=100, message='Nome deve ter entre 2 e 100 caracteres')
@@ -21,6 +25,13 @@ class DominioForm(FlaskForm):
     ], default=1, render_kw={'placeholder': 'Ordem de exibição'})
     
     submit = SubmitField('Salvar Domínio')
+    
+    def __init__(self, *args, **kwargs):
+        super(DominioForm, self).__init__(*args, **kwargs)
+        from models.tipo_assessment import TipoAssessment
+        self.tipo_assessment_id.choices = [
+            (ta.id, ta.nome) for ta in TipoAssessment.query.filter_by(ativo=True).order_by(TipoAssessment.nome)
+        ]
 
 class PerguntaForm(FlaskForm):
     """Formulário para cadastro/edição de perguntas"""
@@ -44,6 +55,18 @@ class PerguntaForm(FlaskForm):
     ], default=1, render_kw={'placeholder': 'Ordem dentro do domínio'})
     
     submit = SubmitField('Salvar Pergunta')
+    
+    def __init__(self, tipo_assessment_id=None, *args, **kwargs):
+        super(PerguntaForm, self).__init__(*args, **kwargs)
+        from models.dominio import Dominio
+        
+        query = Dominio.query.filter_by(ativo=True)
+        if tipo_assessment_id:
+            query = query.filter_by(tipo_assessment_id=tipo_assessment_id)
+        
+        self.dominio_id.choices = [
+            (d.id, f"{d.tipo_assessment.nome} - {d.nome}") for d in query.order_by(Dominio.nome)
+        ]
 
 class LogoForm(FlaskForm):
     """Formulário para upload do logo"""
