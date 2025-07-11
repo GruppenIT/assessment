@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="h3 mb-0">
+                        <i class="fas fa-building text-primary me-2"></i>
+                        Clientes
+                    </h2>
+                    <p class="text-muted mb-0">Gerencie os clientes e seus respondentes no sistema</p>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoCliente">
+                    <i class="fas fa-plus me-2"></i>Novo Cliente
+                </button>
+            </div>
+
+            <!-- Lista de Clientes -->
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    {% if clientes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-0">Cliente</th>
+                                        <th class="border-0">Razão Social</th>
+                                        <th class="border-0">CNPJ</th>
+                                        <th class="border-0">Localidade</th>
+                                        <th class="border-0">Segmento</th>
+                                        <th class="border-0">Respondentes</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cliente in clientes %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if cliente.logo_path %}
+                                                    <img src="{{ url_for('static', filename=cliente.logo_path.replace('static/', '')) }}" 
+                                                         alt="Logo" class="me-2 rounded" style="width: 32px; height: 32px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-2" 
+                                                         style="width: 32px; height: 32px; font-size: 14px;">
+                                                        {{ cliente.nome[0].upper() }}
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <div class="fw-semibold">{{ cliente.nome }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-muted">{{ cliente.razao_social }}</td>
+                                        <td class="text-muted">{{ cliente.cnpj or '-' }}</td>
+                                        <td class="text-muted">{{ cliente.localidade or '-' }}</td>
+                                        <td class="text-muted">{{ cliente.segmento or '-' }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ cliente.contar_respondentes() }}</span>
+                                        </td>
+                                        <td>
+                                            {% if cliente.ativo %}
+                                                <span class="badge bg-success">Ativo</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inativo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}" 
+                                                   class="btn btn-outline-info btn-sm" title="Respondentes">
+                                                    <i class="fas fa-users"></i>
+                                                </a>
+                                                <button class="btn btn-outline-primary btn-sm" 
+                                                        onclick="editarCliente({{ cliente.id }})"
+                                                        title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm" 
+                                                        onclick="confirmarExclusao({{ cliente.id }}, '{{ cliente.nome }}')"
+                                                        title="Excluir">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-building text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted">Nenhum cliente cadastrado</h5>
+                            <p class="text-muted">Clique em "Novo Cliente" para adicionar o primeiro cliente.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Cliente -->
+<div class="modal fade" id="modalNovoCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.criar_cliente') }}" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus text-primary me-2"></i>
+                        Novo Cliente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.nome.label(class="form-label") }}
+                                {{ form.nome(class="form-control") }}
+                                {% if form.nome.errors %}
+                                    {% for error in form.nome.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.razao_social.label(class="form-label") }}
+                                {{ form.razao_social(class="form-control") }}
+                                {% if form.razao_social.errors %}
+                                    {% for error in form.razao_social.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.cnpj.label(class="form-label") }}
+                                {{ form.cnpj(class="form-control") }}
+                                {% if form.cnpj.errors %}
+                                    {% for error in form.cnpj.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.localidade.label(class="form-label") }}
+                                {{ form.localidade(class="form-control") }}
+                                {% if form.localidade.errors %}
+                                    {% for error in form.localidade.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.segmento.label(class="form-label") }}
+                                {{ form.segmento(class="form-control") }}
+                                {% if form.segmento.errors %}
+                                    {% for error in form.segmento.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.logo.label(class="form-label") }}
+                                {{ form.logo(class="form-control") }}
+                                <div class="form-text">Formatos aceitos: PNG, JPG, JPEG, GIF</div>
+                                {% if form.logo.errors %}
+                                    {% for error in form.logo.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editarCliente(id) {
+    // Implementar edição de cliente
+    alert('Funcionalidade de edição será implementada em breve.');
+}
+
+function confirmarExclusao(id, nome) {
+    if (confirm(`Tem certeza que deseja excluir o cliente "${nome}"?\n\nTodos os respondentes deste cliente também serão removidos.\nEsta ação não pode ser desfeita.`)) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/clientes/${id}/excluir`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

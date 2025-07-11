@@ -81,6 +81,66 @@ def criar_tipo_assessment():
     
     return redirect(url_for('admin.tipos_assessment'))
 
+@admin_bp.route('/tipos_assessment/<int:tipo_id>/editar', methods=['POST'])
+@login_required
+@admin_required
+def editar_tipo_assessment(tipo_id):
+    """Edita um tipo de assessment existente"""
+    tipo = TipoAssessment.query.get_or_404(tipo_id)
+    
+    nome = request.form.get('nome', '').strip()
+    descricao = request.form.get('descricao', '').strip()
+    ordem = request.form.get('ordem', type=int, default=1)
+    
+    if not nome:
+        flash('Nome do tipo é obrigatório.', 'danger')
+        return redirect(url_for('admin.tipos_assessment'))
+    
+    # Verificar se já existe outro tipo com este nome
+    tipo_existente = TipoAssessment.query.filter(
+        TipoAssessment.nome == nome,
+        TipoAssessment.id != tipo_id
+    ).first()
+    
+    if tipo_existente:
+        flash('Já existe outro tipo com este nome.', 'danger')
+        return redirect(url_for('admin.tipos_assessment'))
+    
+    try:
+        tipo.nome = nome
+        tipo.descricao = descricao if descricao else None
+        tipo.ordem = ordem
+        db.session.commit()
+        flash('Tipo de assessment atualizado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao atualizar tipo de assessment.', 'danger')
+    
+    return redirect(url_for('admin.tipos_assessment'))
+
+@admin_bp.route('/tipos_assessment/<int:tipo_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir_tipo_assessment(tipo_id):
+    """Exclui um tipo de assessment"""
+    tipo = TipoAssessment.query.get_or_404(tipo_id)
+    
+    # Verificar se há domínios associados
+    dominios_count = Dominio.query.filter_by(tipo_assessment_id=tipo_id).count()
+    if dominios_count > 0:
+        flash(f'Não é possível excluir este tipo pois há {dominios_count} domínio(s) associado(s).', 'danger')
+        return redirect(url_for('admin.tipos_assessment'))
+    
+    try:
+        db.session.delete(tipo)
+        db.session.commit()
+        flash('Tipo de assessment excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao excluir tipo de assessment.', 'danger')
+    
+    return redirect(url_for('admin.tipos_assessment'))
+
 # Rotas para Clientes
 @admin_bp.route('/clientes')
 @login_required

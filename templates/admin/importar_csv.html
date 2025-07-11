@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Importar CSV - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="h3 mb-0">
+                        <i class="fas fa-file-csv text-primary me-2"></i>
+                        Importar CSV
+                    </h2>
+                    <p class="text-muted mb-0">Importe domínios e perguntas em lote através de arquivo CSV</p>
+                </div>
+                <a href="{{ url_for('admin.template_csv') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-download me-2"></i>Baixar Template
+                </a>
+            </div>
+
+            <div class="row">
+                <!-- Formulário de Upload -->
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-upload me-2"></i>
+                                Upload do Arquivo CSV
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="mb-3">
+                                    {{ form.tipo_assessment_id.label(class="form-label") }}
+                                    {{ form.tipo_assessment_id(class="form-select") }}
+                                    {% if form.tipo_assessment_id.errors %}
+                                        {% for error in form.tipo_assessment_id.errors %}
+                                            <div class="text-danger small mt-1">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <div class="form-text">Selecione o tipo de assessment para associar os domínios e perguntas</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.arquivo_csv.label(class="form-label") }}
+                                    {{ form.arquivo_csv(class="form-control") }}
+                                    {% if form.arquivo_csv.errors %}
+                                        {% for error in form.arquivo_csv.errors %}
+                                            <div class="text-danger small mt-1">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <div class="form-text">Apenas arquivos CSV são aceitos</div>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    {{ form.submit(class="btn btn-primary") }}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instruções -->
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Instruções
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="fw-bold">Formato do CSV:</h6>
+                            <p class="small mb-3">O arquivo deve conter as seguintes colunas:</p>
+                            
+                            <ul class="small mb-3">
+                                <li><strong>dominio_nome:</strong> Nome do domínio</li>
+                                <li><strong>dominio_descricao:</strong> Descrição do domínio (opcional)</li>
+                                <li><strong>dominio_ordem:</strong> Ordem do domínio</li>
+                                <li><strong>pergunta_texto:</strong> Texto da pergunta</li>
+                                <li><strong>pergunta_descricao:</strong> Descrição da pergunta (opcional)</li>
+                                <li><strong>pergunta_ordem:</strong> Ordem da pergunta</li>
+                            </ul>
+                            
+                            <div class="alert alert-warning small">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <strong>Atenção:</strong> Domínios duplicados serão ignorados. Perguntas duplicadas no mesmo domínio também serão ignoradas.
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                <strong>Dica:</strong> Baixe o template CSV para ter o formato correto.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico de Importações (se houver) -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i>
+                                Últimas Importações
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-file-csv mb-3" style="font-size: 2rem;"></i>
+                                <p class="mb-0">Nenhuma importação realizada ainda</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Adicionar preview do arquivo selecionado
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('input[type="file"]');
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileName = file.name;
+                const fileSize = (file.size / 1024).toFixed(2);
+                
+                // Criar preview
+                let preview = document.querySelector('.file-preview');
+                if (!preview) {
+                    preview = document.createElement('div');
+                    preview.className = 'file-preview mt-2 p-2 bg-light rounded small';
+                    fileInput.parentNode.appendChild(preview);
+                }
+                
+                preview.innerHTML = `
+                    <i class="fas fa-file-csv text-success me-2"></i>
+                    <strong>${fileName}</strong> (${fileSize} KB)
+                `;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

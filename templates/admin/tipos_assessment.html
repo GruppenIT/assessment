@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Tipos de Assessment - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="h3 mb-0">
+                        <i class="fas fa-list text-primary me-2"></i>
+                        Tipos de Assessment
+                    </h2>
+                    <p class="text-muted mb-0">Gerencie os diferentes tipos de avaliação disponíveis no sistema</p>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoTipo">
+                    <i class="fas fa-plus me-2"></i>Novo Tipo
+                </button>
+            </div>
+
+            <!-- Lista de Tipos -->
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    {% if tipos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-0">Nome</th>
+                                        <th class="border-0">Descrição</th>
+                                        <th class="border-0">Ordem</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0">Criado em</th>
+                                        <th class="border-0 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tipo in tipos %}
+                                    <tr>
+                                        <td class="fw-semibold">{{ tipo.nome }}</td>
+                                        <td class="text-muted">
+                                            {{ tipo.descricao[:50] + '...' if tipo.descricao and tipo.descricao|length > 50 else tipo.descricao or '-' }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ tipo.ordem }}</span>
+                                        </td>
+                                        <td>
+                                            {% if tipo.ativo %}
+                                                <span class="badge bg-success">Ativo</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inativo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-muted">
+                                            {{ tipo.data_criacao.strftime('%d/%m/%Y') if tipo.data_criacao else '-' }}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary btn-sm" 
+                                                        onclick="editarTipo({{ tipo.id }}, '{{ tipo.nome }}', '{{ tipo.descricao or '' }}', {{ tipo.ordem }})"
+                                                        title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm" 
+                                                        onclick="confirmarExclusao({{ tipo.id }}, '{{ tipo.nome }}')"
+                                                        title="Excluir">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-list text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted">Nenhum tipo de assessment cadastrado</h5>
+                            <p class="text-muted">Clique em "Novo Tipo" para criar o primeiro tipo de assessment.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Tipo -->
+<div class="modal fade" id="modalNovoTipo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.criar_tipo_assessment') }}">
+                {{ form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus text-primary me-2"></i>
+                        Novo Tipo de Assessment
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ form.nome.label(class="form-label") }}
+                        {{ form.nome(class="form-control") }}
+                        {% if form.nome.errors %}
+                            {% for error in form.nome.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.descricao.label(class="form-label") }}
+                        {{ form.descricao(class="form-control") }}
+                        {% if form.descricao.errors %}
+                            {% for error in form.descricao.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.ordem.label(class="form-label") }}
+                        {{ form.ordem(class="form-control") }}
+                        {% if form.ordem.errors %}
+                            {% for error in form.ordem.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Tipo -->
+<div class="modal fade" id="modalEditarTipo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formEditarTipo">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit text-primary me-2"></i>
+                        Editar Tipo de Assessment
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nome do Tipo</label>
+                        <input type="text" class="form-control" name="nome" id="editNome" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" name="descricao" id="editDescricao" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Ordem</label>
+                        <input type="number" class="form-control" name="ordem" id="editOrdem" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editarTipo(id, nome, descricao, ordem) {
+    document.getElementById('editNome').value = nome;
+    document.getElementById('editDescricao').value = descricao;
+    document.getElementById('editOrdem').value = ordem;
+    document.getElementById('formEditarTipo').action = `/admin/tipos_assessment/${id}/editar`;
+    
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarTipo'));
+    modal.show();
+}
+
+function confirmarExclusao(id, nome) {
+    if (confirm(`Tem certeza que deseja excluir o tipo "${nome}"?\n\nEsta ação não pode ser desfeita.`)) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/tipos_assessment/${id}/excluir`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
