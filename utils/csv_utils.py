@@ -36,15 +36,36 @@ def processar_csv_importacao(arquivo_csv, tipo_assessment_id):
             return resultado
         
         # Ler o arquivo CSV usando ponto-e-vírgula como separador
-        stream = io.StringIO(arquivo_csv.read().decode('utf-8'))
+        arquivo_bytes = arquivo_csv.read()
+        
+        # Tentar diferentes encodings
+        for encoding in ['utf-8-sig', 'utf-8', 'latin-1', 'cp1252']:
+            try:
+                conteudo = arquivo_bytes.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            resultado['erros'].append('Não foi possível decodificar o arquivo. Verifique a codificação.')
+            return resultado
+        
+        stream = io.StringIO(conteudo)
         csv_reader = csv.DictReader(stream, delimiter=';')
+        
+        # Debug: mostrar fieldnames encontrados
+        fieldnames_encontrados = csv_reader.fieldnames or []
         
         # Verificar cabeçalhos esperados
         colunas_esperadas = ['Tipo', 'Dominio', 'DescriçãoDominio', 'OrdemDominio', 
                            'Pergunta', 'DescriçãoPergunta', 'OrdemPergunta']
         
-        if not all(col in csv_reader.fieldnames for col in colunas_esperadas):
-            resultado['erros'].append(f'CSV deve conter as colunas: {", ".join(colunas_esperadas)}')
+        # Limpar possíveis espaços nos fieldnames
+        if fieldnames_encontrados:
+            fieldnames_limpos = [field.strip() for field in fieldnames_encontrados]
+            csv_reader.fieldnames = fieldnames_limpos
+        
+        if not all(col in fieldnames_limpos for col in colunas_esperadas):
+            resultado['erros'].append(f'CSV deve conter as colunas: {", ".join(colunas_esperadas)}. Encontradas: {", ".join(fieldnames_limpos)}')
             return resultado
         
         linha_num = 1
