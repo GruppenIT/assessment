@@ -257,7 +257,7 @@
 <script>
 // Popular select de tipos de assessment ao carregar a página
 document.addEventListener('DOMContentLoaded', function() {
-    const tiposAssessment = {{ tipos_assessment | tojson }};
+    const tiposAssessment = {{ tipos_assessment_json | tojson }};
     const selectEdit = document.getElementById('editTipoAssessment');
     
     if (selectEdit && tiposAssessment) {

@@ -267,8 +267,9 @@ def dominios():
     """Gerenciamento de domínios"""
     dominios = Dominio.query.order_by(Dominio.ordem, Dominio.nome).all()
     tipos_assessment = TipoAssessment.query.filter_by(ativo=True).order_by(TipoAssessment.nome).all()
+    tipos_assessment_json = [{'id': ta.id, 'nome': ta.nome} for ta in tipos_assessment]
     form = DominioForm()
-    return render_template('admin/dominios.html', dominios=dominios, tipos_assessment=tipos_assessment, form=form)
+    return render_template('admin/dominios.html', dominios=dominios, tipos_assessment=tipos_assessment, tipos_assessment_json=tipos_assessment_json, form=form)
 
 @admin_bp.route('/dominios/criar', methods=['POST'])
 @login_required
