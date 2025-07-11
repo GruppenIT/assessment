@@ -91,6 +91,10 @@ def processar_csv_importacao(arquivo_csv, tipo_assessment_id):
                     # Processar pergunta
                     texto_pergunta = linha['Pergunta'].strip()
                     if texto_pergunta:
+                        # Limitar tamanho do texto da pergunta se necessário
+                        if len(texto_pergunta) > 1000:
+                            texto_pergunta = texto_pergunta[:1000]
+                        
                         pergunta = processar_pergunta(
                             dominio['objeto'].id,
                             texto_pergunta,
@@ -133,10 +137,14 @@ def processar_dominio(tipo_assessment_id, nome, descricao, ordem_str):
         dict: Resultado do processamento
     """
     # Verificar se já existe
-    dominio_existente = Dominio.query.filter_by(
-        tipo_assessment_id=tipo_assessment_id,
-        nome=nome
-    ).first()
+    try:
+        dominio_existente = Dominio.query.filter_by(
+            tipo_assessment_id=tipo_assessment_id,
+            nome=nome
+        ).first()
+    except Exception as e:
+        # Se der erro na query, assumir que não existe e continuar
+        dominio_existente = None
     
     if dominio_existente:
         return {'criado': False, 'objeto': dominio_existente}
@@ -148,10 +156,14 @@ def processar_dominio(tipo_assessment_id, nome, descricao, ordem_str):
         ordem = 1
     
     # Criar novo domínio
+    # Limitar tamanhos dos campos para evitar problemas
+    nome_truncado = nome[:100] if len(nome) > 100 else nome
+    descricao_truncada = descricao[:500] if descricao and len(descricao) > 500 else descricao
+    
     novo_dominio = Dominio(
         tipo_assessment_id=tipo_assessment_id,
-        nome=nome,
-        descricao=descricao if descricao else None,
+        nome=nome_truncado,
+        descricao=descricao_truncada if descricao_truncada else None,
         ordem=ordem,
         ativo=True
     )
@@ -175,10 +187,14 @@ def processar_pergunta(dominio_id, texto, descricao, ordem_str):
         dict: Resultado do processamento
     """
     # Verificar se já existe (mesmo texto no mesmo domínio)
-    pergunta_existente = Pergunta.query.filter_by(
-        dominio_id=dominio_id,
-        texto=texto
-    ).first()
+    try:
+        pergunta_existente = Pergunta.query.filter_by(
+            dominio_id=dominio_id,
+            texto=texto
+        ).first()
+    except Exception as e:
+        # Se der erro na query, assumir que não existe e continuar
+        pergunta_existente = None
     
     if pergunta_existente:
         return {'criado': False, 'objeto': pergunta_existente}
@@ -190,10 +206,14 @@ def processar_pergunta(dominio_id, texto, descricao, ordem_str):
         ordem = 1
     
     # Criar nova pergunta
+    # Limitar tamanhos dos campos para evitar problemas
+    texto_truncado = texto[:1000] if len(texto) > 1000 else texto
+    descricao_truncada = descricao[:1000] if descricao and len(descricao) > 1000 else descricao
+    
     nova_pergunta = Pergunta(
         dominio_id=dominio_id,
-        texto=texto,
-        descricao=descricao if descricao else None,
+        texto=texto_truncado,
+        descricao=descricao_truncada if descricao_truncada else None,
         ordem=ordem,
         ativo=True
     )
