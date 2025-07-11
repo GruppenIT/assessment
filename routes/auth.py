@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from models.usuario import Usuario
-from forms.auth_forms import LoginForm, CadastroForm
+from forms.auth_forms import LoginForm
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -32,52 +32,14 @@ def login():
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
-            elif usuario.tipo == 'admin':
-                return redirect(url_for('admin.dashboard'))
             else:
-                return redirect(url_for('cliente.dashboard'))
+                return redirect(url_for('admin.dashboard'))
         else:
             flash('Email ou senha incorretos.', 'danger')
     
     return render_template('auth/login.html', form=form)
 
-@auth_bp.route('/cadastro', methods=['GET', 'POST'])
-def cadastro():
-    """Página de cadastro de clientes"""
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    
-    form = CadastroForm()
-    
-    if form.validate_on_submit():
-        # Verificar se o email já existe
-        email_existente = Usuario.query.filter_by(email=form.email.data.lower()).first()
-        if email_existente:
-            flash('Este email já está cadastrado no sistema.', 'danger')
-            return render_template('auth/cadastro.html', form=form)
-        
-        # Criar novo usuário cliente
-        usuario = Usuario(
-            nome=form.nome.data.strip(),
-            nome_empresa=form.nome_empresa.data.strip(),
-            email=form.email.data.lower().strip(),
-            senha_hash=generate_password_hash(form.senha.data),
-            tipo='cliente'
-        )
-        
-        try:
-            db.session.add(usuario)
-            db.session.commit()
-            
-            flash('Cadastro realizado com sucesso! Faça login para continuar.', 'success')
-            return redirect(url_for('auth.login'))
-        
-        except Exception as e:
-            db.session.rollback()
-            flash('Erro ao criar conta. Tente novamente.', 'danger')
-            return render_template('auth/cadastro.html', form=form)
-    
-    return render_template('auth/cadastro.html', form=form)
+
 
 @auth_bp.route('/logout')
 @login_required

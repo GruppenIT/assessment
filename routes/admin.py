@@ -15,6 +15,7 @@ from forms.admin_forms import DominioForm, PerguntaForm, LogoForm
 from forms.cliente_forms import ClienteForm, ResponenteForm, TipoAssessmentForm, ImportacaoCSVForm
 from utils.auth_utils import admin_required
 from utils.upload_utils import allowed_file, save_uploaded_file
+from utils.csv_utils import processar_csv_importacao, gerar_template_csv
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -44,6 +45,160 @@ def dashboard():
                          total_perguntas=total_perguntas,
                          total_respostas=total_respostas,
                          ultimas_respostas=ultimas_respostas)
+
+# Rotas para Tipos de Assessment
+@admin_bp.route('/tipos_assessment')
+@login_required
+@admin_required
+def tipos_assessment():
+    """Gerenciamento de tipos de assessment"""
+    tipos = TipoAssessment.query.order_by(TipoAssessment.ordem, TipoAssessment.nome).all()
+    form = TipoAssessmentForm()
+    return render_template('admin/tipos_assessment.html', tipos=tipos, form=form)
+
+@admin_bp.route('/tipos_assessment/criar', methods=['POST'])
+@login_required
+@admin_required
+def criar_tipo_assessment():
+    """Cria um novo tipo de assessment"""
+    form = TipoAssessmentForm()
+    
+    if form.validate_on_submit():
+        tipo = TipoAssessment(
+            nome=form.nome.data.strip(),
+            descricao=form.descricao.data.strip() if form.descricao.data else None,
+            ordem=int(form.ordem.data),
+            ativo=True
+        )
+        
+        try:
+            db.session.add(tipo)
+            db.session.commit()
+            flash('Tipo de assessment criado com sucesso!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao criar tipo de assessment.', 'danger')
+    
+    return redirect(url_for('admin.tipos_assessment'))
+
+# Rotas para Clientes
+@admin_bp.route('/clientes')
+@login_required
+@admin_required
+def clientes():
+    """Gerenciamento de clientes"""
+    clientes = Cliente.query.order_by(Cliente.nome).all()
+    form = ClienteForm()
+    return render_template('admin/clientes.html', clientes=clientes, form=form)
+
+@admin_bp.route('/clientes/criar', methods=['POST'])
+@login_required
+@admin_required
+def criar_cliente():
+    """Cria um novo cliente"""
+    form = ClienteForm()
+    
+    if form.validate_on_submit():
+        # Processar upload do logo se fornecido
+        logo_path = None
+        if form.logo.data:
+            logo_file = save_uploaded_file(form.logo.data, 'logos')
+            if logo_file:
+                logo_path = logo_file
+        
+        cliente = Cliente(
+            nome=form.nome.data.strip(),
+            razao_social=form.razao_social.data.strip(),
+            cnpj=form.cnpj.data.strip() if form.cnpj.data else None,
+            localidade=form.localidade.data.strip() if form.localidade.data else None,
+            segmento=form.segmento.data.strip() if form.segmento.data else None,
+            logo_path=logo_path,
+            ativo=True
+        )
+        
+        try:
+            db.session.add(cliente)
+            db.session.commit()
+            flash('Cliente criado com sucesso!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao criar cliente.', 'danger')
+    
+    return redirect(url_for('admin.clientes'))
+
+@admin_bp.route('/clientes/<int:cliente_id>/respondentes')
+@login_required
+@admin_required
+def respondentes_cliente(cliente_id):
+    """Gerenciamento de respondentes de um cliente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    respondentes = cliente.respondentes
+    form = ResponenteForm()
+    return render_template('admin/respondentes.html', cliente=cliente, respondentes=respondentes, form=form)
+
+@admin_bp.route('/clientes/<int:cliente_id>/respondentes/criar', methods=['POST'])
+@login_required
+@admin_required
+def criar_respondente(cliente_id):
+    """Cria um novo respondente para um cliente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    form = ResponenteForm()
+    
+    if form.validate_on_submit():
+        from werkzeug.security import generate_password_hash
+        
+        respondente = Respondente(
+            cliente_id=cliente_id,
+            nome=form.nome.data.strip(),
+            email=form.email.data.lower().strip(),
+            senha_hash=generate_password_hash(form.senha.data),
+            cargo=form.cargo.data.strip() if form.cargo.data else None,
+            setor=form.setor.data.strip() if form.setor.data else None,
+            ativo=form.ativo.data
+        )
+        
+        try:
+            db.session.add(respondente)
+            db.session.commit()
+            flash('Respondente criado com sucesso!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao criar respondente.', 'danger')
+    
+    return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+
+# Rota para Importação CSV
+@admin_bp.route('/importar_csv', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def importar_csv():
+    """Importação de dados via CSV"""
+    form = ImportacaoCSVForm()
+    
+    if form.validate_on_submit():
+        resultado = processar_csv_importacao(form.arquivo_csv.data, form.tipo_assessment_id.data)
+        
+        if resultado['sucesso']:
+            flash(f'Importação concluída! {resultado["dominios_criados"]} domínios e {resultado["perguntas_criadas"]} perguntas criados.', 'success')
+        else:
+            flash(f'Erro na importação: {"; ".join(resultado["erros"])}', 'danger')
+    
+    return render_template('admin/importar_csv.html', form=form)
+
+@admin_bp.route('/template_csv')
+@login_required
+@admin_required
+def template_csv():
+    """Download do template CSV"""
+    from flask import Response
+    
+    template_content = gerar_template_csv()
+    
+    return Response(
+        template_content,
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=template_importacao.csv'}
+    )
 
 @admin_bp.route('/dominios')
 @login_required
