@@ -207,6 +207,12 @@ def criar_respondente(cliente_id):
     if form.validate_on_submit():
         from werkzeug.security import generate_password_hash
         
+        # Verificar se email já existe
+        email_existente = Respondente.query.filter_by(email=form.email.data.lower().strip()).first()
+        if email_existente:
+            flash('Este email já está sendo usado por outro respondente.', 'danger')
+            return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+        
         respondente = Respondente(
             cliente_id=cliente_id,
             nome=form.nome.data.strip(),
@@ -224,6 +230,28 @@ def criar_respondente(cliente_id):
         except Exception as e:
             db.session.rollback()
             flash('Erro ao criar respondente.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
+    
+    return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+
+@admin_bp.route('/respondentes/<int:respondente_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir_respondente(respondente_id):
+    """Exclui um respondente"""
+    respondente = Respondente.query.get_or_404(respondente_id)
+    cliente_id = respondente.cliente_id
+    
+    try:
+        db.session.delete(respondente)
+        db.session.commit()
+        flash('Respondente excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao excluir respondente.', 'danger')
     
     return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
 
