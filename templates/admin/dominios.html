@@ -42,6 +42,7 @@
                                 <thead>
                                     <tr>
                                         <th>Ordem</th>
+                                        <th>Tipo</th>
                                         <th>Nome</th>
                                         <th>Descrição</th>
                                         <th>Perguntas</th>
@@ -54,6 +55,9 @@
                                         <tr>
                                             <td>
                                                 <span class="badge bg-secondary">{{ dominio.ordem }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ dominio.tipo_assessment.nome }}</span>
                                             </td>
                                             <td>
                                                 <strong>{{ dominio.nome }}</strong>
@@ -82,7 +86,7 @@
                                                     <button type="button" class="btn btn-outline-primary" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#modalEditarDominio"
-                                                            onclick="editarDominio({{ dominio.id }}, '{{ dominio.nome }}', '{{ dominio.descricao or '' }}', {{ dominio.ordem }})">
+                                                            onclick="editarDominio({{ dominio.id }}, {{ dominio.tipo_assessment_id }}, '{{ dominio.nome }}', '{{ dominio.descricao or '' }}', {{ dominio.ordem }})">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <a href="{{ url_for('admin.perguntas', dominio_id=dominio.id) }}" 
@@ -134,6 +138,11 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        {{ form.tipo_assessment_id.label(class="form-label fw-bold") }}
+                        {{ form.tipo_assessment_id(class="form-select") }}
+                        <div class="form-text">Selecione o tipo de assessment para este domínio</div>
+                    </div>
+                    <div class="mb-3">
                         {{ form.nome.label(class="form-label fw-bold") }}
                         {{ form.nome(class="form-control") }}
                     </div>
@@ -175,6 +184,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editTipoAssessment" class="form-label fw-bold">Tipo de Assessment</label>
+                        <select class="form-select" id="editTipoAssessment" name="tipo_assessment_id" required>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label for="editNome" class="form-label fw-bold">Nome do Domínio</label>
                         <input type="text" class="form-control" id="editNome" name="nome" required>
@@ -240,11 +255,31 @@
 
 {% block extra_js %}
 <script>
-function editarDominio(id, nome, descricao, ordem) {
+// Popular select de tipos de assessment ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    const tiposAssessment = {{ tipos_assessment | tojson }};
+    const selectEdit = document.getElementById('editTipoAssessment');
+    
+    if (selectEdit && tiposAssessment) {
+        selectEdit.innerHTML = '';
+        tiposAssessment.forEach(tipo => {
+            const option = document.createElement('option');
+            option.value = tipo.id;
+            option.textContent = tipo.nome;
+            selectEdit.appendChild(option);
+        });
+    }
+});
+
+function editarDominio(id, tipoAssessmentId, nome, descricao, ordem) {
+    document.getElementById('editTipoAssessment').value = tipoAssessmentId;
     document.getElementById('editNome').value = nome;
     document.getElementById('editDescricao').value = descricao;
     document.getElementById('editOrdem').value = ordem;
     document.getElementById('formEditarDominio').action = `/admin/dominios/${id}/editar`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalEditarDominio'));
+    modal.show();
 }
 
 function confirmarExclusao(id, nome) {

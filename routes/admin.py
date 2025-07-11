@@ -266,8 +266,9 @@ def template_csv():
 def dominios():
     """Gerenciamento de domínios"""
     dominios = Dominio.query.order_by(Dominio.ordem, Dominio.nome).all()
+    tipos_assessment = TipoAssessment.query.filter_by(ativo=True).order_by(TipoAssessment.nome).all()
     form = DominioForm()
-    return render_template('admin/dominios.html', dominios=dominios, form=form)
+    return render_template('admin/dominios.html', dominios=dominios, tipos_assessment=tipos_assessment, form=form)
 
 @admin_bp.route('/dominios/criar', methods=['POST'])
 @login_required
@@ -332,6 +333,7 @@ def editar_dominio(dominio_id):
         dominio.nome = nome
         dominio.descricao = descricao if descricao else None
         dominio.ordem = ordem
+        dominio.tipo_assessment_id = request.form.get('tipo_assessment_id', type=int)
         db.session.commit()
         flash('Domínio atualizado com sucesso!', 'success')
     except Exception as e:
