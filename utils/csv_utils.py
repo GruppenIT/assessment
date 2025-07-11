@@ -9,8 +9,8 @@ def processar_csv_importacao(arquivo_csv, tipo_assessment_id):
     """
     Processa um arquivo CSV para importação de domínios e perguntas
     
-    Formato esperado do CSV:
-    Tipo,Dominio,DescriçãoDominio,OrdemDominio,Pergunta,DescriçãoPergunta,OrdemPergunta
+    Formato esperado do CSV (separador: ponto-e-vírgula):
+    Tipo;Dominio;DescriçãoDominio;OrdemDominio;Pergunta;DescriçãoPergunta;OrdemPergunta
     
     Args:
         arquivo_csv: Arquivo CSV enviado via form
@@ -35,9 +35,9 @@ def processar_csv_importacao(arquivo_csv, tipo_assessment_id):
             resultado['erros'].append('Tipo de assessment não encontrado')
             return resultado
         
-        # Ler o arquivo CSV
+        # Ler o arquivo CSV usando ponto-e-vírgula como separador
         stream = io.StringIO(arquivo_csv.read().decode('utf-8'))
-        csv_reader = csv.DictReader(stream)
+        csv_reader = csv.DictReader(stream, delimiter=';')
         
         # Verificar cabeçalhos esperados
         colunas_esperadas = ['Tipo', 'Dominio', 'DescriçãoDominio', 'OrdemDominio', 
@@ -223,7 +223,7 @@ def gerar_template_csv():
     fieldnames = ['Tipo', 'Dominio', 'DescriçãoDominio', 'OrdemDominio', 
                   'Pergunta', 'DescriçãoPergunta', 'OrdemPergunta']
     
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=';')
     writer.writeheader()
     writer.writerows(template_data)
     
