@@ -28,6 +28,10 @@ def processar_csv_importacao(arquivo_csv, tipo_assessment_id):
         'erros': []
     }
     
+    # Coletar dados para processar em lote
+    dominios_para_criar = {}
+    perguntas_para_criar = []
+    
     try:
         # Verificar se o tipo de assessment existe
         tipo_assessment = TipoAssessment.query.get(tipo_assessment_id)
@@ -73,48 +77,106 @@ def processar_csv_importacao(arquivo_csv, tipo_assessment_id):
             linha_num += 1
             
             try:
-                # Processar domínio
+                # Preparar dados do domínio
                 nome_dominio = linha['Dominio'].strip()
                 if nome_dominio:
-                    dominio = processar_dominio(
-                        tipo_assessment_id,
-                        nome_dominio,
-                        linha['DescriçãoDominio'].strip(),
-                        linha['OrdemDominio'].strip()
-                    )
+                    dominio_key = f"{tipo_assessment_id}:{nome_dominio}"
                     
-                    if dominio['criado']:
-                        resultado['dominios_criados'] += 1
-                    else:
-                        resultado['dominios_existentes'] += 1
+                    if dominio_key not in dominios_para_criar:
+                        dominios_para_criar[dominio_key] = {
+                            'nome': nome_dominio,
+                            'descricao': linha['DescriçãoDominio'].strip(),
+                            'ordem': linha['OrdemDominio'].strip(),
+                            'perguntas': []
+                        }
                     
-                    # Processar pergunta
+                    # Preparar dados da pergunta
                     texto_pergunta = linha['Pergunta'].strip()
                     if texto_pergunta:
-                        # Limitar tamanho do texto da pergunta se necessário
                         if len(texto_pergunta) > 1000:
                             texto_pergunta = texto_pergunta[:1000]
                         
-                        pergunta = processar_pergunta(
-                            dominio['objeto'].id,
-                            texto_pergunta,
-                            linha['DescriçãoPergunta'].strip(),
-                            linha['OrdemPergunta'].strip()
-                        )
-                        
-                        if pergunta['criado']:
-                            resultado['perguntas_criadas'] += 1
-                        else:
-                            resultado['perguntas_existentes'] += 1
+                        dominios_para_criar[dominio_key]['perguntas'].append({
+                            'texto': texto_pergunta,
+                            'descricao': linha['DescriçãoPergunta'].strip(),
+                            'ordem': linha['OrdemPergunta'].strip()
+                        })
                 
             except Exception as e:
                 resultado['erros'].append(f'Erro na linha {linha_num}: {str(e)}')
         
-        # Commit das alterações se não houver erros críticos
+        # Processar domínios e perguntas em lote
         if not resultado['erros']:
             try:
+                for dominio_key, dominio_data in dominios_para_criar.items():
+                    # Verificar se domínio já existe
+                    nome_dominio = dominio_data['nome']
+                    dominio_existente = Dominio.query.filter_by(
+                        tipo_assessment_id=tipo_assessment_id,
+                        nome=nome_dominio
+                    ).first()
+                    
+                    if dominio_existente:
+                        resultado['dominios_existentes'] += 1
+                        dominio_obj = dominio_existente
+                    else:
+                        # Criar novo domínio
+                        try:
+                            ordem = int(dominio_data['ordem']) if dominio_data['ordem'] else 1
+                        except ValueError:
+                            ordem = 1
+                        
+                        nome_normalizado = nome_dominio.encode('utf-8', errors='ignore').decode('utf-8')
+                        descricao_normalizada = dominio_data['descricao'].encode('utf-8', errors='ignore').decode('utf-8') if dominio_data['descricao'] else None
+                        
+                        dominio_obj = Dominio(
+                            tipo_assessment_id=tipo_assessment_id,
+                            nome=nome_normalizado[:100],
+                            descricao=descricao_normalizada[:500] if descricao_normalizada else None,
+                            ordem=ordem,
+                            ativo=True
+                        )
+                        db.session.add(dominio_obj)
+                        resultado['dominios_criados'] += 1
+                    
+                    # Processar perguntas do domínio
+                    for pergunta_data in dominio_data['perguntas']:
+                        texto_pergunta = pergunta_data['texto']
+                        
+                        # Verificar se pergunta já existe
+                        pergunta_existente = None
+                        if dominio_obj.id:
+                            pergunta_existente = Pergunta.query.filter_by(
+                                dominio_id=dominio_obj.id,
+                                texto=texto_pergunta
+                            ).first()
+                        
+                        if pergunta_existente:
+                            resultado['perguntas_existentes'] += 1
+                        else:
+                            # Criar nova pergunta
+                            try:
+                                ordem = int(pergunta_data['ordem']) if pergunta_data['ordem'] else 1
+                            except ValueError:
+                                ordem = 1
+                            
+                            texto_normalizado = texto_pergunta.encode('utf-8', errors='ignore').decode('utf-8')
+                            descricao_normalizada = pergunta_data['descricao'].encode('utf-8', errors='ignore').decode('utf-8') if pergunta_data['descricao'] else None
+                            
+                            pergunta_obj = Pergunta(
+                                dominio=dominio_obj,
+                                texto=texto_normalizado[:1000],
+                                descricao=descricao_normalizada[:1000] if descricao_normalizada else None,
+                                ordem=ordem,
+                                ativo=True
+                            )
+                            db.session.add(pergunta_obj)
+                            resultado['perguntas_criadas'] += 1
+                
+                # Commit único no final
                 db.session.commit()
                 resultado['sucesso'] = True
+                
             except Exception as e:
                 db.session.rollback()
                 resultado['erros'].append(f'Erro ao salvar no banco: {str(e)}')
