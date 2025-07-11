@@ -4,11 +4,15 @@ from werkzeug.utils import secure_filename
 import os
 from app import db
 from models.usuario import Usuario
+from models.cliente import Cliente
+from models.respondente import Respondente
+from models.tipo_assessment import TipoAssessment
 from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.resposta import Resposta
 from models.logo import Logo
 from forms.admin_forms import DominioForm, PerguntaForm, LogoForm
+from forms.cliente_forms import ClienteForm, ResponenteForm, TipoAssessmentForm, ImportacaoCSVForm
 from utils.auth_utils import admin_required
 from utils.upload_utils import allowed_file, save_uploaded_file
 
@@ -20,29 +24,25 @@ admin_bp = Blueprint('admin', __name__)
 def dashboard():
     """Dashboard administrativo"""
     # Estatísticas gerais
-    total_clientes = Usuario.query.filter_by(tipo='cliente', ativo=True).count()
+    total_clientes = Cliente.query.filter_by(ativo=True).count()
+    total_respondentes = Respondente.query.filter_by(ativo=True).count()
+    total_tipos_assessment = TipoAssessment.query.filter_by(ativo=True).count()
     total_dominios = Dominio.query.filter_by(ativo=True).count()
     total_perguntas = Pergunta.query.filter_by(ativo=True).count()
     total_respostas = Resposta.query.count()
     
-    # Clientes com assessment completo
-    clientes_completos = []
-    clientes = Usuario.query.filter_by(tipo='cliente', ativo=True).all()
-    for cliente in clientes:
-        if cliente.assessment_concluido():
-            clientes_completos.append(cliente)
-    
     # Últimas atividades
-    ultimas_respostas = Resposta.query.join(Usuario).order_by(
+    ultimas_respostas = Resposta.query.join(Respondente).order_by(
         Resposta.data_resposta.desc()
     ).limit(10).all()
     
     return render_template('admin/dashboard.html',
                          total_clientes=total_clientes,
+                         total_respondentes=total_respondentes,
+                         total_tipos_assessment=total_tipos_assessment,
                          total_dominios=total_dominios,
                          total_perguntas=total_perguntas,
                          total_respostas=total_respostas,
-                         clientes_completos=clientes_completos,
                          ultimas_respostas=ultimas_respostas)
 
 @admin_bp.route('/dominios')

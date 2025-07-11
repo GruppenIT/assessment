@@ -24,13 +24,6 @@ class Usuario(UserMixin, db.Model):
         """Verifica se o usuário é administrador"""
         return self.tipo == 'admin'
     
-    def assessment_concluido(self):
-        """Verifica se o cliente concluiu o assessment"""
-        from models.pergunta import Pergunta
-        total_perguntas = Pergunta.query.count()
-        respostas_dadas = len(self.respostas)
-        return total_perguntas > 0 and respostas_dadas >= total_perguntas
-    
     def to_dict(self):
         """Converte o usuário para dicionário"""
         return {
@@ -38,7 +31,6 @@ class Usuario(UserMixin, db.Model):
             'nome': self.nome,
             'email': self.email,
             'tipo': self.tipo,
-            'nome_empresa': self.nome_empresa,
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
             'ativo': self.ativo
         }
