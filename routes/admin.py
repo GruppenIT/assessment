@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 from app import db
 from models.usuario import Usuario
-from models.cliente import Cliente
+from models.cliente import Cliente, ClienteAssessment
 from models.respondente import Respondente
 from models.tipo_assessment import TipoAssessment
 from models.dominio import Dominio
@@ -254,6 +254,124 @@ def excluir_respondente(respondente_id):
         flash('Erro ao excluir respondente.', 'danger')
     
     return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+
+@admin_bp.route('/clientes/<int:cliente_id>/assessments')
+@login_required
+@admin_required
+def assessments_cliente(cliente_id):
+    """Retorna HTML para gerenciar assessments do cliente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    tipos_assessment = TipoAssessment.query.filter_by(ativo=True).all()
+    
+    # Assessments já associados ao cliente
+    assessments_associados = [ca.tipo_assessment_id for ca in cliente.cliente_assessments if ca.ativo]
+    
+    html = '<h6>Assessments Disponíveis</h6>'
+    html += '<div class="list-group">'
+    
+    for tipo in tipos_assessment:
+        if tipo.id in assessments_associados:
+            html += f'''
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">{tipo.nome}</h6>
+                        <small class="text-muted">{tipo.descricao or ''}</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-success me-2">Associado</span>
+                        <button class="btn btn-sm btn-outline-danger" onclick="desassociarAssessment({cliente_id}, {tipo.id})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            '''
+        else:
+            html += f'''
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">{tipo.nome}</h6>
+                        <small class="text-muted">{tipo.descricao or ''}</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-success" onclick="associarAssessment({cliente_id}, {tipo.id})">
+                            <i class="fas fa-plus"></i> Associar
+                        </button>
+                    </div>
+                </div>
+            '''
+    
+    html += '</div>'
+    
+    return html
+
+@admin_bp.route('/clientes/<int:cliente_id>/assessments/associar', methods=['POST'])
+@login_required
+@admin_required
+def associar_assessment_cliente(cliente_id):
+    """Associa um assessment ao cliente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    tipo_assessment_id = request.form.get('tipo_assessment_id')
+    
+    if not tipo_assessment_id:
+        return jsonify({'success': False, 'message': 'Tipo de assessment não informado'})
+    
+    # Verificar se já existe associação
+    associacao_existente = db.session.query(ClienteAssessment).filter_by(
+        cliente_id=cliente_id,
+        tipo_assessment_id=tipo_assessment_id
+    ).first()
+    
+    if associacao_existente:
+        if not associacao_existente.ativo:
+            associacao_existente.ativo = True
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Assessment reativado'})
+        else:
+            return jsonify({'success': False, 'message': 'Assessment já associado'})
+    
+    # Criar nova associação
+    nova_associacao = ClienteAssessment(
+        cliente_id=cliente_id,
+        tipo_assessment_id=tipo_assessment_id,
+        ativo=True
+    )
+    
+    try:
+        db.session.add(nova_associacao)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Assessment associado com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Erro ao associar assessment'})
+
+@admin_bp.route('/clientes/<int:cliente_id>/assessments/desassociar', methods=['POST'])
+@login_required
+@admin_required
+def desassociar_assessment_cliente(cliente_id):
+    """Desassocia um assessment do cliente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    tipo_assessment_id = request.form.get('tipo_assessment_id')
+    
+    if not tipo_assessment_id:
+        return jsonify({'success': False, 'message': 'Tipo de assessment não informado'})
+    
+    # Encontrar associação
+    associacao = db.session.query(ClienteAssessment).filter_by(
+        cliente_id=cliente_id,
+        tipo_assessment_id=tipo_assessment_id,
+        ativo=True
+    ).first()
+    
+    if not associacao:
+        return jsonify({'success': False, 'message': 'Associação não encontrada'})
+    
+    try:
+        associacao.ativo = False
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Assessment desassociado com sucesso'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Erro ao desassociar assessment'})
 
 # Rota para Importação CSV
 @admin_bp.route('/importar_csv', methods=['GET', 'POST'])

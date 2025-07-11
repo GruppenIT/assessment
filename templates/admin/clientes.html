@@ -76,6 +76,11 @@
                                                    class="btn btn-outline-info btn-sm" title="Respondentes">
                                                     <i class="fas fa-users"></i>
                                                 </a>
+                                                <button class="btn btn-outline-success btn-sm" 
+                                                        onclick="gerenciarAssessments({{ cliente.id }})"
+                                                        title="Gerenciar Assessments">
+                                                    <i class="fas fa-clipboard-list"></i>
+                                                </button>
                                                 <button class="btn btn-outline-primary btn-sm" 
                                                         onclick="editarCliente({{ cliente.id }})"
                                                         title="Editar">
@@ -205,6 +210,25 @@
     </div>
 </div>
 
+<!-- Modal Gerenciar Assessments -->
+<div class="modal fade" id="modalGerenciarAssessments" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-clipboard-list"></i> Gerenciar Assessments
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="assessments-content">
+                    <!-- Conteúdo será carregado via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function editarCliente(id) {
     // Implementar edição de cliente
@@ -218,6 +242,83 @@ function confirmarExclusao(id, nome) {
         form.action = `/admin/clientes/${id}/excluir`;
         document.body.appendChild(form);
         form.submit();
+    }
+}
+
+function gerenciarAssessments(clienteId) {
+    // Abrir modal
+    const modal = new bootstrap.Modal(document.getElementById('modalGerenciarAssessments'));
+    
+    // Carregar conteúdo via AJAX
+    fetch(`/admin/clientes/${clienteId}/assessments`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('assessments-content').innerHTML = html;
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Erro ao carregar assessments:', error);
+            alert('Erro ao carregar assessments');
+        });
+}
+
+function associarAssessment(clienteId, tipoAssessmentId) {
+    const formData = new FormData();
+    formData.append('cliente_id', clienteId);
+    formData.append('tipo_assessment_id', tipoAssessmentId);
+    
+    fetch(`/admin/clientes/${clienteId}/assessments/associar`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Recarregar o conteúdo
+            gerenciarAssessments(clienteId);
+            // Mostrar mensagem de sucesso
+            alert('Assessment associado com sucesso!');
+        } else {
+            alert('Erro ao associar assessment: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao associar assessment');
+    });
+}
+
+function desassociarAssessment(clienteId, tipoAssessmentId) {
+    if (confirm('Tem certeza que deseja desassociar este assessment?')) {
+        const formData = new FormData();
+        formData.append('cliente_id', clienteId);
+        formData.append('tipo_assessment_id', tipoAssessmentId);
+        
+        fetch(`/admin/clientes/${clienteId}/assessments/desassociar`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Recarregar o conteúdo
+                gerenciarAssessments(clienteId);
+                // Mostrar mensagem de sucesso
+                alert('Assessment desassociado com sucesso!');
+            } else {
+                alert('Erro ao desassociar assessment: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao desassociar assessment');
+        });
     }
 }
 </script>
