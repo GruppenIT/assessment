@@ -112,8 +112,12 @@ def processar_csv_importacao(arquivo_csv, tipo_assessment_id):
         
         # Commit das alterações se não houver erros críticos
         if not resultado['erros']:
-            db.session.commit()
-            resultado['sucesso'] = True
+            try:
+                db.session.commit()
+                resultado['sucesso'] = True
+            except Exception as e:
+                db.session.rollback()
+                resultado['erros'].append(f'Erro ao salvar no banco: {str(e)}')
         else:
             db.session.rollback()
             
@@ -156,22 +160,30 @@ def processar_dominio(tipo_assessment_id, nome, descricao, ordem_str):
         ordem = 1
     
     # Criar novo domínio
-    # Limitar tamanhos dos campos para evitar problemas
+    # Limitar tamanhos dos campos e normalizar encoding
     nome_truncado = nome[:100] if len(nome) > 100 else nome
     descricao_truncada = descricao[:500] if descricao and len(descricao) > 500 else descricao
     
+    # Normalizar caracteres especiais
+    nome_normalizado = nome_truncado.encode('utf-8', errors='ignore').decode('utf-8')
+    descricao_normalizada = descricao_truncada.encode('utf-8', errors='ignore').decode('utf-8') if descricao_truncada else None
+    
     novo_dominio = Dominio(
         tipo_assessment_id=tipo_assessment_id,
-        nome=nome_truncado,
-        descricao=descricao_truncada if descricao_truncada else None,
+        nome=nome_normalizado,
+        descricao=descricao_normalizada,
         ordem=ordem,
         ativo=True
     )
     
-    db.session.add(novo_dominio)
-    db.session.flush()  # Para obter o ID
-    
-    return {'criado': True, 'objeto': novo_dominio}
+    try:
+        db.session.add(novo_dominio)
+        db.session.flush()  # Para obter o ID
+        return {'criado': True, 'objeto': novo_dominio}
+    except Exception as e:
+        # Em caso de erro, fazer rollback e retornar erro
+        db.session.rollback()
+        raise Exception(f'Erro ao criar domínio: {str(e)}')
 
 def processar_pergunta(dominio_id, texto, descricao, ordem_str):
     """
@@ -206,22 +218,30 @@ def processar_pergunta(dominio_id, texto, descricao, ordem_str):
         ordem = 1
     
     # Criar nova pergunta
-    # Limitar tamanhos dos campos para evitar problemas
+    # Limitar tamanhos dos campos e normalizar encoding
     texto_truncado = texto[:1000] if len(texto) > 1000 else texto
     descricao_truncada = descricao[:1000] if descricao and len(descricao) > 1000 else descricao
     
+    # Normalizar caracteres especiais
+    texto_normalizado = texto_truncado.encode('utf-8', errors='ignore').decode('utf-8')
+    descricao_normalizada = descricao_truncada.encode('utf-8', errors='ignore').decode('utf-8') if descricao_truncada else None
+    
     nova_pergunta = Pergunta(
         dominio_id=dominio_id,
-        texto=texto_truncado,
-        descricao=descricao_truncada if descricao_truncada else None,
+        texto=texto_normalizado,
+        descricao=descricao_normalizada,
         ordem=ordem,
         ativo=True
     )
     
-    db.session.add(nova_pergunta)
-    db.session.flush()  # Para obter o ID
-    
-    return {'criado': True, 'objeto': nova_pergunta}
+    try:
+        db.session.add(nova_pergunta)
+        db.session.flush()  # Para obter o ID
+        return {'criado': True, 'objeto': nova_pergunta}
+    except Exception as e:
+        # Em caso de erro, fazer rollback e retornar erro
+        db.session.rollback()
+        raise Exception(f'Erro ao criar pergunta: {str(e)}')
 
 def gerar_template_csv():
     """
