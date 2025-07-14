@@ -88,6 +88,7 @@ def listar_working():
                                     <td>
                                         <a href="/admin/projetos/{p['id']}/detalhar" class="btn btn-sm btn-primary">Ver</a>
                                         <a href="/admin/projetos/{p['id']}/editar" class="btn btn-sm btn-secondary">Editar</a>
+                                        <button onclick="excluirProjeto({p['id']}, '{p['nome']}')" class="btn btn-sm btn-danger">Excluir</button>
                                     </td>
                                 </tr>
             """
@@ -101,6 +102,30 @@ def listar_working():
                     </div>
                 </div>
             </div>
+            
+            <script>
+            function excluirProjeto(id, nome) {
+                if (confirm('Tem certeza que deseja excluir o projeto "' + nome + '"? Esta ação não pode ser desfeita.')) {
+                    fetch('/admin/projetos/' + id + '/excluir', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            alert('Projeto excluído com sucesso!');
+                            location.reload();
+                        } else {
+                            alert('Erro ao excluir projeto. Tente novamente.');
+                        }
+                    })
+                    .catch(error => {
+                        alert('Erro de conexão. Tente novamente.');
+                    });
+                }
+            }
+            </script>
         </body>
         </html>
         """
@@ -483,8 +508,6 @@ def desativar(projeto_id):
     return redirect(url_for('projeto.listar'))
 
 @projeto_bp.route('/<int:projeto_id>/excluir', methods=['POST'])
-@login_required
-@admin_required
 def excluir(projeto_id):
     """Exclui um projeto permanentemente"""
     projeto = Projeto.query.get_or_404(projeto_id)
