@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tipo_assessment.nome }} - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header do Assessment -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="card-title mb-1">
+                                <i class="fas fa-shield-alt me-2"></i>{{ tipo_assessment.nome }}
+                            </h4>
+                            <p class="card-text mb-0">
+                                {% if tipo_assessment.descricao %}
+                                    {{ tipo_assessment.descricao }}
+                                {% else %}
+                                    Avalie cada questão de acordo com a realidade da sua organização
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ url_for('respondente.dashboard') }}" class="btn btn-light">
+                                <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold">Progresso do Assessment</span>
+                        <span id="progress-text" class="text-primary fw-bold">0%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div id="progress-bar" class="progress-bar bg-primary" role="progressbar" 
+                             style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domínios e Perguntas -->
+    {% for dominio in dominios %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-layer-group me-2 text-primary"></i>{{ dominio.nome }}
+                        {% if dominio.descricao %}
+                            <small class="text-muted d-block mt-1">{{ dominio.descricao }}</small>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for pergunta in dominio.get_perguntas_ativas() %}
+                        {% set form_data = forms_data[pergunta.id] %}
+                        <div class="pergunta-container mb-4 p-3 border rounded" data-pergunta-id="{{ pergunta.id }}">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6 class="pergunta-titulo mb-2">
+                                        <span class="badge bg-secondary me-2">{{ loop.index }}</span>
+                                        {{ pergunta.texto }}
+                                    </h6>
+                                    {% if pergunta.descricao %}
+                                        <p class="text-muted small mb-3">{{ pergunta.descricao }}</p>
+                                    {% endif %}
+                                    
+                                    <!-- Textarea para comentário -->
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Comentário (opcional)</label>
+                                        <textarea class="form-control comentario-input" 
+                                                rows="2" 
+                                                placeholder="Adicione observações sobre esta questão..."
+                                                data-pergunta-id="{{ pergunta.id }}">{{ form_data.resposta.comentario if form_data.resposta else '' }}</textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <!-- Rating System -->
+                                    <div class="rating-container text-center">
+                                        <label class="form-label small text-muted d-block mb-2">Avaliação (0-5)</label>
+                                        <div class="rating-buttons" data-pergunta-id="{{ pergunta.id }}">
+                                            {% for nota in range(6) %}
+                                                <button type="button" 
+                                                        class="btn rating-btn {% if form_data.resposta and form_data.resposta.nota == nota %}active{% endif %}" 
+                                                        data-nota="{{ nota }}"
+                                                        data-pergunta-id="{{ pergunta.id }}">
+                                                    {{ nota }}
+                                                </button>
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted d-block mt-2">
+                                            0 = Não aplicável | 5 = Excelente
+                                        </small>
+                                        
+                                        <!-- Status da resposta -->
+                                        <div class="status-resposta mt-2">
+                                            {% if form_data.resposta %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Respondida
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock me-1"></i>Pendente
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Botão de Conclusão -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-flag-checkered me-2 text-success"></i>
+                        Finalizando o Assessment
+                    </h5>
+                    <p class="text-muted mb-3">
+                        Revise suas respostas antes de finalizar. Você pode alterá-las a qualquer momento antes da conclusão final.
+                    </p>
+                    <button id="btn-finalizar" class="btn btn-success btn-lg" disabled>
+                        <i class="fas fa-check me-2"></i>Finalizar Assessment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast para notificações -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast-save" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-check-circle text-success me-2"></i>
+            <strong class="me-auto">Sucesso</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Resposta salva automaticamente!
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-btn {
+    width: 40px;
+    height: 40px;
+    margin: 0 2px;
+    border: 2px solid #dee2e6;
+    background: white;
+    color: #6c757d;
+    font-weight: bold;
+    border-radius: 8px;
+}
+
+.rating-btn:hover {
+    border-color: #007bff;
+    color: #007bff;
+    background: #f8f9fa;
+}
+
+.rating-btn.active {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.pergunta-container {
+    transition: all 0.3s ease;
+}
+
+.pergunta-container:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.toast-container {
+    z-index: 1050;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-save functionality
+    let saveTimeout = null;
+    
+    // Rating buttons
+    document.querySelectorAll('.rating-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const perguntaId = this.dataset.perguntaId;
+            const nota = parseInt(this.dataset.nota);
+            
+            // Update visual state
+            const container = document.querySelector(`.rating-buttons[data-pergunta-id="${perguntaId}"]`);
+            container.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Auto-save
+            salvarResposta(perguntaId, nota);
+        });
+    });
+    
+    // Comment inputs
+    document.querySelectorAll('.comentario-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const perguntaId = this.dataset.perguntaId;
+            
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                const nota = getNotaAtual(perguntaId);
+                if (nota !== null) {
+                    salvarResposta(perguntaId, nota, this.value);
+                }
+            }, 1000); // Auto-save após 1 segundo de inatividade
+        });
+    });
+    
+    function getNotaAtual(perguntaId) {
+        const activeBtn = document.querySelector(`.rating-buttons[data-pergunta-id="${perguntaId}"] .rating-btn.active`);
+        return activeBtn ? parseInt(activeBtn.dataset.nota) : null;
+    }
+    
+    function salvarResposta(perguntaId, nota, comentario = null) {
+        if (comentario === null) {
+            const comentarioInput = document.querySelector(`.comentario-input[data-pergunta-id="${perguntaId}"]`);
+            comentario = comentarioInput ? comentarioInput.value : '';
+        }
+        
+        fetch('/respondente/assessment/salvar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pergunta_id: perguntaId,
+                nota: nota,
+                comentario: comentario
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update status badge
+                const container = document.querySelector(`.pergunta-container[data-pergunta-id="${perguntaId}"]`);
+                const statusBadge = container.querySelector('.status-resposta .badge');
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerHTML = '<i class="fas fa-check me-1"></i>Respondida';
+                
+                // Show toast
+                showToast();
+                
+                // Update progress
+                updateProgress();
+            } else {
+                console.error('Erro ao salvar:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+        });
+    }
+    
+    function showToast() {
+        const toast = new bootstrap.Toast(document.getElementById('toast-save'));
+        toast.show();
+    }
+    
+    function updateProgress() {
+        const totalPerguntas = document.querySelectorAll('.pergunta-container').length;
+        const perguntasRespondidas = document.querySelectorAll('.status-resposta .bg-success').length;
+        const percentual = Math.round((perguntasRespondidas / totalPerguntas) * 100);
+        
+        // Update progress bar
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        
+        progressBar.style.width = percentual + '%';
+        progressBar.setAttribute('aria-valuenow', percentual);
+        progressText.textContent = percentual + '%';
+        
+        // Enable finalization button if 100% complete
+        const btnFinalizar = document.getElementById('btn-finalizar');
+        if (percentual === 100) {
+            btnFinalizar.disabled = false;
+            btnFinalizar.classList.remove('btn-success');
+            btnFinalizar.classList.add('btn-primary');
+        }
+    }
+    
+    // Initialize progress
+    updateProgress();
+});
+</script>
+{% endblock %}
