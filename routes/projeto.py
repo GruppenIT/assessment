@@ -2,7 +2,9 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required
 from app import db
 from utils.auth_utils import admin_required
-from forms.projeto_forms import ProjetoForm, NovoClienteForm, ProjetoResponenteForm
+from forms.projeto_forms import ProjetoForm, NovoClienteForm, AdicionarRespondenteForm
+# Alias para compatibilidade
+ProjetoResponenteForm = AdicionarRespondenteForm
 from models.projeto import Projeto, ProjetoRespondente, ProjetoAssessment
 from models.cliente import Cliente
 from models.respondente import Respondente

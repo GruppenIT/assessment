@@ -96,8 +96,11 @@ def create_app():
     try:
         from routes.projeto import projeto_bp
         app.register_blueprint(projeto_bp)
-    except ImportError:
-        pass
+        logging.info("Blueprint de projetos registrado com sucesso")
+    except ImportError as e:
+        logging.error(f"Erro ao importar blueprint de projetos: {e}")
+    except Exception as e:
+        logging.error(f"Erro ao registrar blueprint de projetos: {e}")
     
     # Rota para servir uploads
     @app.route('/uploads/<path:filename>')
