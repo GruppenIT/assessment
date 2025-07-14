@@ -181,7 +181,7 @@ def gerenciar_respondentes(projeto_id):
         if resp not in respondentes_projeto:
             respondentes_disponiveis.append(resp)
     
-    return render_template('admin/projetos/respondentes.html',
+    return render_template('admin/projetos/gerenciar_respondentes.html',
                          projeto=projeto,
                          form=form,
                          respondentes_projeto=respondentes_projeto,
