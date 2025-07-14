@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Criar Projeto - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('projeto.listar') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h2><i class="fas fa-plus text-primary me-2"></i>Criar Novo Projeto</h2>
+                    <p class="text-muted mb-0">Crie um projeto para gerenciar assessments de um cliente</p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Nome do Projeto -->
+                        <div class="mb-3">
+                            {{ form.nome.label(class="form-label") }}
+                            {{ form.nome(class="form-control" + (" is-invalid" if form.nome.errors else "")) }}
+                            {% if form.nome.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Cliente -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                {{ form.cliente_id.label(class="form-label") }}
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        data-bs-toggle="modal" data-bs-target="#modalNovoCliente">
+                                    <i class="fas fa-plus me-1"></i>Novo Cliente
+                                </button>
+                            </div>
+                            {{ form.cliente_id(class="form-select" + (" is-invalid" if form.cliente_id.errors else "")) }}
+                            {% if form.cliente_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.cliente_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tipos de Assessment -->
+                        <div class="mb-3">
+                            {{ form.tipos_assessment.label(class="form-label") }}
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                {% for tipo in form.tipos_assessment %}
+                                    <div class="form-check">
+                                        {{ tipo(class="form-check-input") }}
+                                        {{ tipo.label(class="form-check-label") }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.tipos_assessment.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.tipos_assessment.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Selecione um ou mais tipos de assessment para este projeto.</div>
+                        </div>
+
+                        <!-- Descrição -->
+                        <div class="mb-4">
+                            {{ form.descricao.label(class="form-label") }}
+                            {{ form.descricao(class="form-control" + (" is-invalid" if form.descricao.errors else "")) }}
+                            {% if form.descricao.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('projeto.listar') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Cliente -->
+<div class="modal fade" id="modalNovoCliente" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-building text-primary me-2"></i>
+                    Criar Novo Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovoCliente">
+                    {{ novo_cliente_form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ novo_cliente_form.nome.label(class="form-label") }}
+                        {{ novo_cliente_form.nome(class="form-control") }}
+                    </div>
+                    
+                    <div id="alertsNovoCliente"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="criarNovoCliente()">
+                    <i class="fas fa-plus me-2"></i>Criar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function criarNovoCliente() {
+    const form = document.getElementById('formNovoCliente');
+    const formData = new FormData(form);
+    const alertsDiv = document.getElementById('alertsNovoCliente');
+    
+    fetch('{{ url_for("projeto.criar_cliente") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Adicionar nova opção ao select
+            const select = document.getElementById('cliente_id');
+            const option = new Option(data.cliente_nome, data.cliente_id);
+            select.add(option);
+            select.value = data.cliente_id;
+            
+            // Fechar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalNovoCliente'));
+            modal.hide();
+            
+            // Limpar formulário
+            form.reset();
+            alertsDiv.innerHTML = '';
+            
+            // Mostrar sucesso
+            showAlert('success', data.message);
+        } else {
+            // Mostrar erro
+            alertsDiv.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    ${data.message}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alertsDiv.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+                Erro ao criar cliente. Tente novamente.
+            </div>
+        `;
+    });
+}
+
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Inserir no topo da página
+    const container = document.querySelector('.container');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+}
+</script>
+{% endblock %}

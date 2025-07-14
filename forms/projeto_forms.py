@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 from wtforms import StringField, SelectField, TextAreaField, SubmitField, SelectMultipleField
 from wtforms.validators import DataRequired, Length, Optional
 from wtforms.widgets import TextArea, Select
@@ -80,8 +81,6 @@ class ProjetoResponenteForm(FlaskForm):
 
 class AssessmentCSVForm(FlaskForm):
     """Formulário para importação de assessment via CSV"""
-    from flask_wtf.file import FileField, FileRequired, FileAllowed
-    
     arquivo_csv = FileField('Arquivo CSV', validators=[
         FileRequired(message='Selecione um arquivo CSV'),
         FileAllowed(['csv'], 'Apenas arquivos CSV são permitidos')
