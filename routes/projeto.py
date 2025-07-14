@@ -18,8 +18,21 @@ projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
 @login_required
 @admin_required
 def listar():
-    """Lista todos os projetos"""
-    projetos = Projeto.query.filter_by(ativo=True).order_by(Projeto.data_criacao.desc()).all()
+    """Lista todos os projetos com filtro opcional por cliente"""
+    # Obter filtro de cliente se fornecido
+    cliente_id = request.args.get('cliente_id', type=int)
+    
+    # Query base
+    query = Projeto.query.filter_by(ativo=True)
+    
+    # Aplicar filtro por cliente se selecionado
+    if cliente_id:
+        query = query.filter_by(cliente_id=cliente_id)
+    
+    projetos = query.order_by(Projeto.data_criacao.desc()).all()
+    
+    # Obter lista de clientes para o filtro
+    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
     
     projetos_data = []
     for projeto in projetos:
@@ -32,7 +45,10 @@ def listar():
             'tipos_count': len(projeto.get_tipos_assessment())
         })
     
-    return render_template('admin/projetos/listar.html', projetos_data=projetos_data)
+    return render_template('admin/projetos/listar.html', 
+                         projetos_data=projetos_data,
+                         clientes=clientes,
+                         cliente_selecionado=cliente_id)
 
 @projeto_bp.route('/criar', methods=['GET', 'POST'])
 @login_required
