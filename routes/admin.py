@@ -971,34 +971,48 @@ def configuracoes():
     from forms.configuracao_forms import ConfiguracaoForm
     from models.configuracao import Configuracao
     
-    # Inicializar configurações padrão se necessário
-    Configuracao.inicializar_configuracoes_padrao()
-    
-    # Formulários
-    logo_form = LogoForm()
-    config_form = ConfiguracaoForm()
-    
-    # Logo atual
-    logo_atual = Logo.get_logo_ativo()
-    
-    # Carregar configurações atuais nos formulários
-    configuracoes = Configuracao.query.all()
-    config_dict = {config.chave: config.valor for config in configuracoes}
-    
-    # Preencher formulário com valores salvos
-    for field_name in config_form._fields:
-        if field_name in config_dict and hasattr(config_form, field_name):
-            field = getattr(config_form, field_name)
-            if hasattr(field, 'data'):
-                field.data = config_dict[field_name]
-            # Também atualizar o valor padrão para o template
-            if hasattr(field, 'render_kw') and field.render_kw:
-                field.render_kw['value'] = config_dict[field_name]
-    
-    return render_template('admin/configuracoes.html',
-                         logo_form=logo_form,
-                         config_form=config_form,
-                         logo_atual=logo_atual)
+    try:
+        # Formulários
+        logo_form = LogoForm()
+        config_form = ConfiguracaoForm()
+        
+        # Logo atual
+        try:
+            logo_atual = Logo.get_logo_ativo()
+        except:
+            logo_atual = None
+        
+        # Carregar configurações atuais (com valores padrão seguros)
+        try:
+            cores = Configuracao.get_cores_sistema()
+            escala = Configuracao.get_escala_pontuacao()
+            
+            # Preencher formulário com valores salvos
+            config_form.cor_primaria.data = cores.get('primaria', '#0d6efd')
+            config_form.cor_secundaria.data = cores.get('secundaria', '#6c757d')
+            config_form.cor_fundo.data = cores.get('fundo', '#ffffff')
+            config_form.cor_texto.data = cores.get('texto', '#212529')
+            
+            for i in range(6):
+                nome_field = getattr(config_form, f'escala_{i}_nome')
+                cor_field = getattr(config_form, f'escala_{i}_cor')
+                nome_field.data = escala[i]['nome']
+                cor_field.data = escala[i]['cor']
+                
+        except Exception as e:
+            import logging
+            logging.error(f"Erro ao carregar configurações: {e}")
+            # Usar valores padrão
+        
+        return render_template('admin/configuracoes.html',
+                             logo_form=logo_form,
+                             config_form=config_form,
+                             logo_atual=logo_atual)
+    except Exception as e:
+        import logging
+        logging.error(f"Erro na página de configurações: {e}")
+        flash('Erro ao carregar configurações.', 'danger')
+        return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/configuracoes/salvar', methods=['POST'])
 @login_required
@@ -1030,44 +1044,54 @@ def salvar_configuracoes():
     if form.validate_on_submit():
         try:
             import logging
-            logging.info(f"Salvando configurações - Form data: {request.form}")
+            logging.info(f"Salvando configurações")
             
-            # Salvar cada configuração
-            configuracoes_para_salvar = [
-                # Cores do sistema
-                ('cor_primaria', form.cor_primaria.data, 'Cor primária do sistema', 'color'),
-                ('cor_secundaria', form.cor_secundaria.data, 'Cor secundária do sistema', 'color'),
-                ('cor_fundo', form.cor_fundo.data, 'Cor de fundo', 'color'),
-                ('cor_texto', form.cor_texto.data, 'Cor do texto', 'color'),
-                
-                # Escala de pontuação - Nomes
-                ('escala_0_nome', form.escala_0_nome.data, 'Nome para pontuação 0', 'string'),
-                ('escala_1_nome', form.escala_1_nome.data, 'Nome para pontuação 1', 'string'),
-                ('escala_2_nome', form.escala_2_nome.data, 'Nome para pontuação 2', 'string'),
-                ('escala_3_nome', form.escala_3_nome.data, 'Nome para pontuação 3', 'string'),
-                ('escala_4_nome', form.escala_4_nome.data, 'Nome para pontuação 4', 'string'),
-                ('escala_5_nome', form.escala_5_nome.data, 'Nome para pontuação 5', 'string'),
-                
-                # Escala de pontuação - Cores
-                ('escala_0_cor', form.escala_0_cor.data, 'Cor para pontuação 0', 'color'),
-                ('escala_1_cor', form.escala_1_cor.data, 'Cor para pontuação 1', 'color'),
-                ('escala_2_cor', form.escala_2_cor.data, 'Cor para pontuação 2', 'color'),
-                ('escala_3_cor', form.escala_3_cor.data, 'Cor para pontuação 3', 'color'),
-                ('escala_4_cor', form.escala_4_cor.data, 'Cor para pontuação 4', 'color'),
-                ('escala_5_cor', form.escala_5_cor.data, 'Cor para pontuação 5', 'color'),
+            # Salvar de forma simples e direta
+            configuracoes = [
+                ('cor_primaria', form.cor_primaria.data),
+                ('cor_secundaria', form.cor_secundaria.data),
+                ('cor_fundo', form.cor_fundo.data),
+                ('cor_texto', form.cor_texto.data),
+                ('escala_0_nome', form.escala_0_nome.data),
+                ('escala_1_nome', form.escala_1_nome.data),
+                ('escala_2_nome', form.escala_2_nome.data),
+                ('escala_3_nome', form.escala_3_nome.data),
+                ('escala_4_nome', form.escala_4_nome.data),
+                ('escala_5_nome', form.escala_5_nome.data),
+                ('escala_0_cor', form.escala_0_cor.data),
+                ('escala_1_cor', form.escala_1_cor.data),
+                ('escala_2_cor', form.escala_2_cor.data),
+                ('escala_3_cor', form.escala_3_cor.data),
+                ('escala_4_cor', form.escala_4_cor.data),
+                ('escala_5_cor', form.escala_5_cor.data),
             ]
             
-            for chave, valor, descricao, tipo in configuracoes_para_salvar:
-                Configuracao.set_valor(chave, valor, descricao, tipo)
+            # Salvar cada configuração usando SQL direto
+            for chave, valor in configuracoes:
+                if valor:  # Só salvar se tiver valor
+                    try:
+                        # Tentar atualizar primeiro
+                        db.session.execute(
+                            "UPDATE configuracoes SET valor = :valor WHERE chave = :chave",
+                            {'valor': valor, 'chave': chave}
+                        )
+                        
+                        # Se não atualizou nenhuma linha, inserir
+                        if db.session.rowcount == 0:
+                            db.session.execute(
+                                "INSERT INTO configuracoes (chave, valor, tipo) VALUES (:chave, :valor, 'string')",
+                                {'chave': chave, 'valor': valor}
+                            )
+                    except Exception as e2:
+                        logging.error(f"Erro ao salvar {chave}: {e2}")
+                        continue
             
+            db.session.commit()
             flash('Configurações salvas com sucesso!', 'success')
             
         except Exception as e:
-            import traceback
             db.session.rollback()
-            logging.error(f"Erro detalhado ao salvar configurações: {str(e)}")
-            logging.error(f"Traceback: {traceback.format_exc()}")
-            flash(f'Erro ao salvar configurações: {str(e)}', 'danger')
+            flash('Erro ao salvar configurações. Tente novamente.', 'danger')
     else:
         for field, errors in form.errors.items():
             for error in errors:
