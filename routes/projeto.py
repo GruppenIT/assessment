@@ -19,8 +19,11 @@ projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
 @admin_required
 def listar():
     """Lista todos os projetos com filtro opcional por cliente"""
+    logging.info("=== Iniciando listagem de projetos ===")
+    
     # Obter filtro de cliente se fornecido
     cliente_id = request.args.get('cliente_id', type=int)
+    logging.info(f"Filtro cliente_id: {cliente_id}")
     
     # Query base
     query = Projeto.query.filter_by(ativo=True)
@@ -30,9 +33,11 @@ def listar():
         query = query.filter_by(cliente_id=cliente_id)
     
     projetos = query.order_by(Projeto.data_criacao.desc()).all()
+    logging.info(f"Projetos encontrados: {len(projetos)}")
     
     # Obter lista de clientes para o filtro
     clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    logging.info(f"Clientes encontrados: {len(clientes)}")
     
     projetos_data = []
     for projeto in projetos:
@@ -63,6 +68,23 @@ def listar():
             'respondentes_count': respondentes_count,
             'tipos_count': tipos_count
         })
+        logging.info(f"Projeto processado: {projeto.nome} - Progresso: {progresso}%")
+    
+    logging.info(f"Total de projetos_data: {len(projetos_data)}")
+    
+    # Debug temporário: criar dados simples se vazio
+    if not projetos_data:
+        logging.warning("Nenhum projeto encontrado - criando dados debug")
+        for projeto in projetos:
+            projetos_data.append({
+                'projeto': projeto,
+                'progresso': 0,
+                'concluido': False,
+                'respondentes_count': 0,
+                'tipos_count': 0
+            })
+    
+    logging.info(f"=== RETORNANDO TEMPLATE COM {len(projetos_data)} projetos ===")
     
     return render_template('admin/projetos/listar.html', 
                          projetos_data=projetos_data,
