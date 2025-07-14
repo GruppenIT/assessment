@@ -25,28 +25,151 @@ admin_bp = Blueprint('admin', __name__)
 @login_required
 @admin_required
 def dashboard():
-    """Dashboard administrativo"""
-    # Estatísticas gerais
-    total_clientes = Cliente.query.filter_by(ativo=True).count()
-    total_respondentes = Respondente.query.filter_by(ativo=True).count()
-    total_tipos_assessment = TipoAssessment.query.filter_by(ativo=True).count()
-    total_dominios = Dominio.query.filter_by(ativo=True).count()
-    total_perguntas = Pergunta.query.filter_by(ativo=True).count()
-    total_respostas = Resposta.query.count()
+    """Dashboard principal do administrador com informações completas"""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
     
-    # Últimas atividades
-    ultimas_respostas = Resposta.query.join(Respondente).order_by(
-        Resposta.data_resposta.desc()
-    ).limit(10).all()
+    # Determinar momento do dia
+    hora = datetime.now().hour
+    if hora < 12:
+        momento_do_dia = "Bom dia"
+    elif hora < 18:
+        momento_do_dia = "Boa tarde"
+    else:
+        momento_do_dia = "Boa noite"
+    
+    # Estatísticas principais
+    total_clientes = Cliente.query.filter_by(ativo=True).count()
+    total_respondentes = Respondente.query.count()
+    respondentes_ativos = Respondente.query.filter_by(ativo=True).count()
+    total_respostas = Resposta.query.count()
+    total_assessments = ClienteAssessment.query.filter_by(ativo=True).count()
+    
+    # Clientes criados este mês
+    inicio_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    clientes_mes = Cliente.query.filter(
+        Cliente.data_criacao >= inicio_mes,
+        Cliente.ativo == True
+    ).count()
+    
+    # Calcular progresso médio e assessments pendentes
+    progresso_medio = 0
+    assessments_pendentes = 0
+    
+    if total_assessments > 0:
+        progressos = []
+        for ca in ClienteAssessment.query.filter_by(ativo=True).all():
+            total_perguntas = Pergunta.query.join(Dominio).filter(
+                Dominio.tipo_assessment_id == ca.tipo_assessment_id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            
+            respostas_cliente = 0
+            for respondente in ca.cliente.respondentes:
+                respostas_cliente += Resposta.query.join(Pergunta).join(Dominio).filter(
+                    Resposta.respondente_id == respondente.id,
+                    Dominio.tipo_assessment_id == ca.tipo_assessment_id
+                ).count()
+            
+            if total_perguntas > 0 and ca.cliente.respondentes:
+                progresso = (respostas_cliente / (total_perguntas * len(ca.cliente.respondentes)) * 100)
+                progressos.append(progresso)
+                if progresso < 100:
+                    assessments_pendentes += 1
+        
+        progresso_medio = sum(progressos) / len(progressos) if progressos else 0
+    
+    # Estatísticas organizadas
+    estatisticas = {
+        'total_clientes': total_clientes,
+        'clientes_mes': clientes_mes,
+        'total_respondentes': total_respondentes,
+        'respondentes_ativos': respondentes_ativos,
+        'total_assessments': total_assessments,
+        'assessments_pendentes': assessments_pendentes,
+        'progresso_medio': progresso_medio,
+        'total_respostas': total_respostas
+    }
+    
+    # Distribuição por tipo de assessment
+    tipos_assessment = []
+    for tipo in TipoAssessment.query.filter_by(ativo=True).all():
+        total_clientes_tipo = ClienteAssessment.query.filter_by(
+            tipo_assessment_id=tipo.id,
+            ativo=True
+        ).count()
+        
+        tipos_assessment.append({
+            'nome': tipo.nome,
+            'total_clientes': total_clientes_tipo
+        })
+    
+    # Atividade recente
+    atividade_recente = []
+    
+    # Últimos clientes criados
+    ultimos_clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.data_criacao.desc()).limit(3).all()
+    for cliente in ultimos_clientes:
+        tempo_delta = datetime.now() - cliente.data_criacao
+        if tempo_delta.days == 0:
+            tempo_formatado = f"Hoje às {cliente.data_criacao.strftime('%H:%M')}"
+        elif tempo_delta.days == 1:
+            tempo_formatado = "Ontem"
+        else:
+            tempo_formatado = f"{tempo_delta.days} dias atrás"
+        
+        atividade_recente.append({
+            'titulo': 'Novo Cliente Cadastrado',
+            'descricao': f'{cliente.nome} foi adicionado ao sistema',
+            'tempo_formatado': tempo_formatado,
+            'icone': 'fa-building',
+            'cor': 'primary'
+        })
+    
+    # Últimas respostas de assessments
+    ultimas_respostas = Resposta.query.order_by(Resposta.data_resposta.desc()).limit(2).all()
+    for resposta in ultimas_respostas:
+        tempo_delta = datetime.now() - resposta.data_resposta
+        if tempo_delta.days == 0:
+            tempo_formatado = f"Hoje às {resposta.data_resposta.strftime('%H:%M')}"
+        elif tempo_delta.days == 1:
+            tempo_formatado = "Ontem"
+        else:
+            tempo_formatado = f"{tempo_delta.days} dias atrás"
+        
+        atividade_recente.append({
+            'titulo': 'Resposta de Assessment',
+            'descricao': f'{resposta.respondente.nome} respondeu uma pergunta',
+            'tempo_formatado': tempo_formatado,
+            'icone': 'fa-clipboard-check',
+            'cor': 'success'
+        })
+    
+    # Manter apenas as 5 mais recentes
+    atividade_recente = atividade_recente[:5]
+    
+    # Alertas importantes
+    alertas_importantes = []
+    
+    # Verificar clientes sem respondentes
+    clientes_sem_respondentes = Cliente.query.filter_by(ativo=True).filter(~Cliente.respondentes.any()).count()
+    if clientes_sem_respondentes > 0:
+        alertas_importantes.append({
+            'tipo': 'warning',
+            'icone': 'fa-users',
+            'titulo': 'Clientes sem Respondentes',
+            'mensagem': f'{clientes_sem_respondentes} cliente(s) não possui(em) respondentes cadastrados',
+            'acao_url': url_for('admin.clientes'),
+            'acao_texto': 'Gerenciar'
+        })
     
     return render_template('admin/dashboard.html',
-                         total_clientes=total_clientes,
-                         total_respondentes=total_respondentes,
-                         total_tipos_assessment=total_tipos_assessment,
-                         total_dominios=total_dominios,
-                         total_perguntas=total_perguntas,
-                         total_respostas=total_respostas,
-                         ultimas_respostas=ultimas_respostas)
+                         momento_do_dia=momento_do_dia,
+                         estatisticas=estatisticas,
+                         tipos_assessment=tipos_assessment,
+                         atividade_recente=atividade_recente,
+                         alertas_importantes=alertas_importantes)
 
 # Rotas para Tipos de Assessment
 @admin_bp.route('/tipos_assessment')
@@ -923,7 +1046,7 @@ def upload_logo():
             try:
                 # Salvar o arquivo
                 filename = save_uploaded_file(file, 'logos')
-                caminho_arquivo = f'static/uploads/logos/{filename}'
+                caminho_arquivo = f'logos/{filename}'
                 
                 # Desativar logo anterior
                 Logo.query.update({'ativo': False})
