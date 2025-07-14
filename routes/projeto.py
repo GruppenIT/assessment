@@ -35,7 +35,7 @@ def auto_login():
 def listar_working():
     """Lista projetos - versão que funciona"""
     try:
-        # Query direto sem ORM
+        # Query direto sem ORM - incluir TODOS os projetos ativos
         projetos_raw = db.session.execute(
             db.text("SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY p.data_criacao DESC")
         ).fetchall()
@@ -109,44 +109,48 @@ def listar_working():
     except Exception as e:
         return f"<h1>Erro: {str(e)}</h1>"
 
-@projeto_bp.route('/')  
+@projeto_bp.route('/')
+@login_required
+@admin_required
 def listar():
-    """Lista todos os projetos - REDIRECIONAMENTO TEMPORÁRIO"""
-    return redirect(url_for('projeto.listar_working'))
+    """Lista todos os projetos com filtro opcional por cliente"""
+    from flask import flash
     
     try:
         # Obter filtro de cliente se fornecido
         cliente_id = request.args.get('cliente_id', type=int)
         
-        # Query de projetos com JOIN para melhor performance
+        # Query base para projetos ativos - CORRIGIDA
         base_query = """
-            SELECT p.*, c.nome as cliente_nome, c.localidade
+            SELECT p.id, p.nome, p.descricao, p.data_criacao, 
+                   c.nome as cliente_nome, c.localidade
             FROM projetos p 
             LEFT JOIN clientes c ON p.cliente_id = c.id 
             WHERE p.ativo = true
         """
         
+        # Aplicar filtro por cliente apenas se especificado
         if cliente_id:
-            base_query += " AND p.cliente_id = :cliente_id"
             projetos_raw = db.session.execute(
-                db.text(base_query + " ORDER BY p.data_criacao DESC"),
+                db.text(base_query + " AND p.cliente_id = :cliente_id ORDER BY p.data_criacao DESC"),
                 {'cliente_id': cliente_id}
             ).fetchall()
         else:
+            # SEM filtro - mostrar TODOS os projetos ativos
             projetos_raw = db.session.execute(
                 db.text(base_query + " ORDER BY p.data_criacao DESC")
             ).fetchall()
         
-        # Buscar clientes para o filtro dropdown
+        # Buscar clientes para dropdown
         clientes = db.session.execute(
             db.text("SELECT id, nome FROM clientes WHERE ativo = true ORDER BY nome")
         ).fetchall()
         
-        # Preparar dados dos projetos com contadores
+        # Preparar dados dos projetos
         projetos_data = []
         for projeto_raw in projetos_raw:
             
-            # Contadores diretos por SQL para evitar problemas com métodos
+            # Contadores
             respondentes_count = db.session.execute(
                 db.text("SELECT COUNT(*) FROM projeto_respondentes WHERE projeto_id = :pid AND ativo = true"),
                 {'pid': projeto_raw.id}
@@ -157,36 +161,31 @@ def listar():
                 {'pid': projeto_raw.id}
             ).scalar() or 0
             
-            # Criar objeto projeto simples para o template
-            projeto_obj = type('Projeto', (), {
-                'id': projeto_raw.id,
-                'nome': projeto_raw.nome,
-                'descricao': projeto_raw.descricao,
-                'data_criacao': projeto_raw.data_criacao,
-                'cliente': type('Cliente', (), {
-                    'nome': projeto_raw.cliente_nome,
-                    'localidade': projeto_raw.localidade
-                })()
-            })()
+            # Criar objeto projeto para template
+            projeto_obj = Projeto.query.get(projeto_raw.id)
             
             projetos_data.append({
                 'projeto': projeto_obj,
-                'progresso': 0,  # Simplificado - pode ser calculado depois
+                'progresso': 0,
                 'concluido': False,
                 'respondentes_count': respondentes_count,
                 'tipos_count': tipos_count
             })
         
-        # Lista de clientes para dropdown
-        clientes_list = [{'id': c.id, 'nome': c.nome} for c in clientes]
+        # Clientes para dropdown
+        clientes_list = [Cliente.query.get(c.id) for c in clientes]
         
-        return render_template('projetos_simples.html', 
+        return render_template('admin/projetos/listar.html', 
                              projetos_data=projetos_data,
                              clientes=clientes_list,
                              cliente_selecionado=cliente_id)
                              
     except Exception as e:
-        return f"<h1>Erro ao carregar projetos</h1><p>{str(e)}</p><p>Projetos no banco: 2</p>"
+        flash(f'Erro ao carregar projetos: {str(e)}', 'danger')
+        return render_template('admin/projetos/listar.html', 
+                             projetos_data=[],
+                             clientes=[],
+                             cliente_selecionado=None)
 
 @projeto_bp.route('/criar', methods=['GET', 'POST'])
 @login_required
