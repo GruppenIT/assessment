@@ -237,6 +237,47 @@ def criar_respondente(cliente_id):
     
     return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
 
+@admin_bp.route('/respondentes/<int:respondente_id>/editar', methods=['POST'])
+@login_required
+@admin_required
+def editar_respondente(respondente_id):
+    """Edita um respondente"""
+    respondente = Respondente.query.get_or_404(respondente_id)
+    cliente_id = respondente.cliente_id
+    
+    try:
+        # Atualizar dados do respondente
+        respondente.nome = request.form.get('nome')
+        respondente.email = request.form.get('email')
+        respondente.cargo = request.form.get('cargo') or None
+        respondente.setor = request.form.get('setor') or None
+        respondente.ativo = bool(request.form.get('ativo'))
+        
+        # Atualizar senha se fornecida
+        nova_senha = request.form.get('senha')
+        if nova_senha and nova_senha.strip():
+            from werkzeug.security import generate_password_hash
+            respondente.senha_hash = generate_password_hash(nova_senha)
+        
+        # Validar email único (exceto para o próprio respondente)
+        email_existente = Respondente.query.filter(
+            Respondente.email == respondente.email,
+            Respondente.id != respondente_id
+        ).first()
+        
+        if email_existente:
+            flash('Este email já está sendo usado por outro respondente.', 'danger')
+            return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+        
+        db.session.commit()
+        flash('Respondente atualizado com sucesso!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao atualizar respondente.', 'danger')
+    
+    return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+
 @admin_bp.route('/respondentes/<int:respondente_id>/excluir', methods=['POST'])
 @login_required
 @admin_required
