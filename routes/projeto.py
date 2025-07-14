@@ -125,13 +125,24 @@ def detalhar(projeto_id):
     # Progresso por tipo de assessment
     progressos_por_tipo = {}
     for tipo in tipos_assessment:
-        total_perguntas = sum(len(d.perguntas) for d in tipo.get_dominios_ativos())
-        total_respostas = 0
+        from models.pergunta import Pergunta
+        from models.dominio import Dominio
         
+        total_perguntas = Pergunta.query.join(Dominio).filter(
+            Dominio.tipo_assessment_id == tipo.id,
+            Dominio.ativo == True,
+            Pergunta.ativo == True
+        ).count()
+        
+        total_respostas = 0
         for respondente in respondentes:
-            respostas_count = len([r for r in respondente.respostas 
-                                 if r.projeto_id == projeto.id and 
-                                 r.pergunta.dominio.tipo_assessment_id == tipo.id])
+            from models.resposta import Resposta
+            respostas_count = Resposta.query.filter_by(
+                respondente_id=respondente.id,
+                projeto_id=projeto.id
+            ).join(Pergunta).join(Dominio).filter(
+                Dominio.tipo_assessment_id == tipo.id
+            ).count()
             total_respostas += respostas_count
         
         total_esperado = total_perguntas * len(respondentes)

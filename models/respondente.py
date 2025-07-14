@@ -78,6 +78,33 @@ class Respondente(UserMixin, db.Model):
         """Verifica se o respondente finalizou o assessment"""
         return self.data_conclusao is not None
     
+    def get_progresso_assessment_projeto(self, tipo_assessment_id, projeto_id):
+        """Calcula o progresso do assessment em um projeto específico"""
+        from models.pergunta import Pergunta
+        from models.dominio import Dominio
+        from models.resposta import Resposta
+        
+        total_perguntas = Pergunta.query.join(Dominio).filter(
+            Dominio.tipo_assessment_id == tipo_assessment_id,
+            Dominio.ativo == True,
+            Pergunta.ativo == True
+        ).count()
+        
+        respostas_dadas = Resposta.query.filter_by(
+            respondente_id=self.id,
+            projeto_id=projeto_id
+        ).join(Pergunta).join(Dominio).filter(
+            Dominio.tipo_assessment_id == tipo_assessment_id
+        ).count()
+        
+        percentual = round((respostas_dadas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
+        
+        return {
+            'percentual': percentual,
+            'respondidas': respostas_dadas,
+            'total': total_perguntas
+        }
+
     def to_dict(self):
         """Converte o respondente para dicionário"""
         return {

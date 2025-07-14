@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ respondente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header com informações do respondente -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="card-title mb-2">
+                                <i class="fas fa-user-circle me-2"></i>
+                                Bem-vindo, {{ respondente.nome }}!
+                            </h4>
+                            <p class="card-text mb-0">
+                                <i class="fas fa-building me-2"></i>{{ respondente.cliente.nome }}<br>
+                                <i class="fas fa-envelope me-2"></i>{{ respondente.email }}
+                                {% if respondente.cargo %}
+                                    <br><i class="fas fa-briefcase me-2"></i>{{ respondente.cargo }}
+                                {% endif %}
+                                {% if respondente.setor %}
+                                    - {{ respondente.setor }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="text-light">
+                                <small>Último acesso:</small><br>
+                                <strong>
+                                    {% if respondente.ultimo_acesso %}
+                                        {{ respondente.ultimo_acesso.strftime('%d/%m/%Y às %H:%M') }}
+                                    {% else %}
+                                        Primeiro acesso
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projetos e Assessments -->
+    <div class="row">
+        <div class="col-12">
+            {% if projetos_data %}
+                {% for projeto_data in projetos_data %}
+                    {% set projeto = projeto_data.projeto %}
+                    {% set tipos_assessment = projeto_data.tipos_assessment %}
+                    {% set progressos = projeto_data.progressos %}
+                    {% set progresso_geral = projeto_data.progresso_geral %}
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-project-diagram me-2"></i>{{ projeto.nome }}
+                                </h5>
+                                <span class="badge bg-light text-dark">
+                                    {{ progresso_geral }}% concluído
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            {% if projeto.descricao %}
+                                <p class="text-muted mb-3">{{ projeto.descricao }}</p>
+                            {% endif %}
+                            
+                            <!-- Barra de Progresso Geral do Projeto -->
+                            <div class="mb-4">
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar {% if progresso_geral >= 100 %}bg-success{% elif progresso_geral >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         style="width: {{ progresso_geral }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tipos de Assessment do Projeto -->
+                            {% if tipos_assessment %}
+                                <div class="row">
+                                    {% for tipo in tipos_assessment %}
+                                        {% set progresso = progressos.get(tipo.id, {'percentual': 0, 'respondidas': 0, 'total': 0}) %}
+                                        <div class="col-md-6 col-lg-4 mb-3">
+                                            <div class="card h-100 assessment-card" onclick="location.href='{{ url_for('respondente.assessment', projeto_id=projeto.id, tipo_assessment_id=tipo.id) }}'">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <h6 class="card-title mb-0">{{ tipo.nome }}</h6>
+                                                        {% if progresso.percentual >= 100 %}
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check me-1"></i>Concluído
+                                                            </span>
+                                                        {% elif progresso.percentual > 0 %}
+                                                            <span class="badge bg-warning">
+                                                                <i class="fas fa-clock me-1"></i>Em andamento
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">
+                                                                <i class="fas fa-play me-1"></i>Iniciar
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                    
+                                                    {% if tipo.descricao %}
+                                                        <p class="card-text text-muted small mb-3">{{ tipo.descricao }}</p>
+                                                    {% endif %}
+                                                    
+                                                    <!-- Progresso -->
+                                                    <div class="mb-2">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <small class="text-muted">Progresso</small>
+                                                            <small class="fw-bold">{{ progresso.percentual }}%</small>
+                                                        </div>
+                                                        <div class="progress" style="height: 4px;">
+                                                            <div class="progress-bar {% if progresso.percentual >= 100 %}bg-success{% elif progresso.percentual >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                                 style="width: {{ progresso.percentual }}%"></div>
+                                                        </div>
+                                                        <small class="text-muted">{{ progresso.respondidas }} de {{ progresso.total }} perguntas</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-clipboard-list text-muted mb-3" style="font-size: 2rem;"></i>
+                                    <p class="text-muted">Nenhum assessment disponível neste projeto.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <!-- Nenhum projeto disponível -->
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-project-diagram text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted">Nenhum projeto disponível</h5>
+                        <p class="text-muted">
+                            Você ainda não foi associado a nenhum projeto.<br>
+                            Entre em contato com o administrador para ter acesso aos assessments.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.assessment-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.assessment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

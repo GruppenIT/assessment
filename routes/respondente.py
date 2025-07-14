@@ -19,86 +19,85 @@ respondente_bp = Blueprint('respondente', __name__)
 @respondente_bp.route('/dashboard')
 @respondente_required
 def dashboard():
-    """Dashboard do respondente"""
-    print(f"DEBUG: Acessando dashboard - current_user: {current_user}")
-    print(f"DEBUG: Tipo do current_user: {type(current_user)}")
-    print(f"DEBUG: É Respondente? {isinstance(current_user, Respondente)}")
-    
+    """Dashboard do respondente"""    
     if not isinstance(current_user, Respondente):
-        print("DEBUG: Usuário não é respondente, redirecionando para auth.login")
         return redirect(url_for('auth.login'))
     
     try:
-        print(f"DEBUG: Cliente do respondente: {current_user.cliente}")
+        # Obter projetos do respondente
+        from models.projeto import ProjetoRespondente, ProjetoAssessment
+        projetos_respondente = ProjetoRespondente.query.filter_by(
+            respondente_id=current_user.id,
+            ativo=True
+        ).all()
         
-        # Obter tipos de assessment do cliente
-        tipos_assessment = current_user.cliente.get_tipos_assessment()
-        print(f"DEBUG: Tipos de assessment encontrados: {len(tipos_assessment)}")
-        
-        # Calcular progresso para cada tipo (apenas se houver tipos)
-        progressos = {}
-        if tipos_assessment:
+        projetos_data = []
+        for pr in projetos_respondente:
+            projeto = pr.projeto
+            if not projeto.ativo:
+                continue
+                
+            # Tipos de assessment do projeto
+            tipos_assessment = projeto.get_tipos_assessment()
+            
+            # Calcular progresso para cada tipo do projeto
+            progressos = {}
             for tipo in tipos_assessment:
-                print(f"DEBUG: Calculando progresso para tipo: {tipo.nome}")
-                progresso = current_user.get_progresso_assessment(tipo.id)
+                progresso = current_user.get_progresso_assessment_projeto(tipo.id, projeto.id)
                 progressos[tipo.id] = progresso
-                print(f"DEBUG: Progresso calculado: {progresso}")
-        else:
-            print("DEBUG: Nenhum tipo de assessment encontrado - dashboard será exibido com mensagem informativa")
+            
+            projetos_data.append({
+                'projeto': projeto,
+                'tipos_assessment': tipos_assessment,
+                'progressos': progressos,
+                'progresso_geral': projeto.get_progresso_respondente(current_user.id)
+            })
         
-        print("DEBUG: Renderizando template dashboard")
-        return render_template('respondente/dashboard.html',
+        return render_template('respondente/dashboard_projetos.html',
                              respondente=current_user,
-                             tipos_assessment=tipos_assessment,
-                             progressos=progressos)
+                             projetos_data=projetos_data)
                              
     except Exception as e:
-        print(f"DEBUG: Erro no dashboard: {str(e)}")
-        import traceback
-        traceback.print_exc()
         flash('Erro ao carregar dashboard. Entre em contato com o suporte.', 'danger')
-        return redirect(url_for('respondente.login'))
+        return redirect(url_for('auth.login'))
 
-@respondente_bp.route('/assessment/<int:tipo_assessment_id>')
+@respondente_bp.route('/assessment/<int:projeto_id>/<int:tipo_assessment_id>')
 @login_required
-def assessment(tipo_assessment_id):
-    """Assessment de um tipo específico"""
+def assessment(projeto_id, tipo_assessment_id):
+    """Assessment de um tipo específico dentro de um projeto"""
     if not isinstance(current_user, Respondente):
         return redirect(url_for('auth.login'))
     
-    # Verificar se o cliente tem acesso a este tipo
-    if not current_user.cliente.tem_acesso_assessment(tipo_assessment_id):
-        flash('Acesso negado a este tipo de assessment.', 'danger')
+    # Verificar se o respondente tem acesso a este projeto
+    from models.projeto import ProjetoRespondente, ProjetoAssessment
+    projeto_respondente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto_id,
+        respondente_id=current_user.id,
+        ativo=True
+    ).first()
+    
+    if not projeto_respondente:
+        flash('Acesso negado a este projeto.', 'danger')
         return redirect(url_for('respondente.dashboard'))
     
+    # Verificar se o tipo de assessment está no projeto
+    projeto_assessment = ProjetoAssessment.query.filter_by(
+        projeto_id=projeto_id,
+        tipo_assessment_id=tipo_assessment_id
+    ).first()
+    
+    if not projeto_assessment:
+        flash('Este tipo de assessment não está disponível neste projeto.', 'danger')
+        return redirect(url_for('respondente.dashboard'))
+    
+    projeto = projeto_respondente.projeto
     tipo_assessment = TipoAssessment.query.get_or_404(tipo_assessment_id)
     dominios = tipo_assessment.get_dominios_ativos()
     
-    # Preparar formulários para cada pergunta
-    forms_data = {}
-    for dominio in dominios:
-        for pergunta in dominio.get_perguntas_ativas():
-            resposta_existente = Resposta.query.filter_by(
-                respondente_id=current_user.id,
-                pergunta_id=pergunta.id
-            ).first()
-            
-            form = RespostaForm()
-            form.pergunta_id.data = pergunta.id
-            
-            if resposta_existente:
-                form.nota.data = resposta_existente.nota
-                form.comentario.data = resposta_existente.comentario
-            
-            forms_data[pergunta.id] = {
-                'form': form,
-                'resposta': resposta_existente
-            }
-    
     return render_template('respondente/assessment.html',
-                         tipo_assessment=tipo_assessment,
-                         dominios=dominios,
-                         forms_data=forms_data)
+                         projeto=projeto,
+                         tipo_assessment=tipo_assessment, 
+                         dominios=dominios)
 
 @respondente_bp.route('/assessment/salvar', methods=['POST'])
 @login_required
@@ -110,26 +109,31 @@ def salvar_resposta():
     try:
         data = request.get_json()
         pergunta_id = data.get('pergunta_id')
+        projeto_id = data.get('projeto_id')
         nota = data.get('nota')
         comentario = data.get('comentario', '')
-        
-        print(f"DEBUG: Salvando resposta - Pergunta: {pergunta_id}, Nota: {nota}, Comentário: {comentario}")
         
         # Validar pergunta
         pergunta = Pergunta.query.get(pergunta_id)
         if not pergunta:
-            print(f"DEBUG: Pergunta {pergunta_id} não encontrada")
             return jsonify({'success': False, 'message': 'Pergunta não encontrada'}), 404
         
-        # Verificar se o cliente tem acesso
-        if not current_user.cliente.tem_acesso_assessment(pergunta.dominio.tipo_assessment_id):
-            print(f"DEBUG: Cliente não tem acesso ao assessment")
-            return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+        # Verificar acesso ao projeto
+        from models.projeto import ProjetoRespondente
+        projeto_respondente = ProjetoRespondente.query.filter_by(
+            projeto_id=projeto_id,
+            respondente_id=current_user.id,
+            ativo=True
+        ).first()
+        
+        if not projeto_respondente:
+            return jsonify({'success': False, 'message': 'Acesso negado ao projeto'}), 403
         
         # Buscar resposta existente
         resposta = Resposta.query.filter_by(
             respondente_id=current_user.id,
-            pergunta_id=pergunta_id
+            pergunta_id=pergunta_id,
+            projeto_id=projeto_id
         ).first()
         
         # Se nota for None, remover resposta (funcionalidade de "desresponder")
@@ -137,7 +141,6 @@ def salvar_resposta():
             if resposta:
                 db.session.delete(resposta)
                 db.session.commit()
-                print(f"DEBUG: Resposta removida para pergunta {pergunta_id} pelo respondente {current_user.nome}")
                 return jsonify({'success': True, 'message': 'Resposta removida', 'action': 'removed'})
             else:
                 return jsonify({'success': True, 'message': 'Nenhuma resposta para remover'})
@@ -147,7 +150,6 @@ def salvar_resposta():
             resposta.nota = nota
             resposta.comentario = comentario
             resposta.data_atualizacao = datetime.utcnow()
-            print(f"DEBUG: Resposta atualizada para pergunta {pergunta_id} pelo respondente {current_user.nome}")
         else:
             # Buscar um usuário admin padrão para compatibilidade
             from models.usuario import Usuario
@@ -159,11 +161,11 @@ def salvar_resposta():
                 usuario_id=admin_user.id,  # Para compatibilidade com o banco
                 respondente_id=current_user.id,
                 pergunta_id=pergunta_id,
+                projeto_id=projeto_id,  # Associar resposta ao projeto
                 nota=nota,
                 comentario=comentario
             )
             db.session.add(resposta)
-            print(f"DEBUG: Nova resposta criada para pergunta {pergunta_id} pelo respondente {current_user.nome}")
         
         db.session.commit()
         

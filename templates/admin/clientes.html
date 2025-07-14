@@ -32,6 +32,7 @@
                                         <th class="border-0">CNPJ</th>
                                         <th class="border-0">Localidade</th>
                                         <th class="border-0">Segmento</th>
+                                        <th class="border-0">Projetos</th>
                                         <th class="border-0">Respondentes</th>
                                         <th class="border-0">Status</th>
                                         <th class="border-0 text-center">Ações</th>
@@ -61,6 +62,9 @@
                                         <td class="text-muted">{{ cliente.localidade or '-' }}</td>
                                         <td class="text-muted">{{ cliente.segmento or '-' }}</td>
                                         <td>
+                                            <span class="badge bg-primary">{{ cliente.projetos|length }}</span>
+                                        </td>
+                                        <td>
                                             <span class="badge bg-info">{{ cliente.contar_respondentes() }}</span>
                                         </td>
                                         <td>
@@ -72,28 +76,36 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">
+                                                <!-- Ver projetos do cliente -->
+                                                <a href="{{ url_for('projeto.listar') }}?cliente={{ cliente.id }}" 
+                                                   class="btn btn-outline-primary btn-sm" title="Ver Projetos">
+                                                    <i class="fas fa-project-diagram"></i>
+                                                </a>
+                                                
+                                                <!-- Respondentes do cliente -->
                                                 <a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}" 
                                                    class="btn btn-outline-info btn-sm" title="Respondentes">
                                                     <i class="fas fa-users"></i>
                                                 </a>
-                                                <button class="btn btn-outline-success btn-sm" 
-                                                        onclick="gerenciarAssessments({{ cliente.id }})"
-                                                        title="Gerenciar Assessments">
-                                                    <i class="fas fa-clipboard-list"></i>
-                                                </button>
                                                 
-                                                <!-- Dropdown para ver respostas por respondente -->
-                                                {% if cliente.get_tipos_assessment() %}
+                                                <!-- Criar novo projeto para cliente -->
+                                                <a href="{{ url_for('projeto.criar') }}?cliente={{ cliente.id }}" 
+                                                   class="btn btn-outline-success btn-sm" title="Novo Projeto">
+                                                    <i class="fas fa-plus"></i>
+                                                </a>
+                                                
+                                                <!-- Dropdown para ver respostas por projeto -->
+                                                {% if cliente.projetos %}
                                                     <div class="btn-group" role="group">
                                                         <button type="button" class="btn btn-outline-warning btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Ver Respostas">
                                                             <i class="fas fa-chart-line"></i>
                                                         </button>
                                                         <ul class="dropdown-menu">
-                                                            {% for tipo in cliente.get_tipos_assessment() %}
+                                                            {% for projeto in cliente.projetos %}
                                                                 <li>
-                                                                    <a class="dropdown-item" href="{{ url_for('admin.respostas_por_respondente', cliente_id=cliente.id, tipo_assessment_id=tipo.id) }}">
+                                                                    <a class="dropdown-item" href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}">
                                                                         <i class="fas fa-chart-bar me-1"></i>
-                                                                        {{ tipo.nome }}
+                                                                        {{ projeto.nome }}
                                                                     </a>
                                                                 </li>
                                                             {% endfor %}

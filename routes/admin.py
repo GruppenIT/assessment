@@ -272,7 +272,7 @@ def excluir_tipo_assessment(tipo_id):
 @admin_required
 def clientes():
     """Gerenciamento de clientes"""
-    clientes = Cliente.query.order_by(Cliente.nome).all()
+    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
     form = ClienteForm()
     return render_template('admin/clientes.html', clientes=clientes, form=form)
 
