@@ -113,6 +113,18 @@
                                                        title="Ver Respostas por Respondente">
                                                         <i class="fas fa-users"></i>
                                                     </a>
+                                                    {% if assessment.cliente.tem_respondente_finalizado() %}
+                                                        <a href="{{ url_for('relatorio.visualizar', cliente_id=assessment.cliente.id, tipo_assessment_id=assessment.tipo_assessment.id) }}" 
+                                                           class="btn btn-success btn-sm"
+                                                           title="Ver Relatório">
+                                                            <i class="fas fa-chart-line"></i>
+                                                        </a>
+                                                        <a href="{{ url_for('relatorio.gerar_pdf', cliente_id=assessment.cliente.id, tipo_assessment_id=assessment.tipo_assessment.id) }}" 
+                                                           class="btn btn-danger btn-sm"
+                                                           title="Baixar PDF">
+                                                            <i class="fas fa-file-pdf"></i>
+                                                        </a>
+                                                    {% endif %}
                                                     <a href="{{ url_for('admin.respondentes_cliente', cliente_id=assessment.cliente.id) }}" 
                                                        class="btn btn-outline-info btn-sm"
                                                        title="Gerenciar Respondentes">

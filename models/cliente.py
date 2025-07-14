@@ -40,6 +40,10 @@ class Cliente(db.Model):
         return any(ca.tipo_assessment_id == tipo_assessment_id and ca.ativo 
                   for ca in self.cliente_assessments)
     
+    def tem_respondente_finalizado(self):
+        """Verifica se o cliente tem pelo menos um respondente que finalizou o assessment"""
+        return any(r.data_conclusao is not None for r in self.get_respondentes_ativos())
+    
     def to_dict(self):
         """Converte o cliente para dicionário"""
         return {

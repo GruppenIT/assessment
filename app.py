@@ -71,14 +71,19 @@ def create_app():
     from routes.auth import auth_bp
     from routes.cliente import cliente_bp
     from routes.admin import admin_bp
-    from routes.relatorio import relatorio_bp
     from routes.respondente import respondente_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(cliente_bp, url_prefix='/cliente')
     app.register_blueprint(admin_bp, url_prefix='/admin')
-    app.register_blueprint(relatorio_bp, url_prefix='/relatorio')
     app.register_blueprint(respondente_bp, url_prefix='/respondente')
+    
+    # Registrar blueprint de relatório separadamente
+    try:
+        from routes.relatorio import relatorio_bp
+        app.register_blueprint(relatorio_bp)
+    except ImportError:
+        pass
     
     # Rota raiz
     @app.route('/')
