@@ -264,15 +264,11 @@ function gerenciarAssessments(clienteId) {
 
 function associarAssessment(clienteId, tipoAssessmentId) {
     const formData = new FormData();
-    formData.append('cliente_id', clienteId);
     formData.append('tipo_assessment_id', tipoAssessmentId);
     
     fetch(`/admin/clientes/${clienteId}/assessments/associar`, {
         method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
-        }
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
@@ -294,15 +290,11 @@ function associarAssessment(clienteId, tipoAssessmentId) {
 function desassociarAssessment(clienteId, tipoAssessmentId) {
     if (confirm('Tem certeza que deseja desassociar este assessment?')) {
         const formData = new FormData();
-        formData.append('cliente_id', clienteId);
         formData.append('tipo_assessment_id', tipoAssessmentId);
         
         fetch(`/admin/clientes/${clienteId}/assessments/desassociar`, {
             method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
-            }
+            body: formData
         })
         .then(response => response.json())
         .then(data => {

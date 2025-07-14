@@ -361,8 +361,17 @@ def associar_assessment_cliente(cliente_id):
     cliente = Cliente.query.get_or_404(cliente_id)
     tipo_assessment_id = request.form.get('tipo_assessment_id')
     
+    print(f"DEBUG: Associando assessment - Cliente ID: {cliente_id}, Tipo ID: {tipo_assessment_id}")
+    
     if not tipo_assessment_id:
+        print("DEBUG: Tipo de assessment não informado")
         return jsonify({'success': False, 'message': 'Tipo de assessment não informado'})
+    
+    try:
+        tipo_assessment_id = int(tipo_assessment_id)
+    except (ValueError, TypeError):
+        print(f"DEBUG: Tipo de assessment inválido: {tipo_assessment_id}")
+        return jsonify({'success': False, 'message': 'Tipo de assessment inválido'})
     
     # Verificar se já existe associação
     associacao_existente = db.session.query(ClienteAssessment).filter_by(
@@ -370,12 +379,16 @@ def associar_assessment_cliente(cliente_id):
         tipo_assessment_id=tipo_assessment_id
     ).first()
     
+    print(f"DEBUG: Associação existente: {associacao_existente}")
+    
     if associacao_existente:
         if not associacao_existente.ativo:
             associacao_existente.ativo = True
             db.session.commit()
+            print("DEBUG: Assessment reativado")
             return jsonify({'success': True, 'message': 'Assessment reativado'})
         else:
+            print("DEBUG: Assessment já associado")
             return jsonify({'success': False, 'message': 'Assessment já associado'})
     
     # Criar nova associação
@@ -388,10 +401,12 @@ def associar_assessment_cliente(cliente_id):
     try:
         db.session.add(nova_associacao)
         db.session.commit()
+        print("DEBUG: Nova associação criada com sucesso")
         return jsonify({'success': True, 'message': 'Assessment associado com sucesso'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': 'Erro ao associar assessment'})
+        print(f"DEBUG: Erro ao criar associação: {str(e)}")
+        return jsonify({'success': False, 'message': f'Erro ao associar assessment: {str(e)}'})
 
 @admin_bp.route('/clientes/<int:cliente_id>/assessments/desassociar', methods=['POST'])
 @login_required
