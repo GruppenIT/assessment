@@ -121,6 +121,26 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   /relatorio/ - Report templates
 ```
 
+## Development Workflow
+
+### Git Integration Setup
+- Created automated Git workflow for continuous development
+- Setup scripts for repository initialization and configuration
+- Deploy automation for Ubuntu servers with rollback capability
+- Requirements.txt generation for production consistency
+
+### Development Process
+1. **Development Environment**: Work on improvements in Replit
+2. **Version Control**: Use Git for tracking changes and releases  
+3. **Production Deploy**: Automated deployment to Ubuntu server via script
+4. **Monitoring**: Comprehensive logging and status checking tools
+
+### Key Scripts
+- `setup-git.sh`: Initialize Git repository with proper configuration
+- `deploy.sh`: Automated deployment script for Ubuntu servers
+- `generate-requirements.py`: Create production-ready requirements.txt
+- `dev-workflow.md`: Complete development workflow documentation
+
 ## Changelog
 - July 07, 2025. Initial setup
 - July 11, 2025. Major architecture overhaul:
@@ -131,6 +151,11 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - Added client-respondent relationship management
   - Removed public client registration (admin-only now)
   - Enhanced client data with business fields (razão social, localidade, segmento)
+- July 14, 2025. Development workflow implementation:
+  - Added Git integration and version control setup
+  - Created automated deployment system for Ubuntu servers
+  - Implemented client-assessment association management interface
+  - Added production-ready deployment scripts with monitoring
 
 ## User Preferences
 
