@@ -52,79 +52,121 @@
         </div>
     </div>
 
-    <!-- Domínios e Perguntas -->
-    {% for dominio in dominios %}
+    <!-- Navegação por Domínios -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-layer-group me-2 text-primary"></i>{{ dominio.nome }}
-                        {% if dominio.descricao %}
-                            <small class="text-muted d-block mt-1">{{ dominio.descricao }}</small>
-                        {% endif %}
-                    </h5>
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="fas fa-map me-2"></i>Navegação por Domínios</h6>
+                    <div class="domain-nav d-flex flex-wrap gap-2">
+                        {% for dominio in dominios %}
+                            <button class="btn btn-outline-primary domain-nav-btn" 
+                                    data-domain-id="{{ dominio.id }}"
+                                    onclick="scrollToDomain({{ dominio.id }})">
+                                {{ dominio.nome }}
+                                <span class="badge bg-primary ms-2 domain-progress" id="progress-{{ dominio.id }}">
+                                    0/{{ dominio.get_perguntas_ativas()|length }}
+                                </span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domínios e Perguntas -->
+    {% for dominio in dominios %}
+    <div class="row mb-5" id="domain-{{ dominio.id }}">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-layer-group me-2"></i>{{ dominio.nome }}
+                            </h5>
+                            {% if dominio.descricao %}
+                                <small class="text-white-50 d-block mt-1">{{ dominio.descricao }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="domain-stats">
+                                <span class="badge bg-light text-dark" id="domain-stats-{{ dominio.id }}">
+                                    0 de {{ dominio.get_perguntas_ativas()|length }} questões
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     {% for pergunta in dominio.get_perguntas_ativas() %}
                         {% set form_data = forms_data[pergunta.id] %}
-                        <div class="pergunta-container mb-4 p-3 border rounded" data-pergunta-id="{{ pergunta.id }}">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <h6 class="pergunta-titulo mb-2">
-                                        <span class="badge bg-secondary me-2">{{ loop.index }}</span>
-                                        {{ pergunta.texto }}
-                                    </h6>
-                                    {% if pergunta.descricao %}
-                                        <p class="text-muted small mb-3">{{ pergunta.descricao }}</p>
-                                    {% endif %}
-                                    
-                                    <!-- Textarea para comentário -->
-                                    <div class="mb-3">
-                                        <label class="form-label small text-muted">Comentário (opcional)</label>
-                                        <textarea class="form-control comentario-input" 
-                                                rows="2" 
-                                                placeholder="Adicione observações sobre esta questão..."
-                                                data-pergunta-id="{{ pergunta.id }}">{{ form_data.resposta.comentario if form_data.resposta else '' }}</textarea>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-4">
-                                    <!-- Rating System -->
-                                    <div class="rating-container text-center">
-                                        <label class="form-label small text-muted d-block mb-2">Nível de Maturidade (0-5)</label>
-                                        <div class="rating-buttons" data-pergunta-id="{{ pergunta.id }}">
-                                            {% for nota in range(6) %}
-                                                <button type="button" 
-                                                        class="btn rating-btn {% if form_data.resposta and form_data.resposta.nota == nota %}active{% endif %}" 
-                                                        data-nota="{{ nota }}"
-                                                        data-pergunta-id="{{ pergunta.id }}">
-                                                    {{ nota }}
-                                                </button>
-                                            {% endfor %}
+                        <div class="pergunta-card mb-4" data-pergunta-id="{{ pergunta.id }}" data-domain-id="{{ dominio.id }}">
+                            <div class="card">
+                                <div class="card-header {% if form_data.resposta %}bg-light-success{% else %}bg-light{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="pergunta-titulo mb-1">
+                                                <span class="badge bg-secondary me-2">{{ loop.index }}</span>
+                                                {{ pergunta.texto }}
+                                            </h6>
+                                            {% if pergunta.descricao %}
+                                                <p class="text-muted small mb-0">{{ pergunta.descricao }}</p>
+                                            {% endif %}
                                         </div>
-                                        <div class="rating-legend mt-2">
-                                            <small class="text-muted d-block">
-                                                <strong>0</strong> - Inexistente: nenhum controle implementado<br>
-                                                <strong>1</strong> - Inicial: práticas informais e não documentadas<br>
-                                                <strong>2</strong> - Básico: controles definidos, aplicação inconsistente<br>
-                                                <strong>3</strong> - Intermediário: controles padronizados e repetíveis<br>
-                                                <strong>4</strong> - Avançado: controles monitorados com métricas<br>
-                                                <strong>5</strong> - Otimizado: controles integrados e melhorados continuamente
-                                            </small>
-                                        </div>
-                                        
-                                        <!-- Status da resposta -->
-                                        <div class="status-resposta mt-2">
+                                        <div class="status-resposta">
                                             {% if form_data.resposta %}
                                                 <span class="badge bg-success">
-                                                    <i class="fas fa-check me-1"></i>Respondida
+                                                    <i class="fas fa-check me-1"></i>Nota {{ form_data.resposta.nota }}
                                                 </span>
                                             {% else %}
                                                 <span class="badge bg-warning">
                                                     <i class="fas fa-clock me-1"></i>Pendente
                                                 </span>
                                             {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <!-- Textarea para comentário -->
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">💬 Comentário (opcional)</label>
+                                                <textarea class="form-control comentario-input" 
+                                                        rows="3" 
+                                                        placeholder="Adicione observações, evidências ou justificativas para esta questão..."
+                                                        data-pergunta-id="{{ pergunta.id }}">{{ form_data.resposta.comentario if form_data.resposta else '' }}</textarea>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-4">
+                                            <!-- Rating System -->
+                                            <div class="rating-container">
+                                                <label class="form-label small fw-bold d-block mb-3">🎯 Nível de Maturidade</label>
+                                                <div class="rating-buttons d-grid gap-2" data-pergunta-id="{{ pergunta.id }}">
+                                                    {% for nota in range(6) %}
+                                                        <button type="button" 
+                                                                class="btn rating-btn-new {% if form_data.resposta and form_data.resposta.nota == nota %}active{% endif %}" 
+                                                                data-nota="{{ nota }}"
+                                                                data-pergunta-id="{{ pergunta.id }}">
+                                                            <div class="d-flex align-items-center">
+                                                                <span class="rating-number">{{ nota }}</span>
+                                                                <span class="rating-text">
+                                                                    {% if nota == 0 %}Inexistente
+                                                                    {% elif nota == 1 %}Inicial
+                                                                    {% elif nota == 2 %}Básico
+                                                                    {% elif nota == 3 %}Intermediário
+                                                                    {% elif nota == 4 %}Avançado
+                                                                    {% elif nota == 5 %}Otimizado
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                        </button>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -173,34 +215,58 @@
 </div>
 
 <style>
-.rating-btn {
-    width: 40px;
-    height: 40px;
-    margin: 0 2px;
+.rating-btn-new {
     border: 2px solid #dee2e6;
     background: white;
     color: #6c757d;
-    font-weight: bold;
+    font-weight: 500;
     border-radius: 8px;
+    padding: 8px 12px;
+    text-align: left;
+    transition: all 0.2s ease;
 }
 
-.rating-btn:hover {
+.rating-btn-new:hover {
     border-color: #007bff;
-    color: #007bff;
     background: #f8f9fa;
+    transform: translateY(-1px);
 }
 
-.rating-btn.active {
+.rating-btn-new.active {
     background: #007bff;
     border-color: #007bff;
     color: white;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
 }
 
-.rating-legend {
-    max-width: 300px;
-    text-align: left;
-    font-size: 0.8rem;
-    line-height: 1.3;
+.rating-number {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 0.9rem;
+}
+
+.rating-btn-new.active .rating-number {
+    background: rgba(255,255,255,0.3);
+    color: white;
+}
+
+.rating-text {
+    font-size: 0.9rem;
+}
+
+.domain-nav-btn {
+    margin-bottom: 8px;
+}
+
+.bg-light-success {
+    background-color: #d1f2eb !important;
 }
 
 .pergunta-container {
@@ -222,14 +288,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let saveTimeout = null;
     
     // Rating buttons
-    document.querySelectorAll('.rating-btn').forEach(btn => {
+    document.querySelectorAll('.rating-btn-new').forEach(btn => {
         btn.addEventListener('click', function() {
             const perguntaId = this.dataset.perguntaId;
             const nota = parseInt(this.dataset.nota);
             
             // Update visual state
             const container = document.querySelector(`.rating-buttons[data-pergunta-id="${perguntaId}"]`);
-            container.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
+            container.querySelectorAll('.rating-btn-new').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             
             // Auto-save
@@ -253,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function getNotaAtual(perguntaId) {
-        const activeBtn = document.querySelector(`.rating-buttons[data-pergunta-id="${perguntaId}"] .rating-btn.active`);
+        const activeBtn = document.querySelector(`.rating-buttons[data-pergunta-id="${perguntaId}"] .rating-btn-new.active`);
         return activeBtn ? parseInt(activeBtn.dataset.nota) : null;
     }
     
@@ -278,10 +344,15 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 // Update status badge
-                const container = document.querySelector(`.pergunta-container[data-pergunta-id="${perguntaId}"]`);
+                const container = document.querySelector(`.pergunta-card[data-pergunta-id="${perguntaId}"]`);
                 const statusBadge = container.querySelector('.status-resposta .badge');
                 statusBadge.className = 'badge bg-success';
-                statusBadge.innerHTML = '<i class="fas fa-check me-1"></i>Respondida';
+                statusBadge.innerHTML = `<i class="fas fa-check me-1"></i>Nota ${nota}`;
+                
+                // Update card header background
+                const cardHeader = container.querySelector('.card-header');
+                cardHeader.classList.remove('bg-light');
+                cardHeader.classList.add('bg-light-success');
                 
                 // Show toast
                 showToast();
@@ -303,11 +374,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateProgress() {
-        const totalPerguntas = document.querySelectorAll('.pergunta-container').length;
+        const totalPerguntas = document.querySelectorAll('.pergunta-card').length;
         const perguntasRespondidas = document.querySelectorAll('.status-resposta .bg-success').length;
         const percentual = Math.round((perguntasRespondidas / totalPerguntas) * 100);
         
-        // Update progress bar
+        // Update main progress bar
         const progressBar = document.getElementById('progress-bar');
         const progressText = document.getElementById('progress-text');
         
@@ -315,12 +386,60 @@ document.addEventListener('DOMContentLoaded', function() {
         progressBar.setAttribute('aria-valuenow', percentual);
         progressText.textContent = percentual + '%';
         
+        // Update domain progress
+        document.querySelectorAll('[data-domain-id]').forEach(domainElement => {
+            const domainId = domainElement.dataset.domainId;
+            if (domainId) {
+                const domainPerguntas = document.querySelectorAll(`.pergunta-card[data-domain-id="${domainId}"]`);
+                const domainRespondidas = document.querySelectorAll(`.pergunta-card[data-domain-id="${domainId}"] .status-resposta .bg-success`);
+                
+                // Update domain navigation badge
+                const navBadge = document.getElementById(`progress-${domainId}`);
+                if (navBadge) {
+                    navBadge.textContent = `${domainRespondidas.length}/${domainPerguntas.length}`;
+                    
+                    // Update navigation button color
+                    const navBtn = document.querySelector(`[data-domain-id="${domainId}"].domain-nav-btn`);
+                    if (navBtn) {
+                        if (domainRespondidas.length === domainPerguntas.length && domainPerguntas.length > 0) {
+                            navBtn.classList.remove('btn-outline-primary');
+                            navBtn.classList.add('btn-success');
+                        } else if (domainRespondidas.length > 0) {
+                            navBtn.classList.remove('btn-outline-primary', 'btn-success');
+                            navBtn.classList.add('btn-warning');
+                        }
+                    }
+                }
+                
+                // Update domain stats
+                const domainStats = document.getElementById(`domain-stats-${domainId}`);
+                if (domainStats) {
+                    domainStats.textContent = `${domainRespondidas.length} de ${domainPerguntas.length} questões`;
+                    if (domainRespondidas.length === domainPerguntas.length && domainPerguntas.length > 0) {
+                        domainStats.classList.remove('bg-light', 'text-dark');
+                        domainStats.classList.add('bg-success', 'text-white');
+                    } else if (domainRespondidas.length > 0) {
+                        domainStats.classList.remove('bg-light', 'text-dark', 'bg-success', 'text-white');
+                        domainStats.classList.add('bg-warning', 'text-dark');
+                    }
+                }
+            }
+        });
+        
         // Enable finalization button if 100% complete
         const btnFinalizar = document.getElementById('btn-finalizar');
         if (percentual === 100) {
             btnFinalizar.disabled = false;
             btnFinalizar.classList.remove('btn-success');
             btnFinalizar.classList.add('btn-primary');
+        }
+    }
+    
+    // Scroll to domain function
+    window.scrollToDomain = function(domainId) {
+        const element = document.getElementById(`domain-${domainId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
     
