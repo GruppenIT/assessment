@@ -64,7 +64,7 @@ class AdicionarRespondenteForm(FlaskForm):
     """Formulário para adicionar respondente ao projeto"""
     respondente_id = SelectField('Respondente', validators=[
         DataRequired(message='Selecione um respondente')
-    ], coerce=int, choices=[])
+    ], choices=[])
     
     submit = SubmitField('Adicionar ao Projeto')
     
@@ -89,7 +89,11 @@ class AdicionarRespondenteForm(FlaskForm):
                 ativo=True
             ).filter(~Respondente.id.in_(respondentes_no_projeto)).order_by(Respondente.nome).all()
             
-            self.respondente_id.choices = [(r.id, f"{r.nome} ({r.email})") for r in respondentes]
+            # Adicionar opção inicial
+            choices = [('', 'Selecione um respondente...')]
+            choices.extend([(r.id, f"{r.nome} ({r.email})") for r in respondentes])
             
-            if not self.respondente_id.choices:
-                self.respondente_id.choices = [('', 'Nenhum respondente disponível')]
+            if len(choices) == 1:  # Só tem a opção inicial
+                choices = [('', 'Nenhum respondente disponível')]
+            
+            self.respondente_id.choices = choices

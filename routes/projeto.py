@@ -207,7 +207,11 @@ def adicionar_respondente(projeto_id):
     
     if form.validate_on_submit():
         try:
-            respondente_id = form.respondente_id.data
+            respondente_id = int(form.respondente_id.data) if form.respondente_id.data else None
+            
+            if not respondente_id:
+                flash('Selecione um respondente válido.', 'danger')
+                return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
             
             # Verificar se já está associado
             associacao_existente = ProjetoRespondente.query.filter_by(
