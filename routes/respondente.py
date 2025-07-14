@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from models.respondente import Respondente
@@ -157,7 +157,7 @@ def assessment(tipo_assessment_id):
 def salvar_resposta():
     """Salva uma resposta via AJAX"""
     if not isinstance(current_user, Respondente):
-        return {'success': False, 'message': 'Acesso negado'}, 403
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
     
     try:
         data = request.get_json()
@@ -165,24 +165,40 @@ def salvar_resposta():
         nota = data.get('nota')
         comentario = data.get('comentario', '')
         
+        print(f"DEBUG: Salvando resposta - Pergunta: {pergunta_id}, Nota: {nota}, Comentário: {comentario}")
+        
         # Validar pergunta
         pergunta = Pergunta.query.get(pergunta_id)
         if not pergunta:
-            return {'success': False, 'message': 'Pergunta não encontrada'}, 404
+            print(f"DEBUG: Pergunta {pergunta_id} não encontrada")
+            return jsonify({'success': False, 'message': 'Pergunta não encontrada'}), 404
         
         # Verificar se o cliente tem acesso
         if not current_user.cliente.tem_acesso_assessment(pergunta.dominio.tipo_assessment_id):
-            return {'success': False, 'message': 'Acesso negado'}, 403
+            print(f"DEBUG: Cliente não tem acesso ao assessment")
+            return jsonify({'success': False, 'message': 'Acesso negado'}), 403
         
-        # Buscar resposta existente ou criar nova
+        # Buscar resposta existente
         resposta = Resposta.query.filter_by(
             respondente_id=current_user.id,
             pergunta_id=pergunta_id
         ).first()
         
+        # Se nota for None, remover resposta (funcionalidade de "desresponder")
+        if nota is None:
+            if resposta:
+                db.session.delete(resposta)
+                db.session.commit()
+                print(f"DEBUG: Resposta removida para pergunta {pergunta_id}")
+                return jsonify({'success': True, 'message': 'Resposta removida', 'action': 'removed'})
+            else:
+                return jsonify({'success': True, 'message': 'Nenhuma resposta para remover'})
+        
+        # Atualizar ou criar resposta
         if resposta:
             resposta.nota = nota
             resposta.comentario = comentario
+            print(f"DEBUG: Resposta atualizada para pergunta {pergunta_id}")
         else:
             resposta = Resposta(
                 respondente_id=current_user.id,
@@ -191,17 +207,11 @@ def salvar_resposta():
                 comentario=comentario
             )
             db.session.add(resposta)
+            print(f"DEBUG: Nova resposta criada para pergunta {pergunta_id}")
         
         db.session.commit()
         
-        # Calcular novo progresso
-        progresso = current_user.get_progresso_assessment(pergunta.dominio.tipo_assessment_id)
-        
-        return {
-            'success': True,
-            'message': 'Resposta salva com sucesso',
-            'progresso': progresso['percentual']
-        }
+        return jsonify({'success': True, 'message': 'Resposta salva com sucesso', 'action': 'saved'})
         
     except Exception as e:
         db.session.rollback()

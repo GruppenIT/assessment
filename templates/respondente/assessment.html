@@ -343,16 +343,26 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                console.log('DEBUG: Resposta salva com sucesso:', data);
+                
                 // Update status badge
                 const container = document.querySelector(`.pergunta-card[data-pergunta-id="${perguntaId}"]`);
                 const statusBadge = container.querySelector('.status-resposta .badge');
-                statusBadge.className = 'badge bg-success';
-                statusBadge.innerHTML = `<i class="fas fa-check me-1"></i>Nota ${nota}`;
-                
-                // Update card header background
                 const cardHeader = container.querySelector('.card-header');
-                cardHeader.classList.remove('bg-light');
-                cardHeader.classList.add('bg-light-success');
+                
+                if (data.action === 'removed' || nota === null) {
+                    // Response was removed
+                    statusBadge.className = 'badge bg-warning';
+                    statusBadge.innerHTML = '<i class="fas fa-clock me-1"></i>Pendente';
+                    cardHeader.classList.remove('bg-light-success');
+                    cardHeader.classList.add('bg-light');
+                } else {
+                    // Response was saved
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.innerHTML = `<i class="fas fa-check me-1"></i>Nota ${nota}`;
+                    cardHeader.classList.remove('bg-light');
+                    cardHeader.classList.add('bg-light-success');
+                }
                 
                 // Show toast
                 showToast();
@@ -361,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateProgress();
             } else {
                 console.error('Erro ao salvar:', data.message);
+                alert('Erro ao salvar resposta: ' + data.message);
             }
         })
         .catch(error => {
