@@ -20,8 +20,11 @@ relatorio_bp = Blueprint('relatorio', __name__, url_prefix='/relatorio')
 def gerar_pdf(cliente_id, tipo_assessment_id):
     """Gera relatório PDF para um cliente específico"""
     try:
+        print(f"DEBUG: Iniciando geração de PDF para cliente {cliente_id}, tipo {tipo_assessment_id}")
         cliente = Cliente.query.get_or_404(cliente_id)
         tipo_assessment = TipoAssessment.query.get_or_404(tipo_assessment_id)
+        print(f"DEBUG: Cliente encontrado: {cliente.nome}")
+        print(f"DEBUG: Tipo assessment encontrado: {tipo_assessment.nome}")
         
         # Verificar se o cliente tem acesso a este tipo de assessment
         if not cliente.tem_acesso_assessment(tipo_assessment_id):
@@ -96,13 +99,16 @@ def gerar_pdf(cliente_id, tipo_assessment_id):
         }
         
         # Gerar PDF
+        print("DEBUG: Iniciando geração do PDF...")
         pdf_content = gerar_relatorio_pdf(dados_relatorio)
+        print(f"DEBUG: PDF gerado com sucesso! Tamanho: {len(pdf_content)} bytes")
         
         # Criar resposta com o PDF
         response = make_response(pdf_content)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'attachment; filename="Assessment_{cliente.nome}_{tipo_assessment.nome}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
         
+        print("DEBUG: Resposta PDF criada com sucesso")
         return response
         
     except Exception as e:
