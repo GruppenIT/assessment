@@ -172,8 +172,14 @@ def gerenciar_respondentes(projeto_id):
     projeto = Projeto.query.get_or_404(projeto_id)
     form = ProjetoResponenteForm()
     
-    # Respondentes atuais do projeto
-    respondentes_projeto = projeto.get_respondentes_ativos()
+    # Respondentes atuais do projeto (objetos ProjetoRespondente)
+    projeto_respondentes = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto.id, 
+        ativo=True
+    ).all()
+    
+    # Extrair os objetos Respondente
+    respondentes_projeto = [pr.respondente for pr in projeto_respondentes]
     
     # Respondentes disponíveis do cliente que não estão no projeto
     respondentes_disponiveis = []

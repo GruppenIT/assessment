@@ -93,8 +93,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for pr in respondentes_projeto %}
-                                        {% set respondente = pr.respondente %}
+                                    {% for respondente in respondentes_projeto %}
                                         {% set progresso = projeto.get_progresso_respondente(respondente.id) %}
                                         <tr>
                                             <td>
@@ -121,26 +120,18 @@
                                                     <small class="text-muted">{{ progresso }}%</small>
                                                 </div>
                                             </td>
-                                            <td>{{ pr.data_associacao.strftime('%d/%m/%Y') }}</td>
+                                            <td>-</td>
                                             <td>
-                                                {% if pr.ativo %}
-                                                    <span class="badge bg-success">Ativo</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">Inativo</span>
-                                                {% endif %}
+                                                <span class="badge bg-success">Ativo</span>
                                             </td>
                                             <td>
-                                                {% if pr.ativo %}
-                                                    <form method="POST" action="{{ url_for('projeto.remover_respondente', projeto_id=projeto.id, respondente_id=respondente.id) }}" 
-                                                          style="display: inline-block;" 
-                                                          onsubmit="return confirm('Tem certeza que deseja remover este respondente do projeto?')">
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                            <i class="fas fa-times me-1"></i>Remover
-                                                        </button>
-                                                    </form>
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
+                                                <form method="POST" action="/admin/projetos/{{ projeto.id }}/remover-respondente/{{ respondente.id }}" 
+                                                      style="display: inline-block;" 
+                                                      onsubmit="return confirm('Tem certeza que deseja remover este respondente do projeto?')">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        <i class="fas fa-times me-1"></i>Remover
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     {% endfor %}
