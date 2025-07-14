@@ -44,6 +44,8 @@ def criar():
     
     if form.validate_on_submit():
         try:
+            logging.info(f"Tipos de assessment selecionados: {form.tipos_assessment.data}")
+            
             # Criar projeto
             projeto = Projeto(
                 nome=form.nome.data,
@@ -69,6 +71,12 @@ def criar():
             db.session.rollback()
             logging.error(f"Erro ao criar projeto: {e}")
             flash('Erro ao criar projeto. Tente novamente.', 'danger')
+    else:
+        # Log dos erros de validação
+        logging.error(f"Erros de validação: {form.errors}")
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     
     return render_template('admin/projetos/criar.html', 
                          form=form, 

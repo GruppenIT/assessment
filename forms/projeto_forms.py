@@ -4,7 +4,7 @@ Formulários para gerenciamento de projetos
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SelectField, SelectMultipleField, SubmitField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, Optional, ValidationError
 from wtforms.widgets import CheckboxInput, ListWidget
 
 
@@ -28,6 +28,12 @@ class ProjetoForm(FlaskForm):
     tipos_assessment = MultiCheckboxField('Tipos de Assessment', validators=[
         DataRequired(message='Selecione pelo menos um tipo de assessment')
     ], coerce=int, choices=[])
+    
+    def validate_tipos_assessment(self, field):
+        """Validação customizada para tipos de assessment"""
+        if not field.data or len(field.data) == 0:
+            raise ValidationError('Selecione pelo menos um tipo de assessment.')
+        return True
     
     descricao = TextAreaField('Descrição', validators=[
         Optional(),
