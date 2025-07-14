@@ -1,12 +1,12 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, BooleanField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
 from wtforms.widgets import ColorInput
 
 class ConfiguracaoForm(FlaskForm):
-    """Formulário para configurações do sistema"""
+    """Formulário simplificado para configurações do sistema"""
     
-    # Cores do sistema
+    # Cores básicas do sistema
     cor_primaria = StringField('Cor Primária', 
                                validators=[DataRequired(message='Cor primária é obrigatória')],
                                widget=ColorInput(),
@@ -16,26 +16,6 @@ class ConfiguracaoForm(FlaskForm):
                                 validators=[DataRequired(message='Cor secundária é obrigatória')],
                                 widget=ColorInput(),
                                 render_kw={'value': '#6c757d'})
-    
-    cor_sucesso = StringField('Cor de Sucesso',
-                             validators=[DataRequired(message='Cor de sucesso é obrigatória')],
-                             widget=ColorInput(),
-                             render_kw={'value': '#198754'})
-    
-    cor_perigo = StringField('Cor de Perigo',
-                            validators=[DataRequired(message='Cor de perigo é obrigatória')],
-                            widget=ColorInput(),
-                            render_kw={'value': '#dc3545'})
-    
-    cor_aviso = StringField('Cor de Aviso',
-                           validators=[DataRequired(message='Cor de aviso é obrigatória')],
-                           widget=ColorInput(),
-                           render_kw={'value': '#ffc107'})
-    
-    cor_info = StringField('Cor de Informação',
-                          validators=[DataRequired(message='Cor de informação é obrigatória')],
-                          widget=ColorInput(),
-                          render_kw={'value': '#0dcaf0'})
     
     cor_fundo = StringField('Cor de Fundo',
                            validators=[DataRequired(message='Cor de fundo é obrigatória')],
@@ -47,10 +27,21 @@ class ConfiguracaoForm(FlaskForm):
                            widget=ColorInput(),
                            render_kw={'value': '#212529'})
     
-    # Configurações de aparência
-    tema_escuro = BooleanField('Tema Escuro', default=False)
-    logo_navbar = BooleanField('Logo na Barra de Navegação', default=True)
-    sidebar_fechada = BooleanField('Sidebar Fechada por Padrão', default=False)
+    # Escala de pontuação - Nomes
+    escala_0_nome = StringField('Nome Nível 0', validators=[DataRequired()], render_kw={'value': 'Inexistente'})
+    escala_1_nome = StringField('Nome Nível 1', validators=[DataRequired()], render_kw={'value': 'Inicial'})
+    escala_2_nome = StringField('Nome Nível 2', validators=[DataRequired()], render_kw={'value': 'Básico'})
+    escala_3_nome = StringField('Nome Nível 3', validators=[DataRequired()], render_kw={'value': 'Intermediário'})
+    escala_4_nome = StringField('Nome Nível 4', validators=[DataRequired()], render_kw={'value': 'Avançado'})
+    escala_5_nome = StringField('Nome Nível 5', validators=[DataRequired()], render_kw={'value': 'Otimizado'})
+    
+    # Escala de pontuação - Cores
+    escala_0_cor = StringField('Cor Nível 0', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#dc3545'})
+    escala_1_cor = StringField('Cor Nível 1', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#fd7e14'})
+    escala_2_cor = StringField('Cor Nível 2', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#ffc107'})
+    escala_3_cor = StringField('Cor Nível 3', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#20c997'})
+    escala_4_cor = StringField('Cor Nível 4', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#0dcaf0'})
+    escala_5_cor = StringField('Cor Nível 5', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#198754'})
     
     # Botões
     submit = SubmitField('Salvar Configurações')
@@ -58,28 +49,3 @@ class ConfiguracaoForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(ConfiguracaoForm, self).__init__(*args, **kwargs)
-
-class ConfiguracaoGeralForm(FlaskForm):
-    """Formulário para configurações gerais do sistema"""
-    
-    nome_sistema = StringField('Nome do Sistema',
-                              validators=[DataRequired(message='Nome do sistema é obrigatório'),
-                                        Length(min=3, max=100, message='Nome deve ter entre 3 e 100 caracteres')],
-                              render_kw={'placeholder': 'Digite o nome do sistema'})
-    
-    descricao_sistema = TextAreaField('Descrição do Sistema',
-                                     validators=[Optional(),
-                                               Length(max=500, message='Descrição deve ter no máximo 500 caracteres')],
-                                     render_kw={'placeholder': 'Descrição opcional do sistema', 'rows': 3})
-    
-    email_suporte = StringField('Email de Suporte',
-                               validators=[Optional(),
-                                         Length(max=120, message='Email deve ter no máximo 120 caracteres')],
-                               render_kw={'placeholder': 'Email para suporte técnico'})
-    
-    telefone_suporte = StringField('Telefone de Suporte',
-                                  validators=[Optional(),
-                                            Length(max=20, message='Telefone deve ter no máximo 20 caracteres')],
-                                  render_kw={'placeholder': 'Telefone para suporte'})
-    
-    submit = SubmitField('Salvar Configurações Gerais')

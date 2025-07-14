@@ -14,7 +14,7 @@
                         Configurações do Sistema
                     </h2>
                     <p class="text-muted mb-0">
-                        Configure o logo e outras opções do sistema
+                        Configure logo, cores e escala de pontuação
                     </p>
                 </div>
             </div>
@@ -23,240 +23,88 @@
     
     <!-- Configuração do Logo -->
     <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-light">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-image me-2 text-primary"></i>
+                        <i class="fas fa-image me-2"></i>
                         Logo da Empresa
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-6">
                             {% if logo_atual %}
                                 <div class="text-center mb-3">
                                     <img src="{{ url_for('uploaded_file', filename=logo_atual.caminho_arquivo) }}" 
                                          alt="Logo atual" 
                                          class="img-fluid border rounded"
-                                         style="max-height: 200px;">
+                                         style="max-height: 100px;">
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-muted small mb-2">Logo atual</p>
-                                    <div class="row text-start">
-                                        <div class="col-6">
-                                            <small class="text-muted">
-                                                <strong>Arquivo:</strong><br>
-                                                {{ logo_atual.nome_original }}
-                                            </small>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted">
-                                                <strong>Upload:</strong><br>
-                                                {{ logo_atual.data_upload.strftime('%d/%m/%Y') }}
-                                            </small>
-                                        </div>
-                                    </div>
+                                    <small class="text-muted">{{ logo_atual.nome_original }}</small>
                                 </div>
                             {% else %}
-                                <div class="text-center py-4">
-                                    <i class="fas fa-image fa-4x text-muted mb-3"></i>
-                                    <h6 class="text-muted">Nenhum logo cadastrado</h6>
-                                    <p class="text-muted small">
-                                        Faça upload do logo da empresa para personalizar o sistema.
-                                    </p>
+                                <div class="text-center py-3">
+                                    <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                    <p class="text-muted small">Nenhum logo</p>
                                 </div>
                             {% endif %}
                         </div>
                         
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <form method="POST" action="{{ url_for('admin.upload_logo') }}" enctype="multipart/form-data">
                                 {{ logo_form.hidden_tag() }}
                                 
                                 <div class="mb-3">
-                                    {{ logo_form.logo.label(class="form-label fw-bold") }}
-                                    {{ logo_form.logo(class="form-control") }}
-                                    <div class="form-text">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Formatos aceitos: PNG, JPG, GIF<br>
-                                        Tamanho máximo: 16MB<br>
-                                        Recomendado: 200x60px (transparente)
+                                    {{ logo_form.logo(class="form-control form-control-sm") }}
+                                    <div class="form-text small">
+                                        PNG, JPG, GIF
                                     </div>
                                 </div>
                                 
-                                <div class="d-grid">
-                                    {{ logo_form.submit(class="btn btn-primary") }}
-                                </div>
+                                {{ logo_form.submit(class="btn btn-primary btn-sm") }}
                             </form>
-                            
-                            {% if logo_atual %}
-                                <hr>
-                                <div class="alert alert-info">
-                                    <i class="fas fa-lightbulb me-2"></i>
-                                    <strong>Dica:</strong> O logo será exibido no cabeçalho de todas as páginas e relatórios do sistema.
-                                </div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-light">
+        <div class="col-md-6">
+            <!-- Configurações de Cores -->
+            <div class="card h-100">
+                <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-info-circle me-2 text-primary"></i>
-                        Informações do Sistema
+                        <i class="fas fa-palette me-2"></i>
+                        Cores do Sistema
                     </h5>
                 </div>
                 <div class="card-body">
-                    <table class="table table-borderless table-sm">
-                        <tbody>
-                            <tr>
-                                <td class="fw-bold">Nome:</td>
-                                <td>{{ nome_sistema }}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Versão:</td>
-                                <td>1.0.0</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Framework:</td>
-                                <td>Flask + Bootstrap 5</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Banco de Dados:</td>
-                                <td>SQLAlchemy ORM</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    
-                    <hr>
-                    
-                    <h6 class="fw-bold mb-2">
-                        <i class="fas fa-tools me-1"></i>
-                        Ações do Sistema
-                    </h6>
-                    
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-tachometer-alt me-2"></i>
-                            Voltar ao Dashboard
-                        </a>
-                        <a href="{{ url_for('admin.dominios') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-layer-group me-2"></i>
-                            Gerenciar Domínios
-                        </a>
-                        <a href="{{ url_for('admin.perguntas') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-question-circle me-2"></i>
-                            Gerenciar Perguntas
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Configurações de Cores -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">
-                        <i class="fas fa-palette me-2 text-primary"></i>
-                        Configurações de Cores
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" action="{{ url_for('admin.salvar_configuracoes') }}">
                         {{ config_form.hidden_tag() }}
                         
                         <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">Cores Principais</h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_primaria.label(class="form-label") }}
-                                            {{ config_form.cor_primaria(class="form-control") }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_secundaria.label(class="form-label") }}
-                                            {{ config_form.cor_secundaria(class="form-control") }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_sucesso.label(class="form-label") }}
-                                            {{ config_form.cor_sucesso(class="form-control") }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_perigo.label(class="form-label") }}
-                                            {{ config_form.cor_perigo(class="form-control") }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_aviso.label(class="form-label") }}
-                                            {{ config_form.cor_aviso(class="form-control") }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_info.label(class="form-label") }}
-                                            {{ config_form.cor_info(class="form-control") }}
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="col-6 mb-3">
+                                {{ config_form.cor_primaria.label(class="form-label small") }}
+                                {{ config_form.cor_primaria(class="form-control form-control-color") }}
                             </div>
-                            
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-3">Cores de Layout</h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_fundo.label(class="form-label") }}
-                                            {{ config_form.cor_fundo(class="form-control") }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            {{ config_form.cor_texto.label(class="form-label") }}
-                                            {{ config_form.cor_texto(class="form-control") }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <h6 class="text-muted mb-3">Opções de Aparência</h6>
-                                <div class="form-check mb-3">
-                                    {{ config_form.tema_escuro(class="form-check-input") }}
-                                    {{ config_form.tema_escuro.label(class="form-check-label") }}
-                                </div>
-                                <div class="form-check mb-3">
-                                    {{ config_form.logo_navbar(class="form-check-input") }}
-                                    {{ config_form.logo_navbar.label(class="form-check-label") }}
-                                </div>
-                                <div class="form-check mb-3">
-                                    {{ config_form.sidebar_fechada(class="form-check-input") }}
-                                    {{ config_form.sidebar_fechada.label(class="form-check-label") }}
-                                </div>
+                            <div class="col-6 mb-3">
+                                {{ config_form.cor_secundaria.label(class="form-label small") }}
+                                {{ config_form.cor_secundaria(class="form-control form-control-color") }}
+                            </div>
+                            <div class="col-6 mb-3">
+                                {{ config_form.cor_fundo.label(class="form-label small") }}
+                                {{ config_form.cor_fundo(class="form-control form-control-color") }}
+                            </div>
+                            <div class="col-6 mb-3">
+                                {{ config_form.cor_texto.label(class="form-label small") }}
+                                {{ config_form.cor_texto(class="form-control form-control-color") }}
                             </div>
                         </div>
                         
-                        <div class="d-flex gap-2">
-                            {{ config_form.submit(class="btn btn-primary") }}
-                            {{ config_form.reset(class="btn btn-outline-warning") }}
+                        <div class="d-grid">
+                            {{ config_form.submit(class="btn btn-success btn-sm") }}
                         </div>
                     </form>
                 </div>
@@ -264,68 +112,51 @@
         </div>
     </div>
     
-    <!-- Configurações Avançadas -->
+    <!-- Configuração da Escala de Pontuação -->
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-light">
+                <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-sliders-h me-2 text-primary"></i>
-                        Configurações Avançadas
+                        <i class="fas fa-star-half-alt me-2"></i>
+                        Escala de Pontuação (0-5)
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">
-                                <i class="fas fa-palette me-1"></i>
-                                Paleta de Cores
-                            </h6>
-                            <div class="row">
-                                <div class="col-4 text-center">
-                                    <div class="rounded mb-2" style="background-color: #FFFFFF; border: 2px solid #dee2e6; height: 60px;"></div>
-                                    <small class="text-muted">
-                                        <strong>Fundo</strong><br>
-                                        #FFFFFF
-                                    </small>
+                    <form method="POST" action="{{ url_for('admin.salvar_configuracoes') }}">
+                        {{ config_form.hidden_tag() }}
+                        
+                        <div class="row">
+                            {% for i in range(6) %}
+                                <div class="col-md-2 mb-3">
+                                    <div class="text-center">
+                                        <div class="mb-2">
+                                            <span class="badge fs-6 text-white" style="background-color: {{ config_form['escala_' + i|string + '_cor'].data or config_form['escala_' + i|string + '_cor'].render_kw.value }};">
+                                                {{ i }}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            {{ config_form['escala_' + i|string + '_nome'](class="form-control form-control-sm text-center", placeholder="Nível " + i|string) }}
+                                        </div>
+                                        
+                                        <div>
+                                            {{ config_form['escala_' + i|string + '_cor'](class="form-control form-control-color form-control-sm") }}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-4 text-center">
-                                    <div class="bg-primary rounded mb-2" style="height: 60px;"></div>
-                                    <small class="text-muted">
-                                        <strong>Principal</strong><br>
-                                        #007BFF
-                                    </small>
-                                </div>
-                                <div class="col-4 text-center">
-                                    <div class="bg-dark rounded mb-2" style="height: 60px;"></div>
-                                    <small class="text-muted">
-                                        <strong>Texto</strong><br>
-                                        #000000
-                                    </small>
-                                </div>
-                            </div>
+                            {% endfor %}
                         </div>
                         
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">
-                                <i class="fas fa-chart-bar me-1"></i>
-                                Escala de Avaliação
-                            </h6>
-                            <div class="row">
-                                {% set cores_notas = ['#dc3545', '#fd7e14', '#ffc107', '#28a745', '#007bff', '#6f42c1'] %}
-                                {% set textos_notas = ['Não implementado', 'Inicial', 'Em desenvolvimento', 'Definido', 'Gerenciado', 'Otimizado'] %}
-                                {% for i in range(6) %}
-                                    <div class="col-2 text-center mb-2">
-                                        <div class="rounded text-white d-flex align-items-center justify-content-center fw-bold" 
-                                             style="background-color: {{ cores_notas[i] }}; height: 40px;">
-                                            {{ i }}
-                                        </div>
-                                        <small class="text-muted">{{ textos_notas[i] }}</small>
-                                    </div>
-                                {% endfor %}
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                {{ config_form.submit(class="btn btn-success") }}
+                            </div>
+                            <div class="col-md-6 text-end">
+                                {{ config_form.reset(class="btn btn-outline-warning") }}
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -333,19 +164,23 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-// Preview do logo antes do upload
-document.querySelector('input[type="file"]').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Criar preview se necessário
-            console.log('Arquivo selecionado:', file.name);
-        };
-        reader.readAsDataURL(file);
-    }
-});
-</script>
+{% block extra_css %}
+<style>
+.form-control-color {
+    width: 100%;
+    height: 38px;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.badge {
+    min-width: 2rem;
+    padding: 0.5rem;
+}
+</style>
 {% endblock %}

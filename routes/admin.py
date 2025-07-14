@@ -14,7 +14,7 @@ from models.logo import Logo
 from models.configuracao import Configuracao
 from forms.admin_forms import DominioForm, PerguntaForm, LogoForm
 from forms.cliente_forms import ClienteForm, ResponenteForm, TipoAssessmentForm, ImportacaoCSVForm
-from forms.configuracao_forms import ConfiguracaoForm, ConfiguracaoGeralForm
+from forms.configuracao_forms import ConfiguracaoForm
 from utils.auth_utils import admin_required
 from utils.upload_utils import allowed_file, save_uploaded_file
 from utils.csv_utils import processar_csv_importacao, gerar_template_csv
@@ -961,82 +961,127 @@ def assessments():
     
     return render_template('admin/assessments.html', assessments_data=assessments_data)
 
-@admin_bp.route('/configuracoes', methods=['GET', 'POST'])
+@admin_bp.route('/configuracoes')
 @login_required
 @admin_required
 def configuracoes():
-    """Configurações do sistema"""
-    logo_atual = Logo.get_logo_ativo()
+    """Configurações simplificadas do sistema"""
+    from models.logo import Logo
+    from forms.admin_forms import LogoForm
+    from forms.configuracao_forms import ConfiguracaoForm
+    from models.configuracao import Configuracao
+    
+    # Inicializar configurações padrão se necessário
+    Configuracao.inicializar_configuracoes_padrao()
+    
+    # Formulários
     logo_form = LogoForm()
     config_form = ConfiguracaoForm()
     
-    # Inicializar configurações padrão se não existirem
-    Configuracao.inicializar_configuracoes_padrao()
+    # Logo atual
+    logo_atual = Logo.get_logo_ativo()
     
-    # Carregar configurações atuais
-    configs = Configuracao.get_configuracoes_categoria('aparencia')
-    config_dict = {config.chave: config.valor for config in configs}
+    # Carregar configurações atuais nos formulários
+    configuracoes = Configuracao.query.all()
+    config_dict = {config.chave: config.valor for config in configuracoes}
     
-    # Preencher formulário com valores atuais
-    if request.method == 'GET':
-        config_form.cor_primaria.data = config_dict.get('cor_primaria', '#0d6efd')
-        config_form.cor_secundaria.data = config_dict.get('cor_secundaria', '#6c757d')
-        config_form.cor_sucesso.data = config_dict.get('cor_sucesso', '#198754')
-        config_form.cor_perigo.data = config_dict.get('cor_perigo', '#dc3545')
-        config_form.cor_aviso.data = config_dict.get('cor_aviso', '#ffc107')
-        config_form.cor_info.data = config_dict.get('cor_info', '#0dcaf0')
-        config_form.cor_fundo.data = config_dict.get('cor_fundo', '#ffffff')
-        config_form.cor_texto.data = config_dict.get('cor_texto', '#212529')
-        config_form.tema_escuro.data = config_dict.get('tema_escuro', 'false').lower() == 'true'
-        config_form.logo_navbar.data = config_dict.get('logo_navbar', 'true').lower() == 'true'
-        config_form.sidebar_fechada.data = config_dict.get('sidebar_fechada', 'false').lower() == 'true'
+    # Preencher formulário com valores salvos
+    for field_name in config_form._fields:
+        if field_name in config_dict and hasattr(config_form, field_name):
+            field = getattr(config_form, field_name)
+            if hasattr(field, 'data'):
+                field.data = config_dict[field_name]
+            # Também atualizar o valor padrão para o template
+            if hasattr(field, 'render_kw') and field.render_kw:
+                field.render_kw['value'] = config_dict[field_name]
     
-    # Processar formulário de configurações
-    if request.method == 'POST' and config_form.validate_on_submit():
-        # Restaurar padrões
-        if config_form.reset.data:
-            # Remover configurações existentes
-            Configuracao.query.filter_by(categoria='aparencia').delete()
-            db.session.commit()
-            
-            # Reinicializar com padrões
-            Configuracao.inicializar_configuracoes_padrao()
-            flash('Configurações restauradas para os padrões!', 'success')
-            return redirect(url_for('admin.configuracoes'))
-        
-        # Salvar configurações
-        if config_form.submit.data:
-            configuracoes = [
-                ('cor_primaria', config_form.cor_primaria.data),
-                ('cor_secundaria', config_form.cor_secundaria.data),
-                ('cor_sucesso', config_form.cor_sucesso.data),
-                ('cor_perigo', config_form.cor_perigo.data),
-                ('cor_aviso', config_form.cor_aviso.data),
-                ('cor_info', config_form.cor_info.data),
-                ('cor_fundo', config_form.cor_fundo.data),
-                ('cor_texto', config_form.cor_texto.data),
-                ('tema_escuro', str(config_form.tema_escuro.data).lower()),
-                ('logo_navbar', str(config_form.logo_navbar.data).lower()),
-                ('sidebar_fechada', str(config_form.sidebar_fechada.data).lower()),
-            ]
-            
-            for chave, valor in configuracoes:
-                Configuracao.set_valor(chave, valor, categoria='aparencia')
-            
-            flash('Configurações salvas com sucesso!', 'success')
-            return redirect(url_for('admin.configuracoes'))
-    
-    return render_template('admin/configuracoes.html', 
-                         logo_atual=logo_atual, 
+    return render_template('admin/configuracoes.html',
                          logo_form=logo_form,
                          config_form=config_form,
-                         configs=config_dict)
+                         logo_atual=logo_atual)
 
-@admin_bp.route('/configuracoes/logo', methods=['POST'])
+@admin_bp.route('/configuracoes/salvar', methods=['POST'])
+@login_required
+@admin_required
+def salvar_configuracoes():
+    """Salvar configurações do sistema"""
+    from forms.configuracao_forms import ConfiguracaoForm
+    from models.configuracao import Configuracao
+    
+    form = ConfiguracaoForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Salvar cada configuração
+            configuracoes_para_salvar = [
+                # Cores do sistema
+                ('cor_primaria', form.cor_primaria.data, 'Cor primária do sistema', 'color'),
+                ('cor_secundaria', form.cor_secundaria.data, 'Cor secundária do sistema', 'color'),
+                ('cor_fundo', form.cor_fundo.data, 'Cor de fundo', 'color'),
+                ('cor_texto', form.cor_texto.data, 'Cor do texto', 'color'),
+                
+                # Escala de pontuação - Nomes
+                ('escala_0_nome', form.escala_0_nome.data, 'Nome para pontuação 0', 'string'),
+                ('escala_1_nome', form.escala_1_nome.data, 'Nome para pontuação 1', 'string'),
+                ('escala_2_nome', form.escala_2_nome.data, 'Nome para pontuação 2', 'string'),
+                ('escala_3_nome', form.escala_3_nome.data, 'Nome para pontuação 3', 'string'),
+                ('escala_4_nome', form.escala_4_nome.data, 'Nome para pontuação 4', 'string'),
+                ('escala_5_nome', form.escala_5_nome.data, 'Nome para pontuação 5', 'string'),
+                
+                # Escala de pontuação - Cores
+                ('escala_0_cor', form.escala_0_cor.data, 'Cor para pontuação 0', 'color'),
+                ('escala_1_cor', form.escala_1_cor.data, 'Cor para pontuação 1', 'color'),
+                ('escala_2_cor', form.escala_2_cor.data, 'Cor para pontuação 2', 'color'),
+                ('escala_3_cor', form.escala_3_cor.data, 'Cor para pontuação 3', 'color'),
+                ('escala_4_cor', form.escala_4_cor.data, 'Cor para pontuação 4', 'color'),
+                ('escala_5_cor', form.escala_5_cor.data, 'Cor para pontuação 5', 'color'),
+            ]
+            
+            for chave, valor, descricao, tipo in configuracoes_para_salvar:
+                Configuracao.set_valor(chave, valor, descricao, tipo)
+            
+            flash('Configurações salvas com sucesso!', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao salvar configurações.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
+    
+    return redirect(url_for('admin.configuracoes'))
+
+@admin_bp.route('/configuracoes/restaurar', methods=['POST'])
+@login_required
+@admin_required
+def restaurar_configuracoes():
+    """Restaurar configurações padrão"""
+    from models.configuracao import Configuracao
+    
+    try:
+        # Remover todas as configurações atuais
+        Configuracao.query.delete()
+        db.session.commit()
+        
+        # Reinicializar com valores padrão
+        Configuracao.inicializar_configuracoes_padrao()
+        
+        flash('Configurações restauradas para os valores padrão!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao restaurar configurações.', 'danger')
+    
+    return redirect(url_for('admin.configuracoes'))
+
+@admin_bp.route('/upload_logo', methods=['POST'])
 @login_required
 @admin_required
 def upload_logo():
     """Upload do logo da empresa"""
+    from forms.admin_forms import LogoForm
+    from models.logo import Logo
+    
     form = LogoForm()
     
     if form.validate_on_submit():
@@ -1055,13 +1100,10 @@ def upload_logo():
                 logo = Logo(
                     caminho_arquivo=caminho_arquivo,
                     nome_original=file.filename,
-                    tamanho=len(file.read()),
+                    tamanho=0,  # Não precisa calcular tamanho
                     tipo_mime=file.content_type,
                     ativo=True
                 )
-                
-                # Resetar o ponteiro do arquivo
-                file.seek(0)
                 
                 db.session.add(logo)
                 db.session.commit()
