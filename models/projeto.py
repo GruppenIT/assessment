@@ -60,6 +60,35 @@ class Projeto(db.Model):
     def get_tipos_assessment(self):
         """Retorna lista de tipos de assessment do projeto"""
         return [pa.tipo_assessment for pa in self.assessments]
+    
+    def get_progresso_respondente(self, respondente_id):
+        """Calcula o progresso geral de um respondente neste projeto"""
+        from models.resposta import Resposta
+        from models.pergunta import Pergunta
+        from models.dominio import Dominio
+        
+        total_perguntas = 0
+        total_respostas = 0
+        
+        for assessment in self.assessments:
+            tipo = assessment.tipo_assessment
+            perguntas = Pergunta.query.join(Dominio).filter(
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            
+            respostas = Resposta.query.filter_by(
+                respondente_id=respondente_id,
+                projeto_id=self.id
+            ).join(Pergunta).join(Dominio).filter(
+                Dominio.tipo_assessment_id == tipo.id
+            ).count()
+            
+            total_perguntas += perguntas
+            total_respostas += respostas
+        
+        return round((total_respostas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
 
 
 class ProjetoRespondente(db.Model):

@@ -335,7 +335,14 @@ def editar(projeto_id):
     tipos_selecionados = [pa.tipo_assessment_id for pa in projeto.assessments]
     form.tipos_assessment.data = tipos_selecionados
     
-    return render_template('admin/projetos/editar.html', form=form, projeto=projeto)
+    # Criar formulário para novo cliente
+    from forms.cliente_forms import NovoClienteForm
+    novo_cliente_form = NovoClienteForm()
+    
+    return render_template('admin/projetos/editar.html', 
+                         form=form, 
+                         projeto=projeto,
+                         novo_cliente_form=novo_cliente_form)
 
 @projeto_bp.route('/<int:projeto_id>/desativar', methods=['POST'])
 @login_required

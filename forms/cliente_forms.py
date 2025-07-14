@@ -120,3 +120,13 @@ class ClienteAssessmentForm(FlaskForm):
         self.tipos_assessment.choices = [
             (ta.id, ta.nome) for ta in TipoAssessment.query.filter_by(ativo=True).order_by(TipoAssessment.nome)
         ]
+
+
+class NovoClienteForm(FlaskForm):
+    """Formulário simplificado para criar novo cliente durante criação de projeto"""
+    nome = StringField('Nome da Empresa', validators=[
+        DataRequired(message='Nome da empresa é obrigatório'),
+        Length(min=2, max=200, message='Nome deve ter entre 2 e 200 caracteres')
+    ], render_kw={'placeholder': 'Digite o nome da empresa'})
+    
+    submit = SubmitField('Criar Cliente')
