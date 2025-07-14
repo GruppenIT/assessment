@@ -12,6 +12,62 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     
+    <!-- Cores personalizadas do sistema -->
+    <style>
+        :root {
+            --cor-primaria: {{ cores_sistema.primaria }};
+            --cor-secundaria: {{ cores_sistema.secundaria }};
+            --cor-fundo: {{ cores_sistema.fundo }};
+            --cor-texto: {{ cores_sistema.texto }};
+        }
+        
+        /* Aplicar cores personalizadas */
+        .btn-primary {
+            background-color: var(--cor-primaria) !important;
+            border-color: var(--cor-primaria) !important;
+        }
+        
+        .btn-primary:hover {
+            background-color: color-mix(in srgb, var(--cor-primaria) 85%, black) !important;
+            border-color: color-mix(in srgb, var(--cor-primaria) 85%, black) !important;
+        }
+        
+        .text-primary {
+            color: var(--cor-primaria) !important;
+        }
+        
+        .bg-primary {
+            background-color: var(--cor-primaria) !important;
+        }
+        
+        .border-primary {
+            border-color: var(--cor-primaria) !important;
+        }
+        
+        .navbar-brand .text-primary {
+            color: var(--cor-primaria) !important;
+        }
+        
+        body {
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+        }
+        
+        .card-header.bg-primary {
+            background-color: var(--cor-primaria) !important;
+        }
+        
+        .badge.bg-primary {
+            background-color: var(--cor-primaria) !important;
+        }
+        
+        .alert-primary {
+            background-color: color-mix(in srgb, var(--cor-primaria) 15%, white);
+            border-color: color-mix(in srgb, var(--cor-primaria) 30%, white);
+            color: color-mix(in srgb, var(--cor-primaria) 85%, black);
+        }
+    </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
 <body>

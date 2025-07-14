@@ -61,10 +61,17 @@ def create_app():
     @app.context_processor
     def inject_globals():
         from models.logo import Logo
-        logo = Logo.query.first()
+        from models.configuracao import Configuracao
+        
+        logo = Logo.query.filter_by(ativo=True).first()
+        cores_sistema = Configuracao.get_cores_sistema()
+        escala_pontuacao = Configuracao.get_escala_pontuacao()
+        
         return {
             'nome_sistema': app.config["NOME_SISTEMA"],
-            'logo_path': logo.caminho_arquivo if logo else None
+            'logo_path': logo.caminho_arquivo if logo else None,
+            'cores_sistema': cores_sistema,
+            'escala_pontuacao': escala_pontuacao
         }
     
     # Registrar blueprints (importação direta para evitar circular imports)

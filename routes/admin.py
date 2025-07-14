@@ -1029,6 +1029,9 @@ def salvar_configuracoes():
     
     if form.validate_on_submit():
         try:
+            import logging
+            logging.info(f"Salvando configurações - Form data: {request.form}")
+            
             # Salvar cada configuração
             configuracoes_para_salvar = [
                 # Cores do sistema

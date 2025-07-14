@@ -44,6 +44,28 @@ class Configuracao(db.Model):
         return config
     
     @staticmethod
+    def get_cores_sistema():
+        """Obter cores do sistema configuradas"""
+        cores = {
+            'primaria': Configuracao.get_valor('cor_primaria', '#0d6efd'),
+            'secundaria': Configuracao.get_valor('cor_secundaria', '#6c757d'),
+            'fundo': Configuracao.get_valor('cor_fundo', '#ffffff'),
+            'texto': Configuracao.get_valor('cor_texto', '#212529')
+        }
+        return cores
+    
+    @staticmethod
+    def get_escala_pontuacao():
+        """Obter configurações da escala de pontuação (0-5)"""
+        escala = {}
+        for i in range(6):
+            escala[i] = {
+                'nome': Configuracao.get_valor(f'escala_{i}_nome', f'Nível {i}'),
+                'cor': Configuracao.get_valor(f'escala_{i}_cor', '#6c757d')
+            }
+        return escala
+    
+    @staticmethod
     def inicializar_configuracoes_padrao():
         """Inicializar configurações padrão do sistema"""
         import logging
