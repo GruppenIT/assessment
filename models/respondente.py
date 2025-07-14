@@ -22,6 +22,7 @@ class Respondente(UserMixin, db.Model):
     
     # Relacionamentos
     respostas = db.relationship('Resposta', backref='respondente', lazy=True, cascade='all, delete-orphan')
+    # projetos = db.relationship('ProjetoRespondente', back_populates='respondente')  # Será adicionado após criar tabelas
     
     def __repr__(self):
         return f'<Respondente {self.nome} - {self.email}>'

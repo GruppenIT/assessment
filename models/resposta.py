@@ -12,6 +12,7 @@ class Resposta(db.Model):
     pergunta_id = db.Column(db.Integer, db.ForeignKey('perguntas.id'), nullable=False, comment='Pergunta respondida')
     nota = db.Column(db.Integer, nullable=False, comment='Nota de 0 a 5')
     comentario = db.Column(db.Text, comment='Comentário opcional')
+    projeto_id = db.Column(db.Integer, db.ForeignKey('projetos.id'), nullable=True, comment='ID do projeto')
     data_resposta = db.Column(db.DateTime, default=datetime.utcnow, comment='Data da resposta')
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='Última atualização')
     

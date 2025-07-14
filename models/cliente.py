@@ -19,6 +19,7 @@ class Cliente(db.Model):
     # Relacionamentos
     respondentes = db.relationship('Respondente', backref='cliente', lazy=True, cascade='all, delete-orphan')
     cliente_assessments = db.relationship('ClienteAssessment', backref='cliente', lazy=True, cascade='all, delete-orphan')
+    # projetos = db.relationship('Projeto', back_populates='cliente')  # Será adicionado após criar tabelas
     
     def __repr__(self):
         return f'<Cliente {self.nome}>'

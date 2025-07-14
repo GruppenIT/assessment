@@ -1077,16 +1077,17 @@ def salvar_configuracoes():
             for chave, valor in configuracoes:
                 if valor:  # Só salvar se tiver valor
                     try:
+                        from sqlalchemy import text
                         # Tentar atualizar primeiro
-                        db.session.execute(
-                            "UPDATE configuracoes SET valor = :valor WHERE chave = :chave",
+                        result = db.session.execute(
+                            text("UPDATE configuracoes SET valor = :valor WHERE chave = :chave"),
                             {'valor': valor, 'chave': chave}
                         )
                         
                         # Se não atualizou nenhuma linha, inserir
-                        if db.session.rowcount == 0:
+                        if result.rowcount == 0:
                             db.session.execute(
-                                "INSERT INTO configuracoes (chave, valor, tipo) VALUES (:chave, :valor, 'string')",
+                                text("INSERT INTO configuracoes (chave, valor, tipo) VALUES (:chave, :valor, 'string')"),
                                 {'chave': chave, 'valor': valor}
                             )
                     except Exception as e2:

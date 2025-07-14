@@ -92,6 +92,13 @@ def create_app():
     except ImportError:
         pass
     
+    # Registrar blueprint de projetos
+    try:
+        from routes.projeto import projeto_bp
+        app.register_blueprint(projeto_bp)
+    except ImportError:
+        pass
+    
     # Rota para servir uploads
     @app.route('/uploads/<path:filename>')
     def uploaded_file(filename):
@@ -118,7 +125,7 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto
         db.create_all()
         
         # Criar usuário admin padrão se não existir
