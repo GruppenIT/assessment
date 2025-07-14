@@ -1,20 +1,24 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from models.usuario import Usuario
+from models.respondente import Respondente
 from forms.auth_forms import LoginForm
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """Página de login"""
+    """Página de login unificada - detecta automaticamente se é admin ou respondente"""
     if current_user.is_authenticated:
-        if current_user.tipo == 'admin':
+        # Redirecionar baseado no tipo de usuário
+        if hasattr(current_user, 'tipo') and current_user.tipo == 'admin':
             return redirect(url_for('admin.dashboard'))
+        elif hasattr(current_user, 'cliente_id'):
+            return redirect(url_for('respondente.dashboard'))
         else:
-            return redirect(url_for('cliente.dashboard'))
+            return redirect(url_for('admin.dashboard'))
     
     form = LoginForm()
     
@@ -22,20 +26,38 @@ def login():
         email = form.email.data.lower().strip()
         senha = form.senha.data
         
-        usuario = Usuario.query.filter_by(email=email, ativo=True).first()
+        # Primeiro tentar encontrar um administrador
+        usuario_admin = Usuario.query.filter_by(email=email, ativo=True).first()
         
-        if usuario and check_password_hash(usuario.senha_hash, senha):
-            login_user(usuario, remember=form.lembrar.data)
+        if usuario_admin and check_password_hash(usuario_admin.senha_hash, senha):
+            # Login como administrador
+            login_user(usuario_admin, remember=form.lembrar.data)
+            session['user_type'] = 'admin'
             flash('Login realizado com sucesso!', 'success')
             
-            # Redirecionar para a página solicitada ou dashboard
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
             else:
                 return redirect(url_for('admin.dashboard'))
-        else:
-            flash('Email ou senha incorretos.', 'danger')
+        
+        # Se não encontrou admin, tentar encontrar um respondente
+        respondente = Respondente.query.filter_by(email=email, ativo=True).first()
+        
+        if respondente and check_password_hash(respondente.senha_hash, senha):
+            # Login como respondente
+            login_user(respondente, remember=form.lembrar.data)
+            session['user_type'] = 'respondente'
+            flash('Login realizado com sucesso!', 'success')
+            
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+            else:
+                return redirect(url_for('respondente.dashboard'))
+        
+        # Se não encontrou nenhum usuário válido
+        flash('Email ou senha incorretos.', 'danger')
     
     return render_template('auth/login.html', form=form)
 

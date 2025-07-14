@@ -9,68 +9,15 @@ from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.resposta import Resposta
 from forms.assessment_forms import RespostaForm
-from forms.respondente_forms import LoginResponenteForm
+from utils.auth_utils import respondente_required
 from app import db
 
 respondente_bp = Blueprint('respondente', __name__)
 
-@respondente_bp.route('/login', methods=['GET', 'POST'])
-def login():
-    """Login específico para respondentes"""
-    # Se já está logado como respondente, redirecionar para dashboard
-    if current_user.is_authenticated and isinstance(current_user, Respondente):
-        return redirect(url_for('respondente.dashboard'))
-    
-    form = LoginResponenteForm()
-    
-    if form.validate_on_submit():
-        email = form.email.data.strip()
-        senha = form.senha.data
-        
-        print(f"DEBUG: Tentativa de login - Email: '{email}', Senha recebida: {'Sim' if senha else 'Não'}")
-        
-        respondente = Respondente.query.filter_by(email=email, ativo=True).first()
-        
-        if respondente:
-            print(f"DEBUG: Respondente encontrado: {respondente.nome}")
-            print(f"DEBUG: Respondente ativo: {respondente.ativo}")
-            
-            senha_correta = respondente.check_password(senha)
-            print(f"DEBUG: Senha correta: {senha_correta}")
-            
-            if senha_correta:
-                try:
-                    resultado_login = login_user(respondente, remember=True)
-                    print(f"DEBUG: Resultado login_user: {resultado_login}")
-                    
-                    session['user_type'] = 'respondente'
-                    print(f"DEBUG: Session user_type definido: {session.get('user_type')}")
-                    
-                    # Atualizar último acesso
-                    from datetime import datetime
-                    respondente.ultimo_acesso = datetime.utcnow()
-                    db.session.commit()
-                    
-                    flash('Login realizado com sucesso!', 'success')
-                    print(f"DEBUG: Redirecionando para dashboard...")
-                    return redirect(url_for('respondente.dashboard'))
-                    
-                except Exception as e:
-                    print(f"DEBUG: Erro no login: {str(e)}")
-                    flash('Erro interno no sistema de login.', 'danger')
-            else:
-                flash('Senha inválida.', 'danger')
-        else:
-            print(f"DEBUG: Respondente não encontrado ou inativo para email: '{email}'")
-            flash('Email não encontrado ou usuário inativo.', 'danger')
-    else:
-        if request.method == 'POST':
-            print(f"DEBUG: Erro de validação do formulário: {form.errors}")
-    
-    return render_template('respondente/login.html', form=form)
+# Login removido - agora usa o login unificado em /auth/login
 
 @respondente_bp.route('/dashboard')
-@login_required
+@respondente_required
 def dashboard():
     """Dashboard do respondente"""
     print(f"DEBUG: Acessando dashboard - current_user: {current_user}")

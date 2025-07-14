@@ -10,8 +10,12 @@
                 <div class="card-header bg-primary text-white text-center py-4">
                     <h4 class="mb-0">
                         <i class="fas fa-sign-in-alt me-2"></i>
-                        Fazer Login
+                        Acesso ao Sistema
                     </h4>
+                    <small class="text-light">
+                        <i class="fas fa-info-circle"></i> 
+                        Administradores e respondentes usam a mesma tela
+                    </small>
                 </div>
                 <div class="card-body p-4">
                     <form method="POST" action="{{ url_for('auth.login') }}">
@@ -58,9 +62,16 @@
                     </form>
                 </div>
                 <div class="card-footer text-center py-3 bg-light">
-                    <p class="mb-0 text-muted">
-                        Acesso administrativo ao sistema
-                    </p>
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <strong>Tipos de acesso:</strong><br>
+                            <i class="fas fa-user-shield text-primary"></i> Administradores: Gerenciam o sistema<br>
+                            <i class="fas fa-user text-secondary"></i> Respondentes: Realizam avaliações
+                        </small>
+                    </div>
+                    <small class="text-muted">
+                        © 2025 Gruppen Serviços de Informática Ltda
+                    </small>
                 </div>
             </div>
             

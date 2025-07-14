@@ -1,6 +1,7 @@
 from functools import wraps
 from flask import abort, redirect, url_for, flash
 from flask_login import current_user
+from models.respondente import Respondente
 
 def admin_required(f):
     """Decorator para rotas que requerem acesso de administrador"""
@@ -26,6 +27,21 @@ def cliente_required(f):
         
         if not current_user.is_cliente():
             flash('Acesso negado. Esta área é restrita para clientes.', 'danger')
+            abort(403)
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+def respondente_required(f):
+    """Decorator para rotas que requerem acesso de respondente"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login'))
+        
+        if not isinstance(current_user, Respondente):
+            flash('Acesso negado. Esta área é restrita para respondentes.', 'danger')
             abort(403)
         
         return f(*args, **kwargs)
