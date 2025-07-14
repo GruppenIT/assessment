@@ -36,13 +36,32 @@ def listar():
     
     projetos_data = []
     for projeto in projetos:
-        progresso = projeto.get_progresso_geral()
+        try:
+            progresso = projeto.get_progresso_geral()
+        except Exception as e:
+            logging.error(f"Erro ao calcular progresso do projeto {projeto.id}: {e}")
+            progresso = 0
+        
+        try:
+            respondentes_ativos = projeto.get_respondentes_ativos()
+            respondentes_count = len(respondentes_ativos)
+        except Exception as e:
+            logging.error(f"Erro ao obter respondentes do projeto {projeto.id}: {e}")
+            respondentes_count = 0
+        
+        try:
+            tipos_assessment = projeto.get_tipos_assessment()
+            tipos_count = len(tipos_assessment)
+        except Exception as e:
+            logging.error(f"Erro ao obter tipos de assessment do projeto {projeto.id}: {e}")
+            tipos_count = 0
+        
         projetos_data.append({
             'projeto': projeto,
             'progresso': progresso,
-            'concluido': projeto.is_concluido(),
-            'respondentes_count': len(projeto.get_respondentes_ativos()),
-            'tipos_count': len(projeto.get_tipos_assessment())
+            'concluido': progresso >= 100,
+            'respondentes_count': respondentes_count,
+            'tipos_count': tipos_count
         })
     
     return render_template('admin/projetos/listar.html', 
