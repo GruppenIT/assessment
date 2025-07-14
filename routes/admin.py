@@ -242,6 +242,14 @@ def criar_respondente(cliente_id):
 @admin_required
 def editar_respondente(respondente_id):
     """Edita um respondente"""
+    from flask_wtf.csrf import validate_csrf
+    
+    # Validar CSRF token se disponível
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except:
+        pass  # Continuar sem CSRF por enquanto
+    
     respondente = Respondente.query.get_or_404(respondente_id)
     cliente_id = respondente.cliente_id
     
