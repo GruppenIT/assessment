@@ -8,7 +8,7 @@ from models.pergunta import Pergunta
 from models.resposta import Resposta
 from models.tipo_assessment import TipoAssessment
 from utils.auth_utils import admin_required
-from utils.pdf_utils import gerar_relatorio_pdf
+from utils.pdf_utils import gerar_relatorio_pdf, calcular_nivel_maturidade
 from app import db
 from datetime import datetime
 
@@ -116,20 +116,7 @@ def gerar_pdf(cliente_id, tipo_assessment_id):
         flash('Erro ao gerar relatório PDF.', 'danger')
         return redirect(url_for('admin.assessments'))
 
-def calcular_nivel_maturidade(media):
-    """Calcula o nível de maturidade baseado na média"""
-    if media >= 4.5:
-        return "Otimizado (Nível 5)"
-    elif media >= 3.5:
-        return "Avançado (Nível 4)"
-    elif media >= 2.5:
-        return "Intermediário (Nível 3)"
-    elif media >= 1.5:
-        return "Básico (Nível 2)"
-    elif media >= 0.5:
-        return "Inicial (Nível 1)"
-    else:
-        return "Inexistente (Nível 0)"
+
 
 @relatorio_bp.route('/visualizar/<int:cliente_id>/<int:tipo_assessment_id>')
 @login_required

@@ -22,3 +22,7 @@ gunicorn>=21.2.0
 
 # Environment Management
 python-dotenv>=1.0.0
+matplotlib
+numpy
+sqlalchemy
+werkzeug
