@@ -714,29 +714,51 @@ def excluir_pergunta(pergunta_id):
 @admin_required
 def assessments():
     """Visualização de assessments dos clientes"""
-    clientes = Usuario.query.filter_by(tipo='cliente', ativo=True).order_by(Usuario.nome).all()
+    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
     
     assessments_data = []
     for cliente in clientes:
-        total_perguntas = Pergunta.query.filter_by(ativo=True).count()
-        respostas_dadas = len(cliente.respostas)
-        progresso = cliente.get_progresso_assessment()
-        concluido = cliente.assessment_concluido()
+        # Para cada tipo de assessment associado ao cliente
+        tipos_assessment = cliente.get_tipos_assessment()
         
-        # Calcular média geral
-        if cliente.respostas:
-            media_geral = sum(r.nota for r in cliente.respostas) / len(cliente.respostas)
-        else:
-            media_geral = 0
-        
-        assessments_data.append({
-            'cliente': cliente,
-            'total_perguntas': total_perguntas,
-            'respostas_dadas': respostas_dadas,
-            'progresso': progresso,
-            'concluido': concluido,
-            'media_geral': round(media_geral, 2)
-        })
+        for tipo_assessment in tipos_assessment:
+            # Calcular estatísticas por tipo de assessment
+            total_perguntas = Pergunta.query.join(Dominio).filter(
+                Dominio.tipo_assessment_id == tipo_assessment.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            
+            # Contar respostas de todos os respondentes do cliente para este tipo
+            respostas = Resposta.query.join(Respondente).join(Pergunta).join(Dominio).filter(
+                Respondente.cliente_id == cliente.id,
+                Dominio.tipo_assessment_id == tipo_assessment.id,
+                Respondente.ativo == True
+            ).all()
+            
+            respostas_dadas = len(respostas)
+            progresso = round((respostas_dadas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
+            concluido = progresso >= 100
+            
+            # Calcular média geral das respostas
+            if respostas:
+                media_geral = sum(r.nota for r in respostas) / len(respostas)
+            else:
+                media_geral = 0
+            
+            # Contar respondentes ativos
+            respondentes_count = cliente.contar_respondentes()
+            
+            assessments_data.append({
+                'cliente': cliente,
+                'tipo_assessment': tipo_assessment,
+                'total_perguntas': total_perguntas,
+                'respostas_dadas': respostas_dadas,
+                'progresso': progresso,
+                'concluido': concluido,
+                'media_geral': round(media_geral, 2),
+                'respondentes_count': respondentes_count
+            })
     
     return render_template('admin/assessments.html', assessments_data=assessments_data)
 

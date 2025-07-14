@@ -38,8 +38,9 @@
                                 <thead>
                                     <tr>
                                         <th>Cliente</th>
-                                        <th>Responsável</th>
-                                        <th>Progress</th>
+                                        <th>Assessment</th>
+                                        <th>Respondentes</th>
+                                        <th>Progresso</th>
                                         <th>Média Geral</th>
                                         <th>Status</th>
                                         <th>Ações</th>
@@ -49,10 +50,15 @@
                                     {% for assessment in assessments_data %}
                                         <tr {% if assessment.concluido %}class="table-light"{% endif %}>
                                             <td>
-                                                <strong>{{ assessment.cliente.nome_empresa }}</strong>
-                                                <div class="small text-muted">{{ assessment.cliente.email }}</div>
+                                                <strong>{{ assessment.cliente.nome }}</strong>
+                                                <div class="small text-muted">{{ assessment.cliente.razao_social }}</div>
                                             </td>
-                                            <td>{{ assessment.cliente.nome }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ assessment.tipo_assessment.nome }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ assessment.respondentes_count }}</span>
+                                            </td>
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <div class="progress me-2" style="width: 100px; height: 20px;">
@@ -102,28 +108,16 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm" role="group">
-                                                    {% if assessment.progresso > 0 %}
-                                                        <a href="{{ url_for('relatorio.visualizar', usuario_id=assessment.cliente.id) }}" 
-                                                           class="btn btn-outline-primary"
-                                                           title="Ver detalhes">
-                                                            <i class="fas fa-eye"></i>
-                                                        </a>
-                                                    {% endif %}
-                                                    
-                                                    {% if assessment.concluido %}
-                                                        <a href="{{ url_for('relatorio.gerar_pdf', usuario_id=assessment.cliente.id) }}" 
-                                                           class="btn btn-outline-danger"
-                                                           title="Baixar PDF">
-                                                            <i class="fas fa-file-pdf"></i>
-                                                        </a>
-                                                    {% endif %}
-                                                    
-                                                    <button type="button" 
-                                                            class="btn btn-outline-info"
-                                                            title="Detalhes do cliente"
-                                                            onclick="mostrarDetalhesCliente('{{ assessment.cliente.nome_empresa }}', '{{ assessment.cliente.nome }}', '{{ assessment.cliente.email }}', '{{ assessment.cliente.data_criacao.strftime('%d/%m/%Y') }}')">
-                                                        <i class="fas fa-info"></i>
-                                                    </button>
+                                                    <a href="{{ url_for('admin.respostas_por_respondente', cliente_id=assessment.cliente.id, tipo_assessment_id=assessment.tipo_assessment.id) }}" 
+                                                       class="btn btn-outline-primary btn-sm"
+                                                       title="Ver Respostas por Respondente">
+                                                        <i class="fas fa-users"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('admin.respondentes_cliente', cliente_id=assessment.cliente.id) }}" 
+                                                       class="btn btn-outline-info btn-sm"
+                                                       title="Gerenciar Respondentes">
+                                                        <i class="fas fa-user-cog"></i>
+                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>
