@@ -81,6 +81,25 @@
                                                         title="Gerenciar Assessments">
                                                     <i class="fas fa-clipboard-list"></i>
                                                 </button>
+                                                
+                                                <!-- Dropdown para ver respostas por respondente -->
+                                                {% if cliente.get_tipos_assessment() %}
+                                                    <div class="btn-group" role="group">
+                                                        <button type="button" class="btn btn-outline-warning btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Ver Respostas">
+                                                            <i class="fas fa-chart-line"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            {% for tipo in cliente.get_tipos_assessment() %}
+                                                                <li>
+                                                                    <a class="dropdown-item" href="{{ url_for('admin.respostas_por_respondente', cliente_id=cliente.id, tipo_assessment_id=tipo.id) }}">
+                                                                        <i class="fas fa-chart-bar me-1"></i>
+                                                                        {{ tipo.nome }}
+                                                                    </a>
+                                                                </li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+                                                {% endif %}
                                                 <button class="btn btn-outline-primary btn-sm" 
                                                         onclick="editarCliente({{ cliente.id }})"
                                                         title="Editar">

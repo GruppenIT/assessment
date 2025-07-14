@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Respostas por Respondente - {{ config.NOME_SISTEMA }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="fas fa-users me-2 text-primary"></i>
+                        Respostas por Respondente
+                    </h2>
+                    <p class="text-muted mb-0">{{ cliente.nome }} - {{ tipo_assessment.nome }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Voltar aos Clientes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if respondentes %}
+        <div class="row">
+            {% for respondente in respondentes %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user me-2 text-primary"></i>
+                                {{ respondente.nome }}
+                            </h5>
+                            <small class="text-muted">{{ respondente.email }}</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h4 class="text-success mb-0">{{ respondente.respostas_count }}</h4>
+                                        <small class="text-muted">Respondidas</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <h4 class="text-primary mb-0">{{ respondente.progresso }}%</h4>
+                                        <small class="text-muted">Progresso</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ respondente.progresso }}%" 
+                                     aria-valuenow="{{ respondente.progresso }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+
+                            {% if respondente.ultima_atividade %}
+                                <p class="small text-muted mb-3">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Última atividade: {{ respondente.ultima_atividade.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                            {% endif %}
+
+                            <button class="btn btn-outline-primary btn-sm w-100" 
+                                    onclick="toggleRespostas('{{ respondente.id }}')">
+                                <i class="fas fa-eye me-1"></i>
+                                Ver Respostas
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Detalhes das respostas por respondente -->
+        {% for respondente in respondentes %}
+            <div id="respostas-{{ respondente.id }}" class="mt-4" style="display: none;">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Respostas de {{ respondente.nome }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if respondente.respostas %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Domínio</th>
+                                            <th>Pergunta</th>
+                                            <th>Nota</th>
+                                            <th>Comentário</th>
+                                            <th>Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for resposta in respondente.respostas %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge bg-info">
+                                                        {{ resposta.pergunta.dominio.nome }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <small>
+                                                        {{ resposta.pergunta.texto[:80] }}{% if resposta.pergunta.texto|length > 80 %}...{% endif %}
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge" style="background-color: {{ resposta.get_cor_nota() }}">
+                                                        {{ resposta.nota }}/5
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        {% if resposta.comentario %}
+                                                            {{ resposta.comentario[:50] }}{% if resposta.comentario|length > 50 %}...{% endif %}
+                                                        {% else %}
+                                                            <em>Sem comentário</em>
+                                                        {% endif %}
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        {{ resposta.data_resposta.strftime('%d/%m/%Y %H:%M') }}
+                                                    </small>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">Este respondente ainda não registrou nenhuma resposta.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">Nenhum respondente encontrado</h4>
+            <p class="text-muted">Este cliente ainda não possui respondentes cadastrados para este tipo de assessment.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleRespostas(respondentId) {
+    const elemento = document.getElementById('respostas-' + respondentId);
+    if (elemento.style.display === 'none') {
+        // Esconder todas as outras seções
+        document.querySelectorAll('[id^="respostas-"]').forEach(el => {
+            el.style.display = 'none';
+        });
+        // Mostrar a seção clicada
+        elemento.style.display = 'block';
+        elemento.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        elemento.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

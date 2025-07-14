@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
+from datetime import datetime
 from models.respondente import Respondente
 from models.cliente import Cliente
 from models.tipo_assessment import TipoAssessment
@@ -189,7 +190,7 @@ def salvar_resposta():
             if resposta:
                 db.session.delete(resposta)
                 db.session.commit()
-                print(f"DEBUG: Resposta removida para pergunta {pergunta_id}")
+                print(f"DEBUG: Resposta removida para pergunta {pergunta_id} pelo respondente {current_user.nome}")
                 return jsonify({'success': True, 'message': 'Resposta removida', 'action': 'removed'})
             else:
                 return jsonify({'success': True, 'message': 'Nenhuma resposta para remover'})
@@ -198,7 +199,8 @@ def salvar_resposta():
         if resposta:
             resposta.nota = nota
             resposta.comentario = comentario
-            print(f"DEBUG: Resposta atualizada para pergunta {pergunta_id}")
+            resposta.data_atualizacao = datetime.utcnow()
+            print(f"DEBUG: Resposta atualizada para pergunta {pergunta_id} pelo respondente {current_user.nome}")
         else:
             # Buscar um usuário admin padrão para compatibilidade
             from models.usuario import Usuario
@@ -214,7 +216,7 @@ def salvar_resposta():
                 comentario=comentario
             )
             db.session.add(resposta)
-            print(f"DEBUG: Nova resposta criada para pergunta {pergunta_id}")
+            print(f"DEBUG: Nova resposta criada para pergunta {pergunta_id} pelo respondente {current_user.nome}")
         
         db.session.commit()
         
@@ -222,7 +224,8 @@ def salvar_resposta():
         
     except Exception as e:
         db.session.rollback()
-        return {'success': False, 'message': str(e)}, 500
+        print(f"DEBUG: Erro ao salvar resposta: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @respondente_bp.route('/logout')
 @login_required

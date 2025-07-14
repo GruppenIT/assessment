@@ -226,8 +226,8 @@
                                         <tr>
                                             <td>
                                                 <small>
-                                                    <strong>{{ resposta.usuario.nome_empresa }}</strong><br>
-                                                    {{ resposta.usuario.nome }}
+                                                    <strong>{{ resposta.respondente.cliente.nome if resposta.respondente else 'N/A' }}</strong><br>
+                                                    {{ resposta.respondente.nome if resposta.respondente else 'N/A' }}
                                                 </small>
                                             </td>
                                             <td>

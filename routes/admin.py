@@ -151,6 +151,46 @@ def clientes():
     form = ClienteForm()
     return render_template('admin/clientes.html', clientes=clientes, form=form)
 
+@admin_bp.route('/cliente/<int:cliente_id>/respostas/<int:tipo_assessment_id>')
+@login_required
+@admin_required
+def respostas_por_respondente(cliente_id, tipo_assessment_id):
+    """Visualizar respostas por respondente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    tipo_assessment = TipoAssessment.query.get_or_404(tipo_assessment_id)
+    
+    # Buscar respondentes do cliente
+    respondentes = Respondente.query.filter_by(cliente_id=cliente_id, ativo=True).all()
+    
+    # Para cada respondente, calcular estatísticas
+    for respondente in respondentes:
+        # Contar respostas
+        respostas = Resposta.query.filter_by(respondente_id=respondente.id).join(Pergunta).join(Dominio).filter(
+            Dominio.tipo_assessment_id == tipo_assessment_id
+        ).all()
+        respondente.respostas = respostas
+        respondente.respostas_count = len(respostas)
+        
+        # Calcular progresso
+        total_perguntas = Pergunta.query.join(Dominio).filter(
+            Dominio.tipo_assessment_id == tipo_assessment_id,
+            Dominio.ativo == True,
+            Pergunta.ativo == True
+        ).count()
+        
+        respondente.progresso = round((respondente.respostas_count / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
+        
+        # Última atividade
+        if respostas:
+            respondente.ultima_atividade = max(r.data_resposta for r in respostas)
+        else:
+            respondente.ultima_atividade = None
+    
+    return render_template('admin/respostas_por_respondente.html',
+                         cliente=cliente,
+                         tipo_assessment=tipo_assessment,
+                         respondentes=respondentes)
+
 @admin_bp.route('/clientes/criar', methods=['POST'])
 @login_required
 @admin_required
