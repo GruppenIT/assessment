@@ -30,6 +30,9 @@ def save_uploaded_file(file, subfolder=''):
     file_path = os.path.join(upload_dir, unique_filename)
     file.save(file_path)
     
+    # Retornar o caminho relativo correto
+    if subfolder:
+        return os.path.join(subfolder, unique_filename)
     return unique_filename
 
 def delete_file(file_path):

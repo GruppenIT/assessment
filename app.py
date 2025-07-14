@@ -104,12 +104,13 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao
         db.create_all()
         
         # Criar usuário admin padrão se não existir
         from models.usuario import Usuario
         from models.tipo_assessment import TipoAssessment
+        from models.configuracao import Configuracao
         from werkzeug.security import generate_password_hash
         
         admin_existente = Usuario.query.filter_by(email='admin@sistema.com').first()
@@ -136,6 +137,13 @@ def create_app():
             db.session.commit()
             logging.info("Usuário admin padrão criado: admin@sistema.com / admin123")
             logging.info("Tipo de assessment padrão 'Cibersegurança' criado")
+        
+        # Inicializar configurações padrão
+        try:
+            Configuracao.inicializar_configuracoes_padrao()
+            logging.info("Configurações padrão inicializadas")
+        except Exception as e:
+            logging.error(f"Erro ao inicializar configurações: {e}")
     
     return app
 

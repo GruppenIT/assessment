@@ -11,8 +11,10 @@ from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.resposta import Resposta
 from models.logo import Logo
+from models.configuracao import Configuracao
 from forms.admin_forms import DominioForm, PerguntaForm, LogoForm
 from forms.cliente_forms import ClienteForm, ResponenteForm, TipoAssessmentForm, ImportacaoCSVForm
+from forms.configuracao_forms import ConfiguracaoForm, ConfiguracaoGeralForm
 from utils.auth_utils import admin_required
 from utils.upload_utils import allowed_file, save_uploaded_file
 from utils.csv_utils import processar_csv_importacao, gerar_template_csv
@@ -202,9 +204,12 @@ def criar_cliente():
         # Processar upload do logo se fornecido
         logo_path = None
         if form.logo.data:
-            logo_file = save_uploaded_file(form.logo.data, 'logos')
-            if logo_file:
-                logo_path = logo_file
+            try:
+                logo_file = save_uploaded_file(form.logo.data, 'logos')
+                if logo_file:
+                    logo_path = logo_file
+            except Exception as e:
+                flash('Erro ao fazer upload do logo.', 'danger')
         
         cliente = Cliente(
             nome=form.nome.data.strip(),
@@ -237,18 +242,21 @@ def editar_cliente(cliente_id):
     if request.method == 'POST' and form.validate_on_submit():
         # Processar upload do logo se fornecido
         if form.logo.data:
-            logo_file = save_uploaded_file(form.logo.data, 'logos')
-            if logo_file:
-                # Remover logo anterior se existir
-                if cliente.logo_path:
-                    try:
-                        import os
-                        old_logo_path = os.path.join('static/uploads', cliente.logo_path)
-                        if os.path.exists(old_logo_path):
-                            os.remove(old_logo_path)
-                    except:
-                        pass  # Continuar mesmo se não conseguir remover o arquivo antigo
-                cliente.logo_path = logo_file
+            try:
+                logo_file = save_uploaded_file(form.logo.data, 'logos')
+                if logo_file:
+                    # Remover logo anterior se existir
+                    if cliente.logo_path:
+                        try:
+                            import os
+                            old_logo_path = os.path.join('static/uploads', cliente.logo_path)
+                            if os.path.exists(old_logo_path):
+                                os.remove(old_logo_path)
+                        except:
+                            pass  # Continuar mesmo se não conseguir remover o arquivo antigo
+                    cliente.logo_path = logo_file
+            except Exception as e:
+                flash('Erro ao fazer upload do logo.', 'danger')
         
         # Atualizar dados do cliente
         cliente.nome = form.nome.data.strip()
@@ -830,14 +838,76 @@ def assessments():
     
     return render_template('admin/assessments.html', assessments_data=assessments_data)
 
-@admin_bp.route('/configuracoes')
+@admin_bp.route('/configuracoes', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def configuracoes():
     """Configurações do sistema"""
     logo_atual = Logo.get_logo_ativo()
-    form = LogoForm()
-    return render_template('admin/configuracoes.html', logo_atual=logo_atual, form=form)
+    logo_form = LogoForm()
+    config_form = ConfiguracaoForm()
+    
+    # Inicializar configurações padrão se não existirem
+    Configuracao.inicializar_configuracoes_padrao()
+    
+    # Carregar configurações atuais
+    configs = Configuracao.get_configuracoes_categoria('aparencia')
+    config_dict = {config.chave: config.valor for config in configs}
+    
+    # Preencher formulário com valores atuais
+    if request.method == 'GET':
+        config_form.cor_primaria.data = config_dict.get('cor_primaria', '#0d6efd')
+        config_form.cor_secundaria.data = config_dict.get('cor_secundaria', '#6c757d')
+        config_form.cor_sucesso.data = config_dict.get('cor_sucesso', '#198754')
+        config_form.cor_perigo.data = config_dict.get('cor_perigo', '#dc3545')
+        config_form.cor_aviso.data = config_dict.get('cor_aviso', '#ffc107')
+        config_form.cor_info.data = config_dict.get('cor_info', '#0dcaf0')
+        config_form.cor_fundo.data = config_dict.get('cor_fundo', '#ffffff')
+        config_form.cor_texto.data = config_dict.get('cor_texto', '#212529')
+        config_form.tema_escuro.data = config_dict.get('tema_escuro', 'false').lower() == 'true'
+        config_form.logo_navbar.data = config_dict.get('logo_navbar', 'true').lower() == 'true'
+        config_form.sidebar_fechada.data = config_dict.get('sidebar_fechada', 'false').lower() == 'true'
+    
+    # Processar formulário de configurações
+    if request.method == 'POST' and config_form.validate_on_submit():
+        # Restaurar padrões
+        if config_form.reset.data:
+            # Remover configurações existentes
+            Configuracao.query.filter_by(categoria='aparencia').delete()
+            db.session.commit()
+            
+            # Reinicializar com padrões
+            Configuracao.inicializar_configuracoes_padrao()
+            flash('Configurações restauradas para os padrões!', 'success')
+            return redirect(url_for('admin.configuracoes'))
+        
+        # Salvar configurações
+        if config_form.submit.data:
+            configuracoes = [
+                ('cor_primaria', config_form.cor_primaria.data),
+                ('cor_secundaria', config_form.cor_secundaria.data),
+                ('cor_sucesso', config_form.cor_sucesso.data),
+                ('cor_perigo', config_form.cor_perigo.data),
+                ('cor_aviso', config_form.cor_aviso.data),
+                ('cor_info', config_form.cor_info.data),
+                ('cor_fundo', config_form.cor_fundo.data),
+                ('cor_texto', config_form.cor_texto.data),
+                ('tema_escuro', str(config_form.tema_escuro.data).lower()),
+                ('logo_navbar', str(config_form.logo_navbar.data).lower()),
+                ('sidebar_fechada', str(config_form.sidebar_fechada.data).lower()),
+            ]
+            
+            for chave, valor in configuracoes:
+                Configuracao.set_valor(chave, valor, categoria='aparencia')
+            
+            flash('Configurações salvas com sucesso!', 'success')
+            return redirect(url_for('admin.configuracoes'))
+    
+    return render_template('admin/configuracoes.html', 
+                         logo_atual=logo_atual, 
+                         logo_form=logo_form,
+                         config_form=config_form,
+                         configs=config_dict)
 
 @admin_bp.route('/configuracoes/logo', methods=['POST'])
 @login_required

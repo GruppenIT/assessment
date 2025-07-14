@@ -71,11 +71,11 @@
                         
                         <div class="col-md-6">
                             <form method="POST" action="{{ url_for('admin.upload_logo') }}" enctype="multipart/form-data">
-                                {{ form.hidden_tag() }}
+                                {{ logo_form.hidden_tag() }}
                                 
                                 <div class="mb-3">
-                                    {{ form.logo.label(class="form-label fw-bold") }}
-                                    {{ form.logo(class="form-control") }}
+                                    {{ logo_form.logo.label(class="form-label fw-bold") }}
+                                    {{ logo_form.logo(class="form-control") }}
                                     <div class="form-text">
                                         <i class="fas fa-info-circle me-1"></i>
                                         Formatos aceitos: PNG, JPG, GIF<br>
@@ -85,7 +85,7 @@
                                 </div>
                                 
                                 <div class="d-grid">
-                                    {{ form.submit(class="btn btn-primary") }}
+                                    {{ logo_form.submit(class="btn btn-primary") }}
                                 </div>
                             </form>
                             
@@ -153,6 +153,112 @@
                             Gerenciar Perguntas
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Configurações de Cores -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-palette me-2 text-primary"></i>
+                        Configurações de Cores
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ config_form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Cores Principais</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_primaria.label(class="form-label") }}
+                                            {{ config_form.cor_primaria(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_secundaria.label(class="form-label") }}
+                                            {{ config_form.cor_secundaria(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_sucesso.label(class="form-label") }}
+                                            {{ config_form.cor_sucesso(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_perigo.label(class="form-label") }}
+                                            {{ config_form.cor_perigo(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_aviso.label(class="form-label") }}
+                                            {{ config_form.cor_aviso(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_info.label(class="form-label") }}
+                                            {{ config_form.cor_info(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Cores de Layout</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_fundo.label(class="form-label") }}
+                                            {{ config_form.cor_fundo(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ config_form.cor_texto.label(class="form-label") }}
+                                            {{ config_form.cor_texto(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="text-muted mb-3">Opções de Aparência</h6>
+                                <div class="form-check mb-3">
+                                    {{ config_form.tema_escuro(class="form-check-input") }}
+                                    {{ config_form.tema_escuro.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-check mb-3">
+                                    {{ config_form.logo_navbar(class="form-check-input") }}
+                                    {{ config_form.logo_navbar.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-check mb-3">
+                                    {{ config_form.sidebar_fechada(class="form-check-input") }}
+                                    {{ config_form.sidebar_fechada.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            {{ config_form.submit(class="btn btn-primary") }}
+                            {{ config_form.reset(class="btn btn-outline-warning") }}
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
