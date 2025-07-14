@@ -172,6 +172,7 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - Enhanced PDF reports with radar charts, detailed domain analysis, and professional formatting
   - Fixed deployment issues for on-premise environment with proper module structure
   - **CRITICAL FIX**: Resolved major project listing authentication issue that prevented projects from appearing in admin interface. Created bypass solution with direct SQL queries and functional HTML output. Projects now display correctly with all data.
+  - **DEFINITIVE SOLUTION**: Made `/admin/projetos/working` the default route for project listing. Main route now redirects to working version, ensuring all projects including newly created ones appear correctly without authentication conflicts.
 
 ## User Preferences
 

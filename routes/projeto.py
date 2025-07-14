@@ -33,7 +33,7 @@ def auto_login():
 
 @projeto_bp.route('/working')
 def listar_working():
-    """Lista projetos - versão que funciona"""
+    """Lista todos os projetos - VERSÃO PRINCIPAL"""
     try:
         # Query direto sem ORM - incluir TODOS os projetos ativos
         projetos_raw = db.session.execute(
@@ -60,12 +60,13 @@ def listar_working():
         <head>
             <title>Projetos - Sistema Assessment</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
         </head>
         <body>
             <div class="container mt-4">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        <h4>Projetos de Assessment ({len(projetos_data)} projetos)</h4>
+                        <h4><i class="fas fa-project-diagram me-2"></i>Lista de Projetos ({len(projetos_data)} projetos)</h4>
                     </div>
                     <div class="card-body">
                         <table class="table table-striped">
@@ -111,82 +112,8 @@ def listar_working():
 
 @projeto_bp.route('/')
 def listar():
-    """Lista todos os projetos com filtro opcional por cliente - BYPASS AUTENTICAÇÃO"""
-    from flask import flash
-    
-    # MODO DEBUG: Ignorar completamente o sistema de autenticação por enquanto
-    flash('AVISO: Sistema em modo debug - autenticação desabilitada', 'warning')
-    
-    try:
-        # Obter filtro de cliente se fornecido
-        cliente_id = request.args.get('cliente_id', type=int)
-        
-        # Query base para projetos ativos - CORRIGIDA
-        base_query = """
-            SELECT p.id, p.nome, p.descricao, p.data_criacao, 
-                   c.nome as cliente_nome, c.localidade
-            FROM projetos p 
-            LEFT JOIN clientes c ON p.cliente_id = c.id 
-            WHERE p.ativo = true
-        """
-        
-        # Aplicar filtro por cliente apenas se especificado
-        if cliente_id:
-            projetos_raw = db.session.execute(
-                db.text(base_query + " AND p.cliente_id = :cliente_id ORDER BY p.data_criacao DESC"),
-                {'cliente_id': cliente_id}
-            ).fetchall()
-        else:
-            # SEM filtro - mostrar TODOS os projetos ativos
-            projetos_raw = db.session.execute(
-                db.text(base_query + " ORDER BY p.data_criacao DESC")
-            ).fetchall()
-        
-        # Buscar clientes para dropdown
-        clientes = db.session.execute(
-            db.text("SELECT id, nome FROM clientes WHERE ativo = true ORDER BY nome")
-        ).fetchall()
-        
-        # Preparar dados dos projetos
-        projetos_data = []
-        for projeto_raw in projetos_raw:
-            
-            # Contadores
-            respondentes_count = db.session.execute(
-                db.text("SELECT COUNT(*) FROM projeto_respondentes WHERE projeto_id = :pid AND ativo = true"),
-                {'pid': projeto_raw.id}
-            ).scalar() or 0
-            
-            tipos_count = db.session.execute(
-                db.text("SELECT COUNT(*) FROM projeto_assessments WHERE projeto_id = :pid"),
-                {'pid': projeto_raw.id}
-            ).scalar() or 0
-            
-            # Criar objeto projeto para template
-            projeto_obj = Projeto.query.get(projeto_raw.id)
-            
-            projetos_data.append({
-                'projeto': projeto_obj,
-                'progresso': 0,
-                'concluido': False,
-                'respondentes_count': respondentes_count,
-                'tipos_count': tipos_count
-            })
-        
-        # Clientes para dropdown
-        clientes_list = [Cliente.query.get(c.id) for c in clientes]
-        
-        return render_template('admin/projetos/listar.html', 
-                             projetos_data=projetos_data,
-                             clientes=clientes_list,
-                             cliente_selecionado=cliente_id)
-                             
-    except Exception as e:
-        flash(f'Erro ao carregar projetos: {str(e)}', 'danger')
-        return render_template('admin/projetos/listar.html', 
-                             projetos_data=[],
-                             clientes=[],
-                             cliente_selecionado=None)
+    """Redireciona para a versão funcional - working como padrão"""
+    return redirect(url_for('projeto.listar_working'))
 
 @projeto_bp.route('/criar', methods=['GET', 'POST'])
 @login_required
