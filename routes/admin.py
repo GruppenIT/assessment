@@ -1010,6 +1010,23 @@ def salvar_configuracoes():
     
     form = ConfiguracaoForm()
     
+    # Verificar se é restaurar padrões
+    if request.form.get('reset') == 'true':
+        try:
+            # Remover todas as configurações atuais
+            Configuracao.query.delete()
+            db.session.commit()
+            
+            # Reinicializar com valores padrão
+            Configuracao.inicializar_configuracoes_padrao()
+            
+            flash('Configurações restauradas para os valores padrão!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao restaurar configurações.', 'danger')
+        
+        return redirect(url_for('admin.configuracoes'))
+    
     if form.validate_on_submit():
         try:
             # Salvar cada configuração
@@ -1044,7 +1061,7 @@ def salvar_configuracoes():
             
         except Exception as e:
             db.session.rollback()
-            flash('Erro ao salvar configurações.', 'danger')
+            flash(f'Erro ao salvar configurações: {str(e)}', 'danger')
     else:
         for field, errors in form.errors.items():
             for error in errors:

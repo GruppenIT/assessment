@@ -127,25 +127,89 @@
                         {{ config_form.hidden_tag() }}
                         
                         <div class="row">
-                            {% for i in range(6) %}
-                                <div class="col-md-2 mb-3">
-                                    <div class="text-center">
-                                        <div class="mb-2">
-                                            <span class="badge fs-6 text-white" style="background-color: {{ config_form['escala_' + i|string + '_cor'].data or config_form['escala_' + i|string + '_cor'].render_kw.value }};">
-                                                {{ i }}
-                                            </span>
-                                        </div>
-                                        
-                                        <div class="mb-2">
-                                            {{ config_form['escala_' + i|string + '_nome'](class="form-control form-control-sm text-center", placeholder="Nível " + i|string) }}
-                                        </div>
-                                        
-                                        <div>
-                                            {{ config_form['escala_' + i|string + '_cor'](class="form-control form-control-color form-control-sm") }}
-                                        </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        <span class="badge fs-6 text-white" style="background-color: #dc3545;">0</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        {{ config_form.escala_0_nome(class="form-control form-control-sm text-center") }}
+                                    </div>
+                                    <div>
+                                        {{ config_form.escala_0_cor(class="form-control form-control-color form-control-sm") }}
                                     </div>
                                 </div>
-                            {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        <span class="badge fs-6 text-white" style="background-color: #fd7e14;">1</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        {{ config_form.escala_1_nome(class="form-control form-control-sm text-center") }}
+                                    </div>
+                                    <div>
+                                        {{ config_form.escala_1_cor(class="form-control form-control-color form-control-sm") }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        <span class="badge fs-6 text-white" style="background-color: #ffc107;">2</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        {{ config_form.escala_2_nome(class="form-control form-control-sm text-center") }}
+                                    </div>
+                                    <div>
+                                        {{ config_form.escala_2_cor(class="form-control form-control-color form-control-sm") }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        <span class="badge fs-6 text-white" style="background-color: #20c997;">3</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        {{ config_form.escala_3_nome(class="form-control form-control-sm text-center") }}
+                                    </div>
+                                    <div>
+                                        {{ config_form.escala_3_cor(class="form-control form-control-color form-control-sm") }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        <span class="badge fs-6 text-white" style="background-color: #0dcaf0;">4</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        {{ config_form.escala_4_nome(class="form-control form-control-sm text-center") }}
+                                    </div>
+                                    <div>
+                                        {{ config_form.escala_4_cor(class="form-control form-control-color form-control-sm") }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <div class="text-center">
+                                    <div class="mb-2">
+                                        <span class="badge fs-6 text-white" style="background-color: #198754;">5</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        {{ config_form.escala_5_nome(class="form-control form-control-sm text-center") }}
+                                    </div>
+                                    <div>
+                                        {{ config_form.escala_5_cor(class="form-control form-control-color form-control-sm") }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="row mt-3">
@@ -153,7 +217,7 @@
                                 {{ config_form.submit(class="btn btn-success") }}
                             </div>
                             <div class="col-md-6 text-end">
-                                {{ config_form.reset(class="btn btn-outline-warning") }}
+                                <button type="submit" name="reset" value="true" class="btn btn-outline-warning">Restaurar Padrões</button>
                             </div>
                         </div>
                     </form>
