@@ -19,15 +19,33 @@ def login():
         email = request.form.get('email')
         senha = request.form.get('senha')
         
+        print(f"DEBUG: Tentativa de login - Email: {email}")
+        
         respondente = Respondente.query.filter_by(email=email, ativo=True).first()
         
-        if respondente and respondente.check_password(senha):
-            login_user(respondente)
-            session['user_type'] = 'respondente'
-            flash('Login realizado com sucesso!', 'success')
-            return redirect(url_for('respondente.dashboard'))
+        if respondente:
+            print(f"DEBUG: Respondente encontrado: {respondente.nome}")
+            print(f"DEBUG: Respondente ativo: {respondente.ativo}")
+            
+            senha_correta = respondente.check_password(senha)
+            print(f"DEBUG: Senha correta: {senha_correta}")
+            
+            if senha_correta:
+                login_user(respondente)
+                session['user_type'] = 'respondente'
+                
+                # Atualizar último acesso
+                from datetime import datetime
+                respondente.ultimo_acesso = datetime.utcnow()
+                db.session.commit()
+                
+                flash('Login realizado com sucesso!', 'success')
+                return redirect(url_for('respondente.dashboard'))
+            else:
+                flash('Senha inválida.', 'danger')
         else:
-            flash('Email ou senha inválidos.', 'danger')
+            print(f"DEBUG: Respondente não encontrado ou inativo para email: {email}")
+            flash('Email não encontrado ou usuário inativo.', 'danger')
     
     return render_template('respondente/login.html')
 

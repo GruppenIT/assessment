@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Respondente{% endblock %}
+
+{% block content %}
+<div class="container-fluid vh-100">
+    <div class="row h-100">
+        <!-- Lado esquerdo - Informações -->
+        <div class="col-lg-6 d-flex align-items-center justify-content-center bg-primary text-white">
+            <div class="text-center">
+                <i class="fas fa-user-check fa-5x mb-4"></i>
+                <h2 class="mb-4">Portal do Respondente</h2>
+                <p class="lead">
+                    Acesse sua conta para responder aos assessments de maturidade organizacional.
+                </p>
+                <div class="mt-4">
+                    <small class="text-light">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Ambiente seguro e confidencial
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lado direito - Formulário de login -->
+        <div class="col-lg-6 d-flex align-items-center justify-content-center">
+            <div class="w-100" style="max-width: 400px;">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold text-primary">Entrar como Respondente</h3>
+                    <p class="text-muted">Digite suas credenciais para acessar</p>
+                </div>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('respondente.login') }}">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope me-2"></i>Email
+                        </label>
+                        <input type="email" class="form-control form-control-lg" 
+                               id="email" name="email" required 
+                               placeholder="Digite seu email">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="senha" class="form-label">
+                            <i class="fas fa-lock me-2"></i>Senha
+                        </label>
+                        <input type="password" class="form-control form-control-lg" 
+                               id="senha" name="senha" required 
+                               placeholder="Digite sua senha">
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Entrar
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <hr>
+                    <small class="text-muted">
+                        Problemas para acessar? Entre em contato com o administrador
+                    </small>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('auth.login') }}" class="text-decoration-none">
+                        <small>Acesso para Administradores</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.vh-100 {
+    min-height: 100vh;
+}
+
+.form-control-lg {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .col-lg-6:first-child {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

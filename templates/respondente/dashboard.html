@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ respondente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header com informações do respondente -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="card-title mb-2">
+                                <i class="fas fa-user-circle me-2"></i>
+                                Bem-vindo, {{ respondente.nome }}!
+                            </h4>
+                            <p class="card-text mb-0">
+                                <i class="fas fa-building me-2"></i>{{ respondente.cliente.nome }}<br>
+                                <i class="fas fa-envelope me-2"></i>{{ respondente.email }}
+                                {% if respondente.cargo %}
+                                    <br><i class="fas fa-briefcase me-2"></i>{{ respondente.cargo }}
+                                {% endif %}
+                                {% if respondente.setor %}
+                                    - {{ respondente.setor }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="text-light">
+                                <small>Último acesso:</small><br>
+                                <strong>
+                                    {% if respondente.ultimo_acesso %}
+                                        {{ respondente.ultimo_acesso.strftime('%d/%m/%Y às %H:%M') }}
+                                    {% else %}
+                                        Primeiro acesso
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessments Disponíveis -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Seus Assessments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if tipos_assessment %}
+                        <div class="row">
+                            {% for tipo in tipos_assessment %}
+                                {% set progresso = progressos[tipo.id] %}
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card h-100 border-{{ 'success' if progresso.percentual == 100 else 'info' if progresso.percentual > 0 else 'light' }}">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-{{ 'check-circle text-success' if progresso.percentual == 100 else 'play-circle text-info' if progresso.percentual > 0 else 'circle text-muted' }} me-2"></i>
+                                                {{ tipo.nome }}
+                                            </h6>
+                                            <p class="card-text small text-muted">{{ tipo.descricao or 'Assessment de maturidade organizacional' }}</p>
+                                            
+                                            <!-- Barra de Progresso -->
+                                            <div class="progress mb-3" style="height: 8px;">
+                                                <div class="progress-bar bg-{{ 'success' if progresso.percentual == 100 else 'info' }}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ progresso.percentual }}%">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row text-center mb-3">
+                                                <div class="col">
+                                                    <small class="text-muted">Progresso</small><br>
+                                                    <strong class="text-{{ 'success' if progresso.percentual == 100 else 'info' }}">
+                                                        {{ progresso.percentual }}%
+                                                    </strong>
+                                                </div>
+                                                <div class="col">
+                                                    <small class="text-muted">Respondidas</small><br>
+                                                    <strong>{{ progresso.respondidas }}/{{ progresso.total }}</strong>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-grid">
+                                                {% if progresso.percentual == 100 %}
+                                                    <a href="{{ url_for('respondente.assessment', tipo_assessment_id=tipo.id) }}" 
+                                                       class="btn btn-success btn-sm">
+                                                        <i class="fas fa-eye me-1"></i>Revisar Respostas
+                                                    </a>
+                                                {% elif progresso.percentual > 0 %}
+                                                    <a href="{{ url_for('respondente.assessment', tipo_assessment_id=tipo.id) }}" 
+                                                       class="btn btn-info btn-sm">
+                                                        <i class="fas fa-play me-1"></i>Continuar
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{{ url_for('respondente.assessment', tipo_assessment_id=tipo.id) }}" 
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-play me-1"></i>Iniciar
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhum Assessment Disponível</h5>
+                            <p class="text-muted">
+                                Ainda não há assessments associados à sua empresa.<br>
+                                Entre em contato com o administrador para mais informações.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações Úteis -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Como Funciona
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Responda às perguntas</strong> de cada domínio
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Use a escala de 0 a 5</strong> para avaliar sua organização
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Adicione comentários</strong> quando necessário
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Suas respostas são salvas</strong> automaticamente
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Precisa de Ajuda?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Se tiver dúvidas sobre como responder aos assessments ou problemas técnicos, 
+                        entre em contato com o administrador do sistema.
+                    </p>
+                    <div class="d-grid">
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-sign-out-alt me-1"></i>Sair do Sistema
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
