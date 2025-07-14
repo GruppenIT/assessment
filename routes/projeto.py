@@ -447,20 +447,3 @@ def excluir(projeto_id):
     
     return redirect(url_for('projeto.listar'))
 
-@projeto_bp.route('/<int:projeto_id>/desativar', methods=['POST'])
-@login_required
-@admin_required
-def desativar(projeto_id):
-    """Desativa um projeto"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
-    try:
-        projeto.ativo = False
-        db.session.commit()
-        flash(f'Projeto "{projeto.nome}" desativado com sucesso.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Erro ao desativar projeto: {e}")
-        flash('Erro ao desativar projeto. Tente novamente.', 'danger')
-    
-    return redirect(url_for('projeto.listar'))
