@@ -85,6 +85,13 @@ def create_app():
     except ImportError:
         pass
     
+    # Rota para servir uploads
+    @app.route('/uploads/<path:filename>')
+    def uploaded_file(filename):
+        from flask import send_from_directory
+        import os
+        return send_from_directory(os.path.join(app.root_path, app.config['UPLOAD_FOLDER']), filename)
+    
     # Rota raiz
     @app.route('/')
     def index():

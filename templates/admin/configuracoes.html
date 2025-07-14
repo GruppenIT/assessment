@@ -36,7 +36,7 @@
                         <div class="col-md-6">
                             {% if logo_atual %}
                                 <div class="text-center mb-3">
-                                    <img src="{{ url_for('static', filename=logo_atual.caminho_arquivo.replace('static/', '')) }}" 
+                                    <img src="{{ url_for('uploaded_file', filename=logo_atual.caminho_arquivo) }}" 
                                          alt="Logo atual" 
                                          class="img-fluid border rounded"
                                          style="max-height: 200px;">
