@@ -169,6 +169,8 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - Created admin interface to view responses separated by respondent
   - Fixed admin assessments overview page to work with new Cliente/Respondente structure
   - Added complete client editing interface with logo upload functionality
+  - Enhanced PDF reports with radar charts, detailed domain analysis, and professional formatting
+  - Fixed deployment issues for on-premise environment with proper module structure
 
 ## User Preferences
 

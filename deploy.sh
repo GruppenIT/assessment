@@ -116,7 +116,7 @@ deploy_app() {
     # Migrar banco de dados
     log "Executando migrações do banco..."
     source venv/bin/activate
-    python -c "from app import app, db; app.app_context().push(); db.create_all()"
+    python init_db.py
     
     # Reiniciar serviços
     log "Reiniciando serviços..."
