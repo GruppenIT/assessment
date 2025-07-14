@@ -60,7 +60,7 @@
                     <!-- Link para criar novo respondente -->
                     <hr>
                     <div class="text-center">
-                        <a href="{{ url_for('cliente.adicionar_respondente', cliente_id=projeto.cliente.id) }}?redirect_projeto={{ projeto.id }}" 
+                        <a href="/admin/clientes/{{ projeto.cliente.id }}/respondentes/criar?redirect_projeto={{ projeto.id }}" 
                            class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-plus me-1"></i>Criar Novo Respondente
                         </a>
