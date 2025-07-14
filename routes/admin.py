@@ -1063,7 +1063,10 @@ def salvar_configuracoes():
             flash('Configurações salvas com sucesso!', 'success')
             
         except Exception as e:
+            import traceback
             db.session.rollback()
+            logging.error(f"Erro detalhado ao salvar configurações: {str(e)}")
+            logging.error(f"Traceback: {traceback.format_exc()}")
             flash(f'Erro ao salvar configurações: {str(e)}', 'danger')
     else:
         for field, errors in form.errors.items():
