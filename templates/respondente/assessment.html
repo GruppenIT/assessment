@@ -293,13 +293,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const perguntaId = this.dataset.perguntaId;
             const nota = parseInt(this.dataset.nota);
             
+            // Check if this button is already active (desresponder functionality)
+            const isCurrentlyActive = this.classList.contains('active');
+            
+            console.log(`DEBUG: Clicou no botão ${nota}, já ativo: ${isCurrentlyActive}`);
+            
             // Update visual state
             const container = document.querySelector(`.rating-buttons[data-pergunta-id="${perguntaId}"]`);
-            container.querySelectorAll('.rating-btn-new').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
             
-            // Auto-save
-            salvarResposta(perguntaId, nota);
+            if (isCurrentlyActive) {
+                // "Desresponder" - remove response
+                console.log('DEBUG: Removendo resposta (desresponder)');
+                container.querySelectorAll('.rating-btn-new').forEach(b => b.classList.remove('active'));
+                salvarResposta(perguntaId, null);
+            } else {
+                // Select new option
+                console.log('DEBUG: Selecionando nova opção');
+                container.querySelectorAll('.rating-btn-new').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                salvarResposta(perguntaId, nota);
+            }
         });
     });
     
