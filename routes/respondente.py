@@ -14,6 +14,17 @@ from app import db
 
 respondente_bp = Blueprint('respondente', __name__)
 
+@respondente_bp.route('/auto-login')
+def auto_login():
+    """Auto login de teste para respondente"""
+    respondente = Respondente.query.filter_by(email='rodrigo@gruppen.com.br').first()
+    if respondente:
+        login_user(respondente)
+        session['user_type'] = 'respondente'
+        return redirect(url_for('respondente.dashboard'))
+    else:
+        return "Respondente não encontrado"
+
 # Login removido - agora usa o login unificado em /auth/login
 
 @respondente_bp.route('/dashboard')
@@ -94,10 +105,33 @@ def assessment(projeto_id, tipo_assessment_id):
     tipo_assessment = TipoAssessment.query.get_or_404(tipo_assessment_id)
     dominios = tipo_assessment.get_dominios_ativos()
     
+    # Buscar respostas existentes do respondente
+    respostas_existentes = {}
+    from models.resposta import Resposta
+    respostas = Resposta.query.filter_by(respondente_id=current_user.id).all()
+    for resposta in respostas:
+        respostas_existentes[resposta.pergunta_id] = {
+            'nota': resposta.nota,
+            'comentario': resposta.comentario
+        }
+    
+    # Criar forms_data para compatibilidade com o template
+    forms_data = {}
+    for dominio in dominios:
+        for pergunta in dominio.get_perguntas_ativas():
+            forms_data[pergunta.id] = {
+                'pergunta_id': pergunta.id,
+                'nota': respostas_existentes.get(pergunta.id, {}).get('nota', 0),
+                'comentario': respostas_existentes.get(pergunta.id, {}).get('comentario', ''),
+                'resposta': respostas_existentes.get(pergunta.id) if pergunta.id in respostas_existentes else None
+            }
+
     return render_template('respondente/assessment.html',
                          projeto=projeto,
                          tipo_assessment=tipo_assessment, 
-                         dominios=dominios)
+                         dominios=dominios,
+                         forms_data=forms_data,
+                         respostas_existentes=respostas_existentes)
 
 @respondente_bp.route('/assessment/salvar', methods=['POST'])
 @login_required
