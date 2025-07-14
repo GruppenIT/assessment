@@ -92,8 +92,6 @@ def listar_working():
 
         return render_template('admin/projetos/listar.html', 
                              projetos_data=projetos_data,
-                             clientes=[],
-                             cliente_selecionado=None,
                              ordem_atual=ordem,
                              direcao_atual=direcao)
         
