@@ -226,6 +226,74 @@ def criar_cliente():
     
     return redirect(url_for('admin.clientes'))
 
+@admin_bp.route('/clientes/<int:cliente_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar_cliente(cliente_id):
+    """Edita um cliente existente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    form = ClienteForm(obj=cliente)
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        # Processar upload do logo se fornecido
+        if form.logo.data:
+            logo_file = save_uploaded_file(form.logo.data, 'logos')
+            if logo_file:
+                # Remover logo anterior se existir
+                if cliente.logo_path:
+                    try:
+                        import os
+                        old_logo_path = os.path.join('static/uploads', cliente.logo_path)
+                        if os.path.exists(old_logo_path):
+                            os.remove(old_logo_path)
+                    except:
+                        pass  # Continuar mesmo se não conseguir remover o arquivo antigo
+                cliente.logo_path = logo_file
+        
+        # Atualizar dados do cliente
+        cliente.nome = form.nome.data.strip()
+        cliente.razao_social = form.razao_social.data.strip()
+        cliente.cnpj = form.cnpj.data.strip() if form.cnpj.data else None
+        cliente.localidade = form.localidade.data.strip() if form.localidade.data else None
+        cliente.segmento = form.segmento.data.strip() if form.segmento.data else None
+        
+        try:
+            db.session.commit()
+            flash('Cliente atualizado com sucesso!', 'success')
+            return redirect(url_for('admin.clientes'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao atualizar cliente.', 'danger')
+    
+    return render_template('admin/editar_cliente.html', form=form, cliente=cliente)
+
+@admin_bp.route('/clientes/<int:cliente_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir_cliente(cliente_id):
+    """Exclui um cliente"""
+    cliente = Cliente.query.get_or_404(cliente_id)
+    
+    try:
+        # Remover logo se existir
+        if cliente.logo_path:
+            try:
+                import os
+                logo_path = os.path.join('static/uploads', cliente.logo_path)
+                if os.path.exists(logo_path):
+                    os.remove(logo_path)
+            except:
+                pass  # Continuar mesmo se não conseguir remover o arquivo
+        
+        db.session.delete(cliente)
+        db.session.commit()
+        flash('Cliente excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao excluir cliente.', 'danger')
+    
+    return redirect(url_for('admin.clientes'))
+
 @admin_bp.route('/clientes/<int:cliente_id>/respondentes')
 @login_required
 @admin_required

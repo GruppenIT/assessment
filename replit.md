@@ -165,6 +165,10 @@ This is a Flask-based web application for multi-type maturity assessments. The s
     * 4 - Avançado: controles monitorados com métricas
     * 5 - Otimizado: controles integrados e melhorados continuamente
   - Added real-time progress tracking and visual feedback system
+  - Implemented multi-respondent tracking system with individual response attribution
+  - Created admin interface to view responses separated by respondent
+  - Fixed admin assessments overview page to work with new Cliente/Respondente structure
+  - Added complete client editing interface with logo upload functionality
 
 ## User Preferences
 

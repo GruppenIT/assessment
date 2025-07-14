@@ -100,13 +100,13 @@
                                                         </ul>
                                                     </div>
                                                 {% endif %}
-                                                <button class="btn btn-outline-primary btn-sm" 
-                                                        onclick="editarCliente({{ cliente.id }})"
-                                                        title="Editar">
+                                                <a href="{{ url_for('admin.editar_cliente', cliente_id=cliente.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm" 
+                                                   title="Editar">
                                                     <i class="fas fa-edit"></i>
-                                                </button>
+                                                </a>
                                                 <button class="btn btn-outline-danger btn-sm" 
-                                                        onclick="confirmarExclusao({{ cliente.id }}, '{{ cliente.nome }}')"
+                                                        onclick="confirmarExclusaoCliente({{ cliente.id }}, '{{ cliente.nome }}')"
                                                         title="Excluir">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
@@ -249,12 +249,9 @@
 </div>
 
 <script>
-function editarCliente(id) {
-    // Implementar edição de cliente
-    alert('Funcionalidade de edição será implementada em breve.');
-}
+// Função removida - agora usa link direto para página de edição
 
-function confirmarExclusao(id, nome) {
+function confirmarExclusaoCliente(id, nome) {
     if (confirm(`Tem certeza que deseja excluir o cliente "${nome}"?\n\nTodos os respondentes deste cliente também serão removidos.\nEsta ação não pode ser desfeita.`)) {
         var form = document.createElement('form');
         form.method = 'POST';
