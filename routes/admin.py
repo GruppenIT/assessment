@@ -435,7 +435,7 @@ def respondentes_cliente(cliente_id):
     form = ResponenteForm()
     return render_template('admin/respondentes.html', cliente=cliente, respondentes=respondentes, form=form)
 
-@admin_bp.route('/clientes/<int:cliente_id>/respondentes/criar', methods=['POST'])
+@admin_bp.route('/clientes/<int:cliente_id>/respondentes/criar', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def criar_respondente(cliente_id):
@@ -466,6 +466,13 @@ def criar_respondente(cliente_id):
             db.session.add(respondente)
             db.session.commit()
             flash('Respondente criado com sucesso!', 'success')
+            
+            # Se veio de um projeto, redirecionar de volta
+            redirect_projeto = request.args.get('redirect_projeto')
+            if redirect_projeto:
+                return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=redirect_projeto))
+            
+            return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
         except Exception as e:
             db.session.rollback()
             flash('Erro ao criar respondente.', 'danger')
@@ -474,7 +481,11 @@ def criar_respondente(cliente_id):
             for error in errors:
                 flash(f'{field}: {error}', 'danger')
     
-    return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+    # Renderizar o template para GET ou se houve erro no POST
+    return render_template('admin/criar_respondente.html', 
+                         cliente=cliente, 
+                         form=form,
+                         redirect_projeto=request.args.get('redirect_projeto'))
 
 @admin_bp.route('/respondentes/<int:respondente_id>/editar', methods=['POST'])
 @login_required

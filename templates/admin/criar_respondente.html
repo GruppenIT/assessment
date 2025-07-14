@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Criar Respondente - {{ cliente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-user-plus me-2"></i>Criar Novo Respondente
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    {% if redirect_projeto %}
+                        <a href="{{ url_for('projeto.gerenciar_respondentes', projeto_id=redirect_projeto) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Voltar ao Projeto
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Voltar aos Respondentes
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-building me-2"></i>Cliente: {{ cliente.nome }}
+                    </h5>
+                    <small class="text-muted">Criar novo respondente para participar dos assessments</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Nome -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.nome.label(class="form-label fw-bold") }}
+                                {{ form.nome(class="form-control" + (" is-invalid" if form.nome.errors else "")) }}
+                                {% if form.nome.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nome.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Email -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label(class="form-label fw-bold") }}
+                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.email.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Senha -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.senha.label(class="form-label fw-bold") }}
+                                {{ form.senha(class="form-control" + (" is-invalid" if form.senha.errors else "")) }}
+                                {% if form.senha.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.senha.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Mínimo 6 caracteres</small>
+                            </div>
+                            
+                            <!-- Cargo -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.cargo.label(class="form-label") }}
+                                {{ form.cargo(class="form-control" + (" is-invalid" if form.cargo.errors else "")) }}
+                                {% if form.cargo.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.cargo.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Setor -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.setor.label(class="form-label") }}
+                                {{ form.setor(class="form-control" + (" is-invalid" if form.setor.errors else "")) }}
+                                {% if form.setor.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.setor.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Status -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status</label>
+                                <div class="form-check">
+                                    {{ form.ativo(class="form-check-input") }}
+                                    {{ form.ativo.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            {% if redirect_projeto %}
+                                <a href="{{ url_for('projeto.gerenciar_respondentes', projeto_id=redirect_projeto) }}" class="btn btn-secondary me-md-2">
+                                    Cancelar
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}" class="btn btn-secondary me-md-2">
+                                    Cancelar
+                                </a>
+                            {% endif %}
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
