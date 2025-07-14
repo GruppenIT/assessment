@@ -16,7 +16,7 @@
                             </h4>
                             <p class="card-text mb-0">Visualize e gerencie todos os projetos de assessment</p>
                         </div>
-                        <a href="{{ url_for('projeto.criar') }}" class="btn btn-light">
+                        <a href="/admin/projetos/criar" class="btn btn-light">
                             <i class="fas fa-plus me-2"></i>Novo Projeto
                         </a>
                     </div>
@@ -114,7 +114,7 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-info me-1">{{ projeto.tipos_count }}</span>
-                                                {% for tipo in projeto.get_tipos_assessment()[:2] %}
+                                                {% for tipo in projeto.get_tipos_assessment[:2] %}
                                                     <small class="d-block text-muted">{{ tipo.nome }}</small>
                                                 {% endfor %}
                                                 {% if projeto.tipos_count > 2 %}
@@ -144,20 +144,20 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm" role="group">
-                                                    <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" 
+                                                    <a href="/admin/projetos/{{ projeto.id }}/detalhar" 
                                                        class="btn btn-outline-primary" title="Ver detalhes">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="{{ url_for('projeto.editar', projeto_id=projeto.id) }}" 
+                                                    <a href="/admin/projetos/{{ projeto.id }}/editar" 
                                                        class="btn btn-outline-secondary" title="Editar">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <a href="{{ url_for('projeto.gerenciar_respondentes', projeto_id=projeto.id) }}" 
+                                                    <a href="/admin/projetos/{{ projeto.id }}/respondentes" 
                                                        class="btn btn-outline-info" title="Gerenciar respondentes">
                                                         <i class="fas fa-users"></i>
                                                     </a>
                                                     {% if projeto.progresso >= 100 %}
-                                                        <a href="{{ url_for('relatorio.projeto', projeto_id=projeto.id) }}" 
+                                                        <a href="/relatorio/projeto/{{ projeto.id }}" 
                                                            class="btn btn-outline-success" title="Relatório">
                                                             <i class="fas fa-chart-bar"></i>
                                                         </a>
@@ -176,7 +176,7 @@
                             <p class="text-muted mb-4">
                                 Comece criando seu primeiro projeto de assessment.
                             </p>
-                            <a href="{{ url_for('projeto.criar') }}" class="btn btn-primary">
+                            <a href="/admin/projetos/criar" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Criar Primeiro Projeto
                             </a>
                         </div>
