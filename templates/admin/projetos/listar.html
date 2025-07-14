@@ -131,14 +131,41 @@
                     {% if projetos_data %}
                         <div class="table-responsive">
                             <table class="table table-hover">
-                                <thead>
+                                <thead class="table-dark">
                                     <tr>
-                                        <th>Projeto</th>
-                                        <th>Cliente</th>
+                                        <th>
+                                            <a href="?ordem=nome&dir={% if ordem_atual == 'nome' and direcao_atual == 'asc' %}desc{% else %}asc{% endif %}" class="text-white text-decoration-none">
+                                                Projeto
+                                                {% if ordem_atual == 'nome' %}
+                                                    <i class="fas fa-sort-{% if direcao_atual == 'asc' %}up{% else %}down{% endif %}"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="?ordem=cliente&dir={% if ordem_atual == 'cliente' and direcao_atual == 'asc' %}desc{% else %}asc{% endif %}" class="text-white text-decoration-none">
+                                                Cliente
+                                                {% if ordem_atual == 'cliente' %}
+                                                    <i class="fas fa-sort-{% if direcao_atual == 'asc' %}up{% else %}down{% endif %}"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
                                         <th>Tipos de Assessment</th>
                                         <th>Respondentes</th>
                                         <th>Progresso</th>
-                                        <th>Criado em</th>
+                                        <th>
+                                            <a href="?ordem=data_criacao&dir={% if ordem_atual == 'data_criacao' and direcao_atual == 'asc' %}desc{% else %}asc{% endif %}" class="text-white text-decoration-none">
+                                                Criado em
+                                                {% if ordem_atual == 'data_criacao' %}
+                                                    <i class="fas fa-sort-{% if direcao_atual == 'asc' %}up{% else %}down{% endif %}"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
                                         <th>Status</th>
                                         <th>Ações</th>
                                     </tr>

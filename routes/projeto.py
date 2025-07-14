@@ -32,8 +32,10 @@ def auto_login():
 
 
 @projeto_bp.route('/working')
+@login_required  
+@admin_required
 def listar_working():
-    """Lista todos os projetos - VERSÃO PRINCIPAL"""
+    """Lista todos os projetos com ordenação e autenticação"""
     try:
         # Query direto sem ORM - incluir TODOS os projetos ativos
         projetos_raw = db.session.execute(
@@ -54,83 +56,46 @@ def listar_working():
                 'tipos_count': 1
             })
         
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Projetos - Sistema Assessment</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-        </head>
-        <body>
-            <div class="container mt-4">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h4><i class="fas fa-project-diagram me-2"></i>Lista de Projetos ({len(projetos_data)} projetos)</h4>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr><th>ID</th><th>Nome</th><th>Cliente</th><th>Data</th><th>Ações</th></tr>
-                            </thead>
-                            <tbody>
-        """
+        # Obter parâmetro de ordenação
+        ordem = request.args.get('ordem', 'data_criacao')
+        direcao = request.args.get('dir', 'desc')
         
-        for item in projetos_data:
-            p = item['projeto']
-            data_str = p['data_criacao'].strftime('%d/%m/%Y') if p['data_criacao'] else 'N/A'
-            html += f"""
-                                <tr>
-                                    <td>{p['id']}</td>
-                                    <td><strong>{p['nome']}</strong></td>
-                                    <td>{p['cliente']['nome']}</td>
-                                    <td>{data_str}</td>
-                                    <td>
-                                        <a href="/admin/projetos/{p['id']}/detalhar" class="btn btn-sm btn-primary">Ver</a>
-                                        <a href="/admin/projetos/{p['id']}/editar" class="btn btn-sm btn-secondary">Editar</a>
-                                        <button onclick="excluirProjeto({p['id']}, '{p['nome']}')" class="btn btn-sm btn-danger">Excluir</button>
-                                    </td>
-                                </tr>
-            """
+        # Aplicar ordenação
+        if ordem == 'nome':
+            ordem_sql = f"p.nome {direcao.upper()}"
+        elif ordem == 'cliente':
+            ordem_sql = f"c.nome {direcao.upper()}"
+        elif ordem == 'id':
+            ordem_sql = f"p.id {direcao.upper()}"
+        else:  # data_criacao (padrão)
+            ordem_sql = f"p.data_criacao {direcao.upper()}"
         
-        html += """
-                            </tbody>
-                        </table>
-                        <div class="mt-3">
-                            <a href="/admin/projetos/criar" class="btn btn-success">Criar Novo Projeto</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <script>
-            function excluirProjeto(id, nome) {
-                if (confirm('Tem certeza que deseja excluir o projeto "' + nome + '"? Esta ação não pode ser desfeita.')) {
-                    fetch('/admin/projetos/' + id + '/excluir', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            alert('Projeto excluído com sucesso!');
-                            location.reload();
-                        } else {
-                            alert('Erro ao excluir projeto. Tente novamente.');
-                        }
-                    })
-                    .catch(error => {
-                        alert('Erro de conexão. Tente novamente.');
-                    });
-                }
-            }
-            </script>
-        </body>
-        </html>
-        """
+        # Nova query com ordenação
+        projetos_raw_ordenados = db.session.execute(
+            db.text(f"SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY {ordem_sql}")
+        ).fetchall()
         
-        return html
+        # Recriar dados com ordenação
+        projetos_data = []
+        for p in projetos_raw_ordenados:
+            projetos_data.append({
+                'projeto': {
+                    'id': p.id,
+                    'nome': p.nome,
+                    'descricao': p.descricao,
+                    'data_criacao': p.data_criacao,
+                    'cliente': {'nome': p.cliente_nome}
+                },
+                'respondentes_count': 1,
+                'tipos_count': 1
+            })
+
+        return render_template('admin/projetos/listar.html', 
+                             projetos_data=projetos_data,
+                             clientes=[],
+                             cliente_selecionado=None,
+                             ordem_atual=ordem,
+                             direcao_atual=direcao)
         
     except Exception as e:
         return f"<h1>Erro: {str(e)}</h1>"
@@ -508,6 +473,8 @@ def desativar(projeto_id):
     return redirect(url_for('projeto.listar'))
 
 @projeto_bp.route('/<int:projeto_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
 def excluir(projeto_id):
     """Exclui um projeto permanentemente"""
     projeto = Projeto.query.get_or_404(projeto_id)

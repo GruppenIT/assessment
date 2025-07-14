@@ -82,11 +82,7 @@
                                                     <i class="fas fa-project-diagram"></i>
                                                 </a>
                                                 
-                                                <!-- Respondentes do cliente -->
-                                                <a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}" 
-                                                   class="btn btn-outline-info btn-sm" title="Respondentes">
-                                                    <i class="fas fa-users"></i>
-                                                </a>
+                                                <!-- Opção removida: respondentes agora são associados ao projeto -->
                                                 
                                                 <!-- Criar novo projeto para cliente -->
                                                 <a href="{{ url_for('projeto.criar') }}?cliente={{ cliente.id }}" 

@@ -1194,34 +1194,9 @@ def upload_logo():
 @login_required
 @admin_required
 def projetos():
-    """Lista todos os projetos do sistema"""
-    import logging
-    try:
-        from models.projeto import Projeto
-        projetos = Projeto.query.filter_by(ativo=True).order_by(Projeto.data_criacao.desc()).all()
-        
-        # Adicionar dados calculados para cada projeto
-        projetos_data = []
-        for projeto in projetos:
-            projetos_data.append({
-                'id': projeto.id,
-                'nome': projeto.nome,
-                'descricao': projeto.descricao,
-                'cliente': projeto.cliente,
-                'data_criacao': projeto.data_criacao,
-                'ativo': projeto.ativo,
-                'progresso': projeto.get_progresso_geral(),
-                'respondentes_count': len(projeto.get_respondentes_ativos()),
-                'tipos_count': len(projeto.get_tipos_assessment()),
-                'get_tipos_assessment': projeto.get_tipos_assessment()
-            })
-        
-        return render_template('admin/projetos/listar.html', projetos=projetos_data)
-        
-    except Exception as e:
-        logging.error(f"Erro ao carregar projetos: {e}")
-        flash('Erro ao carregar lista de projetos.', 'danger')
-        return redirect(url_for('admin.dashboard'))
+    """Redireciona para o blueprint de projetos"""
+    from flask import redirect, url_for
+    return redirect(url_for('projeto.listar'))
 
 
 
