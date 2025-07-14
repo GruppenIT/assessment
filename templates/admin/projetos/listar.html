@@ -48,7 +48,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-check-circle text-success mb-2" style="font-size: 2rem;"></i>
-                    <h5 class="card-title">{{ projetos_data|selectattr('concluido')|list|length }}</h5>
+                    <h5 class="card-title">0</h5>
                     <p class="card-text text-muted">Projetos Concluídos</p>
                 </div>
             </div>
@@ -66,7 +66,7 @@
             <div class="card text-center">
                 <div class="card-body">
                     <i class="fas fa-chart-line text-warning mb-2" style="font-size: 2rem;"></i>
-                    <h5 class="card-title">{{ "%.1f"|format((projetos_data|sum(attribute='progresso')/projetos_data|length) if projetos_data else 0) }}%</h5>
+                    <h5 class="card-title">0.0%</h5>
                     <p class="card-text text-muted">Progresso Médio</p>
                 </div>
             </div>
@@ -151,12 +151,7 @@
                                             </td>
                                             <td>
                                                 <span class="badge bg-info me-1">{{ projeto_data.tipos_count }}</span>
-                                                {% for tipo in projeto.get_tipos_assessment()[:2] %}
-                                                    <small class="d-block text-muted">{{ tipo.nome }}</small>
-                                                {% endfor %}
-                                                {% if projeto_data.tipos_count > 2 %}
-                                                    <small class="text-muted">... e mais {{ projeto_data.tipos_count - 2 }}</small>
-                                                {% endif %}
+                                                <small class="d-block text-muted">Assessment disponível</small>
                                             </td>
                                             <td>
                                                 <span class="badge bg-success">{{ projeto_data.respondentes_count }}</span>
@@ -165,10 +160,10 @@
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <div class="progress me-2" style="width: 80px; height: 6px;">
-                                                        <div class="progress-bar {% if projeto_data.progresso >= 100 %}bg-success{% elif projeto_data.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                                             style="width: {{ projeto_data.progresso }}%"></div>
+                                                        <div class="progress-bar bg-secondary" 
+                                                             style="width: 0%"></div>
                                                     </div>
-                                                    <small class="text-muted">{{ projeto_data.progresso }}%</small>
+                                                    <small class="text-muted">0%</small>
                                                 </div>
                                             </td>
                                             <td>{{ projeto.data_criacao.strftime('%d/%m/%Y') }}</td>
@@ -193,12 +188,10 @@
                                                        class="btn btn-outline-info" title="Gerenciar respondentes">
                                                         <i class="fas fa-users"></i>
                                                     </a>
-                                                    {% if projeto_data.progresso >= 100 %}
-                                                        <a href="/relatorio/projeto/{{ projeto.id }}" 
-                                                           class="btn btn-outline-success" title="Relatório">
-                                                            <i class="fas fa-chart-bar"></i>
-                                                        </a>
-                                                    {% endif %}
+                                                    <a href="/relatorio/projeto/{{ projeto.id }}" 
+                                                       class="btn btn-outline-success" title="Relatório">
+                                                        <i class="fas fa-chart-bar"></i>
+                                                    </a>
                                                     
                                                     <!-- Dropdown para ações perigosas -->
                                                     <div class="btn-group" role="group">
