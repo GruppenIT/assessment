@@ -459,6 +459,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Finalization button event listener
+    document.getElementById('btn-finalizar').addEventListener('click', function() {
+        const button = this;
+        
+        if (confirm('Tem certeza que deseja finalizar o assessment?\n\nApós finalizar, você não poderá mais alterar as respostas.')) {
+            // Disable button and show loading
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Finalizando...';
+            
+            fetch('/respondente/assessment/finalizar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    alert('Assessment finalizado com sucesso!\n\nObrigado por participar da avaliação.');
+                    
+                    // Redirect to dashboard
+                    window.location.href = '/respondente/dashboard';
+                } else {
+                    alert('Erro ao finalizar assessment: ' + data.message);
+                    
+                    // Restore button
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-check me-2"></i>Finalizar Assessment';
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao finalizar assessment. Tente novamente.');
+                
+                // Restore button
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check me-2"></i>Finalizar Assessment';
+            });
+        }
+    });
+    
     // Scroll to domain function
     window.scrollToDomain = function(domainId) {
         const element = document.getElementById(`domain-${domainId}`);

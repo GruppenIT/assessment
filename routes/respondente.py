@@ -227,6 +227,50 @@ def salvar_resposta():
         print(f"DEBUG: Erro ao salvar resposta: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@respondente_bp.route('/assessment/finalizar', methods=['POST'])
+@login_required
+def finalizar_assessment():
+    """Finalizar assessment do respondente"""
+    try:
+        if not isinstance(current_user, Respondente):
+            return jsonify({'success': False, 'message': 'Usuário não autorizado'}), 401
+        
+        # Verificar se o respondente tem respostas
+        total_respostas = Resposta.query.filter_by(respondente_id=current_user.id).count()
+        
+        if total_respostas == 0:
+            return jsonify({'success': False, 'message': 'Nenhuma resposta encontrada'}), 400
+        
+        # Verificar se tem assessments completos
+        tipos_assessment = current_user.cliente.get_tipos_assessment()
+        algum_completo = False
+        
+        for tipo in tipos_assessment:
+            progresso = current_user.get_progresso_assessment(tipo.id)
+            if progresso['percentual'] >= 100:
+                algum_completo = True
+                break
+        
+        if not algum_completo:
+            return jsonify({'success': False, 'message': 'Você deve completar pelo menos um assessment antes de finalizar'}), 400
+        
+        # Atualizar data de conclusão do respondente
+        current_user.data_conclusao = datetime.utcnow()
+        db.session.commit()
+        
+        print(f"DEBUG: Assessment finalizado pelo respondente {current_user.nome} - {current_user.email}")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Assessment finalizado com sucesso',
+            'data_conclusao': current_user.data_conclusao.isoformat()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"DEBUG: Erro ao finalizar assessment: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @respondente_bp.route('/logout')
 @login_required
 def logout():

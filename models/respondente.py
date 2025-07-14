@@ -18,6 +18,7 @@ class Respondente(UserMixin, db.Model):
     ativo = db.Column(db.Boolean, default=True, comment='Se o respondente está ativo')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')
     ultimo_acesso = db.Column(db.DateTime, comment='Último acesso do respondente')
+    data_conclusao = db.Column(db.DateTime, comment='Data de conclusão do assessment')
     
     # Relacionamentos
     respostas = db.relationship('Resposta', backref='respondente', lazy=True, cascade='all, delete-orphan')
@@ -72,10 +73,9 @@ class Respondente(UserMixin, db.Model):
         """Respondentes nunca são admins"""
         return False
     
-    def assessment_concluido(self):
-        """Verifica se respondente concluiu pelo menos um assessment"""
-        from models.resposta import Resposta
-        return Resposta.query.filter_by(respondente_id=self.id).count() > 0
+    def assessment_finalizado(self):
+        """Verifica se o respondente finalizou o assessment"""
+        return self.data_conclusao is not None
     
     def to_dict(self):
         """Converte o respondente para dicionário"""
@@ -88,5 +88,6 @@ class Respondente(UserMixin, db.Model):
             'setor': self.setor,
             'ativo': self.ativo,
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
-            'ultimo_acesso': self.ultimo_acesso.isoformat() if self.ultimo_acesso else None
+            'ultimo_acesso': self.ultimo_acesso.isoformat() if self.ultimo_acesso else None,
+            'data_conclusao': self.data_conclusao.isoformat() if self.data_conclusao else None
         }
