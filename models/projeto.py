@@ -78,8 +78,8 @@ class Projeto(db.Model):
                 Pergunta.ativo == True
             ).count()
             
+            # Contar TODAS as respostas do projeto (colaborativo)
             respostas = Resposta.query.filter_by(
-                respondente_id=respondente_id,
                 projeto_id=self.id
             ).join(Pergunta).join(Dominio).filter(
                 Dominio.tipo_assessment_id == tipo.id

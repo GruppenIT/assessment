@@ -116,17 +116,17 @@ def assessment(projeto_id, tipo_assessment_id):
     tipo_assessment = TipoAssessment.query.get_or_404(tipo_assessment_id)
     dominios = tipo_assessment.get_dominios_ativos()
     
-    # Buscar respostas existentes do respondente PARA ESTE PROJETO específico
+    # Buscar TODAS as respostas do projeto (colaborativo entre respondentes)
     respostas_existentes = {}
     from models.resposta import Resposta
     respostas = Resposta.query.filter_by(
-        respondente_id=current_user.id,
-        projeto_id=projeto_id  # Filtrar por projeto específico
+        projeto_id=projeto_id  # Todas as respostas do projeto, não só do respondente atual
     ).all()
     for resposta in respostas:
         respostas_existentes[resposta.pergunta_id] = {
             'nota': resposta.nota,
-            'comentario': resposta.comentario
+            'comentario': resposta.comentario,
+            'respondente_nome': resposta.respondente.nome if resposta.respondente else 'Desconhecido'
         }
     
     # Criar forms_data para compatibilidade com o template
@@ -137,6 +137,7 @@ def assessment(projeto_id, tipo_assessment_id):
                 'pergunta_id': pergunta.id,
                 'nota': respostas_existentes.get(pergunta.id, {}).get('nota', 0),
                 'comentario': respostas_existentes.get(pergunta.id, {}).get('comentario', ''),
+                'respondente_nome': respostas_existentes.get(pergunta.id, {}).get('respondente_nome', ''),
                 'resposta': respostas_existentes.get(pergunta.id) if pergunta.id in respostas_existentes else None
             }
 
@@ -177,11 +178,10 @@ def salvar_resposta():
         if not projeto_respondente:
             return jsonify({'success': False, 'message': 'Acesso negado ao projeto'}), 403
         
-        # Buscar resposta existente PARA ESTE PROJETO específico
+        # Buscar resposta existente para a pergunta (qualquer respondente do projeto)
         resposta = Resposta.query.filter_by(
-            respondente_id=current_user.id,
             pergunta_id=pergunta_id,
-            projeto_id=projeto_id  # Filtrar por projeto específico
+            projeto_id=projeto_id  # Qualquer resposta do projeto para esta pergunta
         ).first()
         
         # Se nota for None, remover resposta (funcionalidade de "desresponder")
