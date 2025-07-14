@@ -993,11 +993,16 @@ def configuracoes():
             config_form.cor_fundo.data = cores.get('fundo', '#ffffff')
             config_form.cor_texto.data = cores.get('texto', '#212529')
             
-            for i in range(6):
-                nome_field = getattr(config_form, f'escala_{i}_nome')
-                cor_field = getattr(config_form, f'escala_{i}_cor')
-                nome_field.data = escala[i]['nome']
-                cor_field.data = escala[i]['cor']
+            try:
+                for i in range(6):
+                    nome_field = getattr(config_form, f'escala_{i}_nome', None)
+                    cor_field = getattr(config_form, f'escala_{i}_cor', None)
+                    if nome_field and cor_field and i in escala:
+                        nome_field.data = escala[i]['nome']
+                        cor_field.data = escala[i]['cor']
+            except Exception as e:
+                logging.warning(f"Erro ao carregar escala: {e}")
+                # Continuar mesmo se a escala der erro
                 
         except Exception as e:
             import logging
@@ -1046,25 +1051,27 @@ def salvar_configuracoes():
             import logging
             logging.info(f"Salvando configurações")
             
-            # Salvar de forma simples e direta
+            # Salvar apenas as cores básicas primeiro (mais simples)
             configuracoes = [
                 ('cor_primaria', form.cor_primaria.data),
                 ('cor_secundaria', form.cor_secundaria.data),
                 ('cor_fundo', form.cor_fundo.data),
                 ('cor_texto', form.cor_texto.data),
-                ('escala_0_nome', form.escala_0_nome.data),
-                ('escala_1_nome', form.escala_1_nome.data),
-                ('escala_2_nome', form.escala_2_nome.data),
-                ('escala_3_nome', form.escala_3_nome.data),
-                ('escala_4_nome', form.escala_4_nome.data),
-                ('escala_5_nome', form.escala_5_nome.data),
-                ('escala_0_cor', form.escala_0_cor.data),
-                ('escala_1_cor', form.escala_1_cor.data),
-                ('escala_2_cor', form.escala_2_cor.data),
-                ('escala_3_cor', form.escala_3_cor.data),
-                ('escala_4_cor', form.escala_4_cor.data),
-                ('escala_5_cor', form.escala_5_cor.data),
             ]
+            
+            # Tentar salvar escala também (se existir)
+            try:
+                escala_configs = []
+                for i in range(6):
+                    nome_field = getattr(form, f'escala_{i}_nome', None)
+                    cor_field = getattr(form, f'escala_{i}_cor', None)
+                    if nome_field and cor_field:
+                        escala_configs.append((f'escala_{i}_nome', nome_field.data))
+                        escala_configs.append((f'escala_{i}_cor', cor_field.data))
+                configuracoes.extend(escala_configs)
+            except Exception as e:
+                logging.warning(f"Erro ao processar escala: {e}")
+                # Continuar mesmo se a escala der erro
             
             # Salvar cada configuração usando SQL direto
             for chave, valor in configuracoes:

@@ -123,6 +123,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    <p class="text-muted mb-3">Configure os nomes e cores para cada nível da escala de maturidade:</p>
                     <form method="POST" action="{{ url_for('admin.salvar_configuracoes') }}">
                         {{ config_form.hidden_tag() }}
                         
