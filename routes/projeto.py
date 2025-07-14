@@ -170,7 +170,9 @@ def detalhar(projeto_id):
 def gerenciar_respondentes(projeto_id):
     """Gerencia respondentes do projeto"""
     projeto = Projeto.query.get_or_404(projeto_id)
-    form = ProjetoResponenteForm()
+    
+    from forms.projeto_forms import AdicionarRespondenteForm
+    form = AdicionarRespondenteForm(cliente_id=projeto.cliente_id, projeto_id=projeto.id)
     
     # Respondentes atuais do projeto (objetos ProjetoRespondente)
     projeto_respondentes = ProjetoRespondente.query.filter_by(
