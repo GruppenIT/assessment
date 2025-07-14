@@ -42,41 +42,54 @@ def criar():
     form = ProjetoForm()
     novo_cliente_form = NovoClienteForm()
     
-    if form.validate_on_submit():
-        try:
-            logging.info(f"Tipos de assessment selecionados: {form.tipos_assessment.data}")
+    if request.method == 'POST':
+        # Validação manual mais simples
+        nome = request.form.get('nome', '').strip()
+        cliente_id = request.form.get('cliente_id')
+        tipos_ids = request.form.getlist('tipos_assessment')
+        descricao = request.form.get('descricao', '').strip()
+        
+        logging.info(f"Dados recebidos - tipos: {tipos_ids}, nome: {nome}, cliente: {cliente_id}")
+        
+        # Validações
+        errors = []
+        if not nome or len(nome) < 2:
+            errors.append('Nome do projeto é obrigatório (mínimo 2 caracteres)')
+        if not cliente_id:
+            errors.append('Cliente é obrigatório')
+        if not tipos_ids:
+            errors.append('Selecione pelo menos um tipo de assessment')
             
-            # Criar projeto
-            projeto = Projeto(
-                nome=form.nome.data,
-                cliente_id=form.cliente_id.data,
-                descricao=form.descricao.data
-            )
-            db.session.add(projeto)
-            db.session.flush()  # Para obter o ID do projeto
-            
-            # Associar tipos de assessment
-            for tipo_id in form.tipos_assessment.data:
-                projeto_assessment = ProjetoAssessment(
-                    projeto_id=projeto.id,
-                    tipo_assessment_id=tipo_id
+        if not errors:
+            try:
+                # Criar projeto
+                projeto = Projeto(
+                    nome=nome,
+                    cliente_id=int(cliente_id),
+                    descricao=descricao
                 )
-                db.session.add(projeto_assessment)
-            
-            db.session.commit()
-            flash(f'Projeto "{projeto.nome}" criado com sucesso!', 'success')
-            return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
-            
-        except Exception as e:
-            db.session.rollback()
-            logging.error(f"Erro ao criar projeto: {e}")
-            flash('Erro ao criar projeto. Tente novamente.', 'danger')
-    else:
-        # Log dos erros de validação
-        logging.error(f"Erros de validação: {form.errors}")
-        for field, errors in form.errors.items():
+                db.session.add(projeto)
+                db.session.flush()  # Para obter o ID do projeto
+                
+                # Associar tipos de assessment
+                for tipo_id in tipos_ids:
+                    projeto_assessment = ProjetoAssessment(
+                        projeto_id=projeto.id,
+                        tipo_assessment_id=int(tipo_id)
+                    )
+                    db.session.add(projeto_assessment)
+                
+                db.session.commit()
+                flash(f'Projeto "{projeto.nome}" criado com sucesso!', 'success')
+                return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Erro ao criar projeto: {e}")
+                flash('Erro ao criar projeto. Tente novamente.', 'danger')
+        else:
+            # Mostrar erros de validação
             for error in errors:
-                flash(f'{field}: {error}', 'danger')
+                flash(error, 'danger')
     
     return render_template('admin/projetos/criar.html', 
                          form=form, 
@@ -369,6 +382,54 @@ def editar(projeto_id):
                          form=form, 
                          projeto=projeto,
                          novo_cliente_form=novo_cliente_form)
+
+@projeto_bp.route('/<int:projeto_id>/desativar', methods=['POST'])
+@login_required
+@admin_required
+def desativar(projeto_id):
+    """Desativa um projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    try:
+        projeto.ativo = False
+        db.session.commit()
+        flash(f'Projeto "{projeto.nome}" desativado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao desativar projeto: {e}")
+        flash('Erro ao desativar projeto.', 'danger')
+    
+    return redirect(url_for('projeto.listar'))
+
+@projeto_bp.route('/<int:projeto_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir(projeto_id):
+    """Exclui um projeto permanentemente"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    try:
+        nome_projeto = projeto.nome
+        
+        # Remover todas as associações primeiro
+        ProjetoRespondente.query.filter_by(projeto_id=projeto.id).delete()
+        ProjetoAssessment.query.filter_by(projeto_id=projeto.id).delete()
+        
+        # Remover respostas relacionadas (se existirem)
+        from models.resposta import Resposta
+        Resposta.query.filter_by(projeto_id=projeto.id).delete()
+        
+        # Remover o projeto
+        db.session.delete(projeto)
+        db.session.commit()
+        
+        flash(f'Projeto "{nome_projeto}" excluído permanentemente!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao excluir projeto: {e}")
+        flash('Erro ao excluir projeto. Tente novamente.', 'danger')
+    
+    return redirect(url_for('projeto.listar'))
 
 @projeto_bp.route('/<int:projeto_id>/desativar', methods=['POST'])
 @login_required

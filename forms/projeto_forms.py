@@ -12,6 +12,16 @@ class MultiCheckboxField(SelectMultipleField):
     """Campo para múltiplas seleções com checkboxes"""
     widget = ListWidget(prefix_label=False)
     option_widget = CheckboxInput()
+    
+    def process_formdata(self, valuelist):
+        """Processa dados do formulário para garantir que funcione corretamente"""
+        if valuelist:
+            try:
+                self.data = [self.coerce(x) for x in valuelist if x]
+            except (ValueError, TypeError):
+                self.data = []
+        else:
+            self.data = []
 
 
 class ProjetoForm(FlaskForm):
@@ -25,15 +35,7 @@ class ProjetoForm(FlaskForm):
         DataRequired(message='Cliente é obrigatório')
     ], coerce=int, choices=[])
     
-    tipos_assessment = MultiCheckboxField('Tipos de Assessment', validators=[
-        DataRequired(message='Selecione pelo menos um tipo de assessment')
-    ], coerce=int, choices=[])
-    
-    def validate_tipos_assessment(self, field):
-        """Validação customizada para tipos de assessment"""
-        if not field.data or len(field.data) == 0:
-            raise ValidationError('Selecione pelo menos um tipo de assessment.')
-        return True
+    tipos_assessment = MultiCheckboxField('Tipos de Assessment', coerce=int, choices=[])
     
     descricao = TextAreaField('Descrição', validators=[
         Optional(),
