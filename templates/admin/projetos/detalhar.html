@@ -29,7 +29,10 @@
                                 <a href="{{ url_for('projeto.editar', projeto_id=projeto.id) }}" class="btn btn-light btn-sm">
                                     <i class="fas fa-edit me-1"></i>Editar
                                 </a>
-                                <a href="{{ url_for('projeto.listar') }}" class="btn btn-outline-light btn-sm">
+                                <a href="{{ url_for('projeto.gerenciar_respondentes', projeto_id=projeto.id) }}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-users me-1"></i>Respondentes
+                                </a>
+                                <a href="{{ url_for('admin.projetos') }}" class="btn btn-outline-light btn-sm">
                                     <i class="fas fa-arrow-left me-1"></i>Voltar
                                 </a>
                             </div>

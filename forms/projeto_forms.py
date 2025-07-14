@@ -1,13 +1,23 @@
+"""
+Formulários para gerenciamento de projetos
+"""
+
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import StringField, SelectField, TextAreaField, SubmitField, SelectMultipleField
+from wtforms import StringField, TextAreaField, SelectField, SelectMultipleField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional
-from wtforms.widgets import TextArea, Select
+from wtforms.widgets import CheckboxInput, ListWidget
+
+
+class MultiCheckboxField(SelectMultipleField):
+    """Campo para múltiplas seleções com checkboxes"""
+    widget = ListWidget(prefix_label=False)
+    option_widget = CheckboxInput()
+
 
 class ProjetoForm(FlaskForm):
-    """Formulário para cadastro/edição de projetos"""
+    """Formulário para criação/edição de projetos"""
     nome = StringField('Nome do Projeto', validators=[
-        DataRequired(message='Nome é obrigatório'),
+        DataRequired(message='Nome do projeto é obrigatório'),
         Length(min=2, max=200, message='Nome deve ter entre 2 e 200 caracteres')
     ], render_kw={'placeholder': 'Digite o nome do projeto'})
     
@@ -15,90 +25,61 @@ class ProjetoForm(FlaskForm):
         DataRequired(message='Cliente é obrigatório')
     ], coerce=int, choices=[])
     
-    tipos_assessment = SelectMultipleField('Tipos de Assessment', validators=[
+    tipos_assessment = MultiCheckboxField('Tipos de Assessment', validators=[
         DataRequired(message='Selecione pelo menos um tipo de assessment')
     ], coerce=int, choices=[])
     
     descricao = TextAreaField('Descrição', validators=[
         Optional(),
         Length(max=1000, message='Descrição deve ter no máximo 1000 caracteres')
-    ], render_kw={'placeholder': 'Digite uma descrição do projeto (opcional)', 'rows': 3})
+    ], render_kw={'placeholder': 'Digite uma descrição para o projeto (opcional)', 'rows': 4})
     
     submit = SubmitField('Salvar Projeto')
     
     def __init__(self, *args, **kwargs):
         super(ProjetoForm, self).__init__(*args, **kwargs)
         
-        # Carregar clientes ativos
+        # Popular clientes
         from models.cliente import Cliente
-        self.cliente_id.choices = [(0, 'Selecione um cliente')] + [
-            (c.id, c.nome) for c in Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-        ]
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+        self.cliente_id.choices = [(c.id, c.nome) for c in clientes]
         
-        # Carregar tipos de assessment ativos
+        # Popular tipos de assessment
         from models.tipo_assessment import TipoAssessment
-        self.tipos_assessment.choices = [
-            (t.id, f"{t.nome} v{t.versao}") for t in TipoAssessment.query.filter_by(ativo=True).order_by(TipoAssessment.nome, TipoAssessment.versao).all()
-        ]
+        tipos = TipoAssessment.query.filter_by(ativo=True).order_by(TipoAssessment.ordem).all()
+        self.tipos_assessment.choices = [(t.id, t.nome) for t in tipos]
 
-class NovoClienteForm(FlaskForm):
-    """Formulário simplificado para criar cliente durante criação do projeto"""
-    nome = StringField('Nome do Cliente', validators=[
-        DataRequired(message='Nome é obrigatório'),
-        Length(min=2, max=200, message='Nome deve ter entre 2 e 200 caracteres')
-    ], render_kw={'placeholder': 'Digite o nome do cliente'})
-    
-    submit = SubmitField('Criar Cliente')
 
-class ProjetoResponenteForm(FlaskForm):
+class AdicionarRespondenteForm(FlaskForm):
     """Formulário para adicionar respondente ao projeto"""
-    nome = StringField('Nome do Respondente', validators=[
-        DataRequired(message='Nome é obrigatório'),
-        Length(min=2, max=100, message='Nome deve ter entre 2 e 100 caracteres')
-    ], render_kw={'placeholder': 'Digite o nome do respondente'})
+    respondente_id = SelectField('Respondente', validators=[
+        DataRequired(message='Selecione um respondente')
+    ], coerce=int, choices=[])
     
-    email = StringField('Email', validators=[
-        DataRequired(message='Email é obrigatório'),
-        Length(max=120, message='Email deve ter no máximo 120 caracteres')
-    ], render_kw={'placeholder': 'Digite o email do respondente'})
+    submit = SubmitField('Adicionar ao Projeto')
     
-    senha = StringField('Senha', validators=[
-        DataRequired(message='Senha é obrigatória'),
-        Length(min=6, message='Senha deve ter pelo menos 6 caracteres')
-    ], render_kw={'placeholder': 'Digite uma senha'})
-    
-    cargo = StringField('Cargo', validators=[
-        Optional(),
-        Length(max=100, message='Cargo deve ter no máximo 100 caracteres')
-    ], render_kw={'placeholder': 'Cargo do respondente'})
-    
-    setor = StringField('Setor', validators=[
-        Optional(),
-        Length(max=100, message='Setor deve ter no máximo 100 caracteres')
-    ], render_kw={'placeholder': 'Setor/departamento'})
-    
-    submit = SubmitField('Adicionar Respondente')
-
-class AssessmentCSVForm(FlaskForm):
-    """Formulário para importação de assessment via CSV"""
-    arquivo_csv = FileField('Arquivo CSV', validators=[
-        FileRequired(message='Selecione um arquivo CSV'),
-        FileAllowed(['csv'], 'Apenas arquivos CSV são permitidos')
-    ])
-    
-    nome_assessment = StringField('Nome do Assessment', validators=[
-        DataRequired(message='Nome é obrigatório'),
-        Length(min=2, max=100, message='Nome deve ter entre 2 e 100 caracteres')
-    ], render_kw={'placeholder': 'Nome do tipo de assessment'})
-    
-    versao = StringField('Versão', validators=[
-        DataRequired(message='Versão é obrigatória'),
-        Length(min=1, max=10, message='Versão deve ter entre 1 e 10 caracteres')
-    ], render_kw={'placeholder': 'Ex: 1.0, 2.1'})
-    
-    descricao = TextAreaField('Descrição', validators=[
-        Optional(),
-        Length(max=500, message='Descrição deve ter no máximo 500 caracteres')
-    ], render_kw={'placeholder': 'Descrição do assessment (opcional)', 'rows': 3})
-    
-    submit = SubmitField('Importar Assessment')
+    def __init__(self, cliente_id=None, projeto_id=None, *args, **kwargs):
+        super(AdicionarRespondenteForm, self).__init__(*args, **kwargs)
+        
+        if cliente_id:
+            from models.respondente import Respondente
+            from models.projeto import ProjetoRespondente
+            
+            # Buscar respondentes do cliente que não estão no projeto
+            respondentes_no_projeto = []
+            if projeto_id:
+                respondentes_no_projeto = ProjetoRespondente.query.filter_by(
+                    projeto_id=projeto_id,
+                    ativo=True
+                ).with_entities(ProjetoRespondente.respondente_id).all()
+                respondentes_no_projeto = [r[0] for r in respondentes_no_projeto]
+            
+            respondentes = Respondente.query.filter_by(
+                cliente_id=cliente_id,
+                ativo=True
+            ).filter(~Respondente.id.in_(respondentes_no_projeto)).order_by(Respondente.nome).all()
+            
+            self.respondente_id.choices = [(r.id, f"{r.nome} ({r.email})") for r in respondentes]
+            
+            if not self.respondente_id.choices:
+                self.respondente_id.choices = [('', 'Nenhum respondente disponível')]

@@ -1177,3 +1177,27 @@ def upload_logo():
                 flash(f'{field}: {error}', 'danger')
     
     return redirect(url_for('admin.configuracoes'))
+
+
+@admin_bp.route('/projetos')
+@login_required
+@admin_required
+def projetos():
+    """Lista todos os projetos do sistema"""
+    import logging
+    try:
+        from models.projeto import Projeto
+        projetos = Projeto.query.filter_by(ativo=True).order_by(Projeto.data_criacao.desc()).all()
+        
+        # Adicionar dados calculados para cada projeto
+        for projeto in projetos:
+            projeto.progresso = projeto.get_progresso_geral()
+            projeto.respondentes_count = len(projeto.get_respondentes_ativos())
+            projeto.tipos_count = len(projeto.get_tipos_assessment())
+        
+        return render_template('admin/projetos/listar.html', projetos=projetos)
+        
+    except Exception as e:
+        logging.error(f"Erro ao carregar projetos: {e}")
+        flash('Erro ao carregar lista de projetos.', 'danger')
+        return redirect(url_for('admin.dashboard'))

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Respondentes - {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="card-title mb-1">
+                                <i class="fas fa-users me-2"></i>Gerenciar Respondentes
+                            </h4>
+                            <p class="card-text mb-0">{{ projeto.nome }}</p>
+                        </div>
+                        <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar ao Projeto
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Adicionar Respondente -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Adicionar Respondente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('projeto.adicionar_respondente', projeto_id=projeto.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Respondente -->
+                        <div class="mb-3">
+                            {{ form.respondente_id.label(class="form-label fw-bold") }}
+                            {{ form.respondente_id(class="form-select" + (" is-invalid" if form.respondente_id.errors else "")) }}
+                            {% if form.respondente_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.respondente_id.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Selecione um respondente do cliente {{ projeto.cliente.nome }}
+                            </small>
+                        </div>
+
+                        {{ form.submit(class="btn btn-primary w-100") }}
+                    </form>
+                    
+                    <!-- Link para criar novo respondente -->
+                    <hr>
+                    <div class="text-center">
+                        <a href="{{ url_for('cliente.adicionar_respondente', cliente_id=projeto.cliente.id) }}?redirect_projeto={{ projeto.id }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>Criar Novo Respondente
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Respondentes -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Respondentes do Projeto
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if respondentes_projeto %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Respondente</th>
+                                        <th>Email</th>
+                                        <th>Cargo</th>
+                                        <th>Progresso</th>
+                                        <th>Data de Associação</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pr in respondentes_projeto %}
+                                        {% set respondente = pr.respondente %}
+                                        {% set progresso = projeto.get_progresso_respondente(respondente.id) %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                                        {{ respondente.nome[0].upper() }}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">{{ respondente.nome }}</div>
+                                                        {% if respondente.setor %}
+                                                            <small class="text-muted">{{ respondente.setor }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ respondente.email }}</td>
+                                            <td>{{ respondente.cargo or '-' }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 80px; height: 6px;">
+                                                        <div class="progress-bar {% if progresso >= 100 %}bg-success{% elif progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                             style="width: {{ progresso }}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">{{ progresso }}%</small>
+                                                </div>
+                                            </td>
+                                            <td>{{ pr.data_associacao.strftime('%d/%m/%Y') }}</td>
+                                            <td>
+                                                {% if pr.ativo %}
+                                                    <span class="badge bg-success">Ativo</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inativo</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if pr.ativo %}
+                                                    <form method="POST" action="{{ url_for('projeto.remover_respondente', projeto_id=projeto.id, respondente_id=respondente.id) }}" 
+                                                          style="display: inline-block;" 
+                                                          onsubmit="return confirm('Tem certeza que deseja remover este respondente do projeto?')">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                            <i class="fas fa-times me-1"></i>Remover
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted">Nenhum respondente associado</h5>
+                            <p class="text-muted">
+                                Adicione respondentes para que possam participar dos assessments deste projeto.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-users text-primary mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ respondentes_projeto|length }}</h5>
+                    <p class="card-text text-muted">Total de Respondentes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-check-circle text-success mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ respondentes_ativos }}</h5>
+                    <p class="card-text text-muted">Respondentes Ativos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clipboard-list text-info mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ tipos_assessment|length }}</h5>
+                    <p class="card-text text-muted">Tipos de Assessment</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line text-warning mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ progresso_geral }}%</h5>
+                    <p class="card-text text-muted">Progresso Geral</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

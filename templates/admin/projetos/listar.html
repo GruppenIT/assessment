@@ -1,174 +1,197 @@
 {% extends "base.html" %}
 
-{% block title %}Projetos - {{ nome_sistema }}{% endblock %}
+{% block title %}Gerenciar Projetos{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
         <div class="col-12">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2><i class="fas fa-project-diagram text-primary me-2"></i>Projetos</h2>
-                    <p class="text-muted">Gerencie os projetos de assessment dos clientes</p>
-                </div>
-                <a href="{{ url_for('projeto.criar') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Novo Projeto
-                </a>
-            </div>
-
-            <!-- Projetos -->
-            {% if projetos_data %}
-                <div class="row">
-                    {% for item in projetos_data %}
-                        {% set projeto = item.projeto %}
-                        {% set progresso = item.progresso %}
-                        {% set concluido = item.concluido %}
-                        {% set respondentes_count = item.respondentes_count %}
-                        {% set tipos_count = item.tipos_count %}
-                        
-                        <div class="col-lg-6 col-xl-4 mb-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-header bg-primary text-white">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="card-title mb-0">
-                                            <i class="fas fa-project-diagram me-2"></i>{{ projeto.nome }}
-                                        </h6>
-                                        {% if concluido %}
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check me-1"></i>Concluído
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-warning">
-                                                <i class="fas fa-clock me-1"></i>Em Andamento
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="card-body">
-                                    <!-- Cliente -->
-                                    <div class="mb-3">
-                                        <strong>Cliente:</strong>
-                                        <div class="text-primary">
-                                            <i class="fas fa-building me-1"></i>{{ projeto.cliente.nome }}
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Descrição -->
-                                    {% if projeto.descricao %}
-                                        <div class="mb-3">
-                                            <small class="text-muted">{{ projeto.descricao[:100] }}{% if projeto.descricao|length > 100 %}...{% endif %}</small>
-                                        </div>
-                                    {% endif %}
-                                    
-                                    <!-- Estatísticas -->
-                                    <div class="row text-center mb-3">
-                                        <div class="col-4">
-                                            <div class="border-end">
-                                                <div class="h5 mb-0 text-primary">{{ respondentes_count }}</div>
-                                                <small class="text-muted">Respondentes</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="border-end">
-                                                <div class="h5 mb-0 text-info">{{ tipos_count }}</div>
-                                                <small class="text-muted">Assessments</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="h5 mb-0 {% if progresso >= 100 %}text-success{% elif progresso >= 50 %}text-warning{% else %}text-danger{% endif %}">
-                                                {{ progresso }}%
-                                            </div>
-                                            <small class="text-muted">Progresso</small>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Barra de Progresso -->
-                                    <div class="mb-3">
-                                        <div class="progress" style="height: 6px;">
-                                            <div class="progress-bar {% if progresso >= 100 %}bg-success{% elif progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                                 style="width: {{ progresso }}%"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Data de Criação -->
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        Criado em {{ projeto.data_criacao.strftime('%d/%m/%Y') }}
-                                    </small>
-                                </div>
-                                
-                                <div class="card-footer bg-light">
-                                    <div class="btn-group w-100" role="group">
-                                        <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" 
-                                           class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-eye me-1"></i>Detalhes
-                                        </a>
-                                        <a href="{{ url_for('projeto.editar', projeto_id=projeto.id) }}" 
-                                           class="btn btn-outline-secondary btn-sm">
-                                            <i class="fas fa-edit me-1"></i>Editar
-                                        </a>
-                                        <button type="button" class="btn btn-outline-danger btn-sm" 
-                                                onclick="confirmarDesativacao({{ projeto.id }}, '{{ projeto.nome }}')">
-                                            <i class="fas fa-trash me-1"></i>Desativar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="card-title mb-1">
+                                <i class="fas fa-project-diagram me-2"></i>Gerenciar Projetos
+                            </h4>
+                            <p class="card-text mb-0">Visualize e gerencie todos os projetos de assessment</p>
                         </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-project-diagram text-muted mb-3" style="font-size: 3rem;"></i>
-                        <h5 class="text-muted">Nenhum projeto encontrado</h5>
-                        <p class="text-muted">Crie seu primeiro projeto para começar a gerenciar assessments.</p>
-                        <a href="{{ url_for('projeto.criar') }}" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Criar Primeiro Projeto
+                        <a href="{{ url_for('projeto.criar') }}" class="btn btn-light">
+                            <i class="fas fa-plus me-2"></i>Novo Projeto
                         </a>
                     </div>
                 </div>
-            {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-project-diagram text-primary mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ projetos|length }}</h5>
+                    <p class="card-text text-muted">Total de Projetos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-check-circle text-success mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ projetos|selectattr('progresso', 'ge', 100)|list|length }}</h5>
+                    <p class="card-text text-muted">Projetos Concluídos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-users text-info mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ projetos|sum(attribute='respondentes_count') }}</h5>
+                    <p class="card-text text-muted">Total Respondentes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line text-warning mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ "%.1f"|format((projetos|sum(attribute='progresso')/projetos|length) if projetos else 0) }}%</h5>
+                    <p class="card-text text-muted">Progresso Médio</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Projetos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Lista de Projetos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if projetos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Projeto</th>
+                                        <th>Cliente</th>
+                                        <th>Tipos de Assessment</th>
+                                        <th>Respondentes</th>
+                                        <th>Progresso</th>
+                                        <th>Criado em</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for projeto in projetos %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                                        {{ projeto.nome[0].upper() }}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">{{ projeto.nome }}</div>
+                                                        {% if projeto.descricao %}
+                                                            <small class="text-muted">{{ projeto.descricao[:50] }}{% if projeto.descricao|length > 50 %}...{% endif %}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">{{ projeto.cliente.nome }}</div>
+                                                {% if projeto.cliente.localidade %}
+                                                    <small class="text-muted">{{ projeto.cliente.localidade }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info me-1">{{ projeto.tipos_count }}</span>
+                                                {% for tipo in projeto.get_tipos_assessment()[:2] %}
+                                                    <small class="d-block text-muted">{{ tipo.nome }}</small>
+                                                {% endfor %}
+                                                {% if projeto.tipos_count > 2 %}
+                                                    <small class="text-muted">... e mais {{ projeto.tipos_count - 2 }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">{{ projeto.respondentes_count }}</span>
+                                                <small class="text-muted">respondentes</small>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 80px; height: 6px;">
+                                                        <div class="progress-bar {% if projeto.progresso >= 100 %}bg-success{% elif projeto.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                             style="width: {{ projeto.progresso }}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">{{ projeto.progresso }}%</small>
+                                                </div>
+                                            </td>
+                                            <td>{{ projeto.data_criacao.strftime('%d/%m/%Y') }}</td>
+                                            <td>
+                                                {% if projeto.ativo %}
+                                                    <span class="badge bg-success">Ativo</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inativo</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" 
+                                                       class="btn btn-outline-primary" title="Ver detalhes">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('projeto.editar', projeto_id=projeto.id) }}" 
+                                                       class="btn btn-outline-secondary" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('projeto.gerenciar_respondentes', projeto_id=projeto.id) }}" 
+                                                       class="btn btn-outline-info" title="Gerenciar respondentes">
+                                                        <i class="fas fa-users"></i>
+                                                    </a>
+                                                    {% if projeto.progresso >= 100 %}
+                                                        <a href="{{ url_for('relatorio.projeto', projeto_id=projeto.id) }}" 
+                                                           class="btn btn-outline-success" title="Relatório">
+                                                            <i class="fas fa-chart-bar"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-project-diagram text-muted mb-3" style="font-size: 4rem;"></i>
+                            <h4 class="text-muted">Nenhum projeto encontrado</h4>
+                            <p class="text-muted mb-4">
+                                Comece criando seu primeiro projeto de assessment.
+                            </p>
+                            <a href="{{ url_for('projeto.criar') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Criar Primeiro Projeto
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Modal de Confirmação -->
-<div class="modal fade" id="modalDesativacao" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                    Confirmar Desativação
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja desativar o projeto <strong id="nomeProjeto"></strong>?</p>
-                <p class="text-muted mb-0">Esta ação não pode ser desfeita. O projeto será ocultado da listagem.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form id="formDesativacao" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash me-2"></i>Desativar Projeto
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function confirmarDesativacao(projetoId, nomeProjeto) {
-    document.getElementById('nomeProjeto').textContent = nomeProjeto;
-    document.getElementById('formDesativacao').action = '/admin/projetos/' + projetoId + '/desativar';
-    
-    var modal = new bootstrap.Modal(document.getElementById('modalDesativacao'));
-    modal.show();
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
 }
-</script>
+</style>
 {% endblock %}

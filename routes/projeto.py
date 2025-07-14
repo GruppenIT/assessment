@@ -189,46 +189,50 @@ def gerenciar_respondentes(projeto_id):
 @login_required
 @admin_required
 def adicionar_respondente(projeto_id):
-    """Adiciona um novo respondente ao projeto"""
+    """Adiciona um respondente existente ao projeto"""
     projeto = Projeto.query.get_or_404(projeto_id)
-    form = ProjetoResponenteForm()
+    
+    from forms.projeto_forms import AdicionarRespondenteForm
+    form = AdicionarRespondenteForm(cliente_id=projeto.cliente_id, projeto_id=projeto.id)
     
     if form.validate_on_submit():
         try:
-            # Verificar se email já existe
-            respondente_existente = Respondente.query.filter_by(email=form.email.data).first()
-            if respondente_existente:
-                flash('Email já está em uso por outro respondente.', 'danger')
-                return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+            respondente_id = form.respondente_id.data
             
-            # Criar respondente
-            respondente = Respondente(
-                cliente_id=projeto.cliente_id,
-                nome=form.nome.data,
-                email=form.email.data,
-                cargo=form.cargo.data,
-                setor=form.setor.data,
-                ativo=True
-            )
-            respondente.set_password(form.senha.data)
-            db.session.add(respondente)
-            db.session.flush()
-            
-            # Associar ao projeto
-            projeto_respondente = ProjetoRespondente(
+            # Verificar se já está associado
+            associacao_existente = ProjetoRespondente.query.filter_by(
                 projeto_id=projeto.id,
-                respondente_id=respondente.id,
-                ativo=True
-            )
-            db.session.add(projeto_respondente)
+                respondente_id=respondente_id
+            ).first()
             
-            db.session.commit()
-            flash(f'Respondente "{respondente.nome}" adicionado ao projeto!', 'success')
+            if associacao_existente:
+                if not associacao_existente.ativo:
+                    associacao_existente.ativo = True
+                    db.session.commit()
+                    flash('Respondente reativado no projeto!', 'success')
+                else:
+                    flash('Respondente já está no projeto.', 'info')
+            else:
+                # Criar nova associação
+                projeto_respondente = ProjetoRespondente(
+                    projeto_id=projeto.id,
+                    respondente_id=respondente_id,
+                    ativo=True
+                )
+                db.session.add(projeto_respondente)
+                db.session.commit()
+                
+                respondente = Respondente.query.get(respondente_id)
+                flash(f'Respondente "{respondente.nome}" adicionado ao projeto!', 'success')
             
         except Exception as e:
             db.session.rollback()
             logging.error(f"Erro ao adicionar respondente: {e}")
             flash('Erro ao adicionar respondente. Tente novamente.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     
     return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
 
