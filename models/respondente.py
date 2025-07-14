@@ -37,6 +37,7 @@ class Respondente(UserMixin, db.Model):
         """Calcula o progresso do assessment para um tipo específico"""
         from models.pergunta import Pergunta
         from models.dominio import Dominio
+        from models.resposta import Resposta
         
         # Contar total de perguntas do tipo de assessment
         total_perguntas = db.session.query(Pergunta).join(Dominio).filter(
@@ -48,12 +49,13 @@ class Respondente(UserMixin, db.Model):
         if total_perguntas == 0:
             return {'percentual': 0, 'respondidas': 0, 'total': 0}
         
-        # Contar perguntas respondidas
-        respondidas = self.respostas.join(Pergunta).join(Dominio).filter(
+        # Contar perguntas respondidas por este respondente
+        respondidas = db.session.query(Resposta).join(Pergunta).join(Dominio).filter(
+            Resposta.respondente_id == self.id,
             Dominio.tipo_assessment_id == tipo_assessment_id
         ).count()
         
-        percentual = round((respondidas / total_perguntas) * 100, 1)
+        percentual = round((respondidas / total_perguntas) * 100, 1) if total_perguntas > 0 else 0
         
         return {
             'percentual': percentual,

@@ -87,13 +87,16 @@ def dashboard():
         tipos_assessment = current_user.cliente.get_tipos_assessment()
         print(f"DEBUG: Tipos de assessment encontrados: {len(tipos_assessment)}")
         
-        # Calcular progresso para cada tipo
+        # Calcular progresso para cada tipo (apenas se houver tipos)
         progressos = {}
-        for tipo in tipos_assessment:
-            print(f"DEBUG: Calculando progresso para tipo: {tipo.nome}")
-            progresso = current_user.get_progresso_assessment(tipo.id)
-            progressos[tipo.id] = progresso
-            print(f"DEBUG: Progresso calculado: {progresso}")
+        if tipos_assessment:
+            for tipo in tipos_assessment:
+                print(f"DEBUG: Calculando progresso para tipo: {tipo.nome}")
+                progresso = current_user.get_progresso_assessment(tipo.id)
+                progressos[tipo.id] = progresso
+                print(f"DEBUG: Progresso calculado: {progresso}")
+        else:
+            print("DEBUG: Nenhum tipo de assessment encontrado - dashboard será exibido com mensagem informativa")
         
         print("DEBUG: Renderizando template dashboard")
         return render_template('respondente/dashboard.html',
@@ -105,7 +108,7 @@ def dashboard():
         print(f"DEBUG: Erro no dashboard: {str(e)}")
         import traceback
         traceback.print_exc()
-        flash('Erro ao carregar dashboard.', 'danger')
+        flash('Erro ao carregar dashboard. Entre em contato com o suporte.', 'danger')
         return redirect(url_for('respondente.login'))
 
 @respondente_bp.route('/assessment/<int:tipo_assessment_id>')

@@ -113,12 +113,39 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">Nenhum Assessment Disponível</h5>
-                            <p class="text-muted">
-                                Ainda não há assessments associados à sua empresa.<br>
-                                Entre em contato com o administrador para mais informações.
+                            <i class="fas fa-clipboard-list fa-4x text-primary mb-4"></i>
+                            <h4 class="text-primary mb-3">Nenhum Assessment Disponível</h4>
+                            <p class="text-muted mb-4">
+                                Ainda não há assessments associados à {{ respondente.cliente.nome }}.<br>
+                                Para solicitar a disponibilização de assessments, entre em contato conosco.
                             </p>
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-md-8">
+                                    <div class="card border-primary">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-primary">
+                                                <i class="fas fa-phone me-2"></i>Entre em Contato
+                                            </h6>
+                                            <p class="card-text">
+                                                <strong>Gruppen Serviços de Informática Ltda</strong><br>
+                                                Nossa equipe está pronta para configurar os assessments adequados 
+                                                para sua organização e suas necessidades específicas.
+                                            </p>
+                                            <div class="row text-center">
+                                                <div class="col-md-6 mb-2">
+                                                    <small class="text-muted">Email de Suporte:</small><br>
+                                                    <strong>suporte@gruppen.com.br</strong>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <small class="text-muted">Solicitação:</small><br>
+                                                    <strong>"Ativação de Assessments"</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     {% endif %}
                 </div>
