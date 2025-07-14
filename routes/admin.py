@@ -1065,7 +1065,7 @@ def salvar_configuracoes():
                 for i in range(6):
                     nome_field = getattr(form, f'escala_{i}_nome', None)
                     cor_field = getattr(form, f'escala_{i}_cor', None)
-                    if nome_field and cor_field:
+                    if nome_field and cor_field and nome_field.data and cor_field.data:
                         escala_configs.append((f'escala_{i}_nome', nome_field.data))
                         escala_configs.append((f'escala_{i}_cor', cor_field.data))
                 configuracoes.extend(escala_configs)
@@ -1100,9 +1100,11 @@ def salvar_configuracoes():
             db.session.rollback()
             flash('Erro ao salvar configurações. Tente novamente.', 'danger')
     else:
+        # Exibir erros de validação apenas para campos importantes
         for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'{field}: {error}', 'danger')
+            if field in ['cor_primaria', 'cor_secundaria', 'cor_fundo', 'cor_texto']:
+                for error in errors:
+                    flash(f'{field}: {error}', 'danger')
     
     return redirect(url_for('admin.configuracoes'))
 

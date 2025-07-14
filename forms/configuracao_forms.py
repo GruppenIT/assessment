@@ -27,21 +27,21 @@ class ConfiguracaoForm(FlaskForm):
                            widget=ColorInput(),
                            render_kw={'value': '#212529'})
     
-    # Escala de pontuação - Nomes
-    escala_0_nome = StringField('Nome Nível 0', validators=[DataRequired()], render_kw={'value': 'Inexistente'})
-    escala_1_nome = StringField('Nome Nível 1', validators=[DataRequired()], render_kw={'value': 'Inicial'})
-    escala_2_nome = StringField('Nome Nível 2', validators=[DataRequired()], render_kw={'value': 'Básico'})
-    escala_3_nome = StringField('Nome Nível 3', validators=[DataRequired()], render_kw={'value': 'Intermediário'})
-    escala_4_nome = StringField('Nome Nível 4', validators=[DataRequired()], render_kw={'value': 'Avançado'})
-    escala_5_nome = StringField('Nome Nível 5', validators=[DataRequired()], render_kw={'value': 'Otimizado'})
+    # Escala de pontuação - Nomes (sem validação obrigatória)
+    escala_0_nome = StringField('Nome Nível 0', render_kw={'value': 'Inexistente'})
+    escala_1_nome = StringField('Nome Nível 1', render_kw={'value': 'Inicial'})
+    escala_2_nome = StringField('Nome Nível 2', render_kw={'value': 'Básico'})
+    escala_3_nome = StringField('Nome Nível 3', render_kw={'value': 'Intermediário'})
+    escala_4_nome = StringField('Nome Nível 4', render_kw={'value': 'Avançado'})
+    escala_5_nome = StringField('Nome Nível 5', render_kw={'value': 'Otimizado'})
     
-    # Escala de pontuação - Cores
-    escala_0_cor = StringField('Cor Nível 0', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#dc3545'})
-    escala_1_cor = StringField('Cor Nível 1', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#fd7e14'})
-    escala_2_cor = StringField('Cor Nível 2', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#ffc107'})
-    escala_3_cor = StringField('Cor Nível 3', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#20c997'})
-    escala_4_cor = StringField('Cor Nível 4', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#0dcaf0'})
-    escala_5_cor = StringField('Cor Nível 5', validators=[DataRequired()], widget=ColorInput(), render_kw={'value': '#198754'})
+    # Escala de pontuação - Cores (sem validação obrigatória)
+    escala_0_cor = StringField('Cor Nível 0', widget=ColorInput(), render_kw={'value': '#dc3545'})
+    escala_1_cor = StringField('Cor Nível 1', widget=ColorInput(), render_kw={'value': '#fd7e14'})
+    escala_2_cor = StringField('Cor Nível 2', widget=ColorInput(), render_kw={'value': '#ffc107'})
+    escala_3_cor = StringField('Cor Nível 3', widget=ColorInput(), render_kw={'value': '#20c997'})
+    escala_4_cor = StringField('Cor Nível 4', widget=ColorInput(), render_kw={'value': '#0dcaf0'})
+    escala_5_cor = StringField('Cor Nível 5', widget=ColorInput(), render_kw={'value': '#198754'})
     
     # Botões
     submit = SubmitField('Salvar Configurações')
