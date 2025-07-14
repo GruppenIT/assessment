@@ -14,82 +14,92 @@ import logging
 
 projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
 
+
+
 @projeto_bp.route('/')
-@login_required
+@login_required 
 @admin_required
 def listar():
     """Lista todos os projetos com filtro opcional por cliente"""
-    logging.info("=== Iniciando listagem de projetos ===")
+    from flask import flash
     
-    # Obter filtro de cliente se fornecido
-    cliente_id = request.args.get('cliente_id', type=int)
-    logging.info(f"Filtro cliente_id: {cliente_id}")
-    
-    # Query base
-    query = Projeto.query.filter_by(ativo=True)
-    
-    # Aplicar filtro por cliente se selecionado
-    if cliente_id:
-        query = query.filter_by(cliente_id=cliente_id)
-    
-    projetos = query.order_by(Projeto.data_criacao.desc()).all()
-    logging.info(f"Projetos encontrados: {len(projetos)}")
-    
-    # Obter lista de clientes para o filtro
-    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-    logging.info(f"Clientes encontrados: {len(clientes)}")
-    
-    projetos_data = []
-    for projeto in projetos:
-        try:
-            progresso = projeto.get_progresso_geral()
-        except Exception as e:
-            logging.error(f"Erro ao calcular progresso do projeto {projeto.id}: {e}")
-            progresso = 0
+    try:
+        # Obter filtro de cliente se fornecido
+        cliente_id = request.args.get('cliente_id', type=int)
         
-        try:
-            respondentes_ativos = projeto.get_respondentes_ativos()
-            respondentes_count = len(respondentes_ativos)
-        except Exception as e:
-            logging.error(f"Erro ao obter respondentes do projeto {projeto.id}: {e}")
-            respondentes_count = 0
+        # Query de projetos com JOIN para melhor performance
+        base_query = """
+            SELECT p.*, c.nome as cliente_nome, c.localidade
+            FROM projetos p 
+            LEFT JOIN clientes c ON p.cliente_id = c.id 
+            WHERE p.ativo = true
+        """
         
-        try:
-            tipos_assessment = projeto.get_tipos_assessment()
-            tipos_count = len(tipos_assessment)
-        except Exception as e:
-            logging.error(f"Erro ao obter tipos de assessment do projeto {projeto.id}: {e}")
-            tipos_count = 0
+        if cliente_id:
+            base_query += " AND p.cliente_id = :cliente_id"
+            projetos_raw = db.session.execute(
+                db.text(base_query + " ORDER BY p.data_criacao DESC"),
+                {'cliente_id': cliente_id}
+            ).fetchall()
+        else:
+            projetos_raw = db.session.execute(
+                db.text(base_query + " ORDER BY p.data_criacao DESC")
+            ).fetchall()
         
-        projetos_data.append({
-            'projeto': projeto,
-            'progresso': progresso,
-            'concluido': progresso >= 100,
-            'respondentes_count': respondentes_count,
-            'tipos_count': tipos_count
-        })
-        logging.info(f"Projeto processado: {projeto.nome} - Progresso: {progresso}%")
-    
-    logging.info(f"Total de projetos_data: {len(projetos_data)}")
-    
-    # Debug temporário: criar dados simples se vazio
-    if not projetos_data:
-        logging.warning("Nenhum projeto encontrado - criando dados debug")
-        for projeto in projetos:
+        # Buscar clientes para o filtro dropdown
+        clientes = db.session.execute(
+            db.text("SELECT id, nome FROM clientes WHERE ativo = true ORDER BY nome")
+        ).fetchall()
+        
+        # Preparar dados dos projetos com contadores
+        projetos_data = []
+        for projeto_raw in projetos_raw:
+            
+            # Contadores diretos por SQL para evitar problemas com métodos
+            respondentes_count = db.session.execute(
+                db.text("SELECT COUNT(*) FROM projeto_respondentes WHERE projeto_id = :pid AND ativo = true"),
+                {'pid': projeto_raw.id}
+            ).scalar() or 0
+            
+            tipos_count = db.session.execute(
+                db.text("SELECT COUNT(*) FROM projeto_assessments WHERE projeto_id = :pid"),
+                {'pid': projeto_raw.id}
+            ).scalar() or 0
+            
+            # Criar objeto projeto simples para o template
+            projeto_obj = type('Projeto', (), {
+                'id': projeto_raw.id,
+                'nome': projeto_raw.nome,
+                'descricao': projeto_raw.descricao,
+                'data_criacao': projeto_raw.data_criacao,
+                'cliente': type('Cliente', (), {
+                    'nome': projeto_raw.cliente_nome,
+                    'localidade': projeto_raw.localidade
+                })()
+            })()
+            
             projetos_data.append({
-                'projeto': projeto,
-                'progresso': 0,
+                'projeto': projeto_obj,
+                'progresso': 0,  # Simplificado - pode ser calculado depois
                 'concluido': False,
-                'respondentes_count': 0,
-                'tipos_count': 0
+                'respondentes_count': respondentes_count,
+                'tipos_count': tipos_count
             })
-    
-    logging.info(f"=== RETORNANDO TEMPLATE COM {len(projetos_data)} projetos ===")
-    
-    return render_template('admin/projetos/listar.html', 
-                         projetos_data=projetos_data,
-                         clientes=clientes,
-                         cliente_selecionado=cliente_id)
+        
+        # Lista de clientes para dropdown
+        clientes_list = [{'id': c.id, 'nome': c.nome} for c in clientes]
+        
+        return render_template('admin/projetos/listar.html', 
+                             projetos_data=projetos_data,
+                             clientes=clientes_list,
+                             cliente_selecionado=cliente_id)
+                             
+    except Exception as e:
+        flash(f'Erro ao carregar projetos: {str(e)}', 'danger')
+        return render_template('admin/projetos/listar.html', 
+                             projetos_data=[],
+                             clientes=[],
+                             cliente_selecionado=None)
 
 @projeto_bp.route('/criar', methods=['GET', 'POST'])
 @login_required

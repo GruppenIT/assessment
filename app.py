@@ -125,6 +125,13 @@ def create_app():
                 return redirect(url_for('cliente.dashboard'))
         return redirect(url_for('auth.login'))
     
+    # Rota de login alternativa para compatibilidade
+    @app.route('/login')
+    def login_redirect():
+        """Redireciona para a rota de login correta"""
+        from flask import redirect, url_for
+        return redirect(url_for('auth.login'))
+    
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
