@@ -200,7 +200,14 @@ def salvar_resposta():
             resposta.comentario = comentario
             print(f"DEBUG: Resposta atualizada para pergunta {pergunta_id}")
         else:
+            # Buscar um usuário admin padrão para compatibilidade
+            from models.usuario import Usuario
+            admin_user = Usuario.query.first()
+            if not admin_user:
+                return jsonify({'success': False, 'message': 'Nenhum usuário admin encontrado'}), 500
+            
             resposta = Resposta(
+                usuario_id=admin_user.id,  # Para compatibilidade com o banco
                 respondente_id=current_user.id,
                 pergunta_id=pergunta_id,
                 nota=nota,

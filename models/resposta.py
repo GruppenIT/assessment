@@ -7,7 +7,8 @@ class Resposta(db.Model):
     __tablename__ = 'respostas'
     
     id = db.Column(db.Integer, primary_key=True)
-    respondente_id = db.Column(db.Integer, db.ForeignKey('respondentes.id'), nullable=False, comment='Respondente que respondeu')
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False, comment='Usuario admin que criou (backward compatibility)')
+    respondente_id = db.Column(db.Integer, db.ForeignKey('respondentes.id'), nullable=True, comment='Respondente que respondeu')
     pergunta_id = db.Column(db.Integer, db.ForeignKey('perguntas.id'), nullable=False, comment='Pergunta respondida')
     nota = db.Column(db.Integer, nullable=False, comment='Nota de 0 a 5')
     comentario = db.Column(db.Text, comment='Comentário opcional')
