@@ -1201,3 +1201,6 @@ def projetos():
         logging.error(f"Erro ao carregar projetos: {e}")
         flash('Erro ao carregar lista de projetos.', 'danger')
         return redirect(url_for('admin.dashboard'))
+
+
+

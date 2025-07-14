@@ -92,7 +92,7 @@ def create_app():
     except ImportError:
         pass
     
-    # Registrar blueprint de projetos
+    # Registrar blueprint de projetos com prefixo correto
     try:
         from routes.projeto import projeto_bp
         app.register_blueprint(projeto_bp)
