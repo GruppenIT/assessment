@@ -105,10 +105,13 @@ def assessment(projeto_id, tipo_assessment_id):
     tipo_assessment = TipoAssessment.query.get_or_404(tipo_assessment_id)
     dominios = tipo_assessment.get_dominios_ativos()
     
-    # Buscar respostas existentes do respondente
+    # Buscar respostas existentes do respondente PARA ESTE PROJETO específico
     respostas_existentes = {}
     from models.resposta import Resposta
-    respostas = Resposta.query.filter_by(respondente_id=current_user.id).all()
+    respostas = Resposta.query.filter_by(
+        respondente_id=current_user.id,
+        projeto_id=projeto_id  # Filtrar por projeto específico
+    ).all()
     for resposta in respostas:
         respostas_existentes[resposta.pergunta_id] = {
             'nota': resposta.nota,
@@ -163,11 +166,11 @@ def salvar_resposta():
         if not projeto_respondente:
             return jsonify({'success': False, 'message': 'Acesso negado ao projeto'}), 403
         
-        # Buscar resposta existente
+        # Buscar resposta existente PARA ESTE PROJETO específico
         resposta = Resposta.query.filter_by(
             respondente_id=current_user.id,
             pergunta_id=pergunta_id,
-            projeto_id=projeto_id
+            projeto_id=projeto_id  # Filtrar por projeto específico
         ).first()
         
         # Se nota for None, remover resposta (funcionalidade de "desresponder")
