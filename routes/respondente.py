@@ -16,8 +16,19 @@ respondente_bp = Blueprint('respondente', __name__)
 
 @respondente_bp.route('/auto-login')
 def auto_login():
-    """Auto login de teste para respondente"""
+    """Auto login de teste para respondente Rodrigo"""
     respondente = Respondente.query.filter_by(email='rodrigo@gruppen.com.br').first()
+    if respondente:
+        login_user(respondente)
+        session['user_type'] = 'respondente'
+        return redirect(url_for('respondente.dashboard'))
+    else:
+        return "Respondente não encontrado"
+
+@respondente_bp.route('/auto-login-marcelo')
+def auto_login_marcelo():
+    """Auto login de teste para respondente Marcelo"""
+    respondente = Respondente.query.filter_by(email='marcelo_barbosa@gruppen.com.br').first()
     if respondente:
         login_user(respondente)
         session['user_type'] = 'respondente'
