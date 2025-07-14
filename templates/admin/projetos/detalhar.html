@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}{{ projeto.nome }} - Detalhes do Projeto{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header do Projeto -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="card-title mb-2">
+                                <i class="fas fa-project-diagram me-2"></i>{{ projeto.nome }}
+                            </h4>
+                            <p class="card-text mb-2">
+                                <i class="fas fa-building me-2"></i>{{ projeto.cliente.nome }}
+                            </p>
+                            {% if projeto.descricao %}
+                                <p class="card-text mb-0">{{ projeto.descricao }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark fs-6">{{ progresso }}% concluído</span>
+                            </div>
+                            <div class="btn-group">
+                                <a href="{{ url_for('projeto.editar', projeto_id=projeto.id) }}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </a>
+                                <a href="{{ url_for('projeto.listar') }}" class="btn btn-outline-light btn-sm">
+                                    <i class="fas fa-arrow-left me-1"></i>Voltar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas do Projeto -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-users text-primary mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ respondentes|length }}</h5>
+                    <p class="card-text text-muted">Respondentes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clipboard-list text-info mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ tipos_assessment|length }}</h5>
+                    <p class="card-text text-muted">Tipos de Assessment</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line text-success mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ progresso }}%</h5>
+                    <p class="card-text text-muted">Progresso Geral</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar text-warning mb-2" style="font-size: 2rem;"></i>
+                    <h5 class="card-title">{{ projeto.data_criacao.strftime('%d/%m/%Y') }}</h5>
+                    <p class="card-text text-muted">Data de Criação</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipos de Assessment do Projeto -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Tipos de Assessment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if tipos_assessment %}
+                        <div class="row">
+                            {% for tipo in tipos_assessment %}
+                                {% set progresso_tipo = progressos_por_tipo.get(tipo.id, {'progresso': 0, 'respostas': 0, 'total': 0}) %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h6 class="card-title mb-0">{{ tipo.nome }}</h6>
+                                                <span class="badge {% if progresso_tipo.progresso >= 100 %}bg-success{% elif progresso_tipo.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ progresso_tipo.progresso }}%
+                                                </span>
+                                            </div>
+                                            {% if tipo.descricao %}
+                                                <p class="card-text text-muted small">{{ tipo.descricao }}</p>
+                                            {% endif %}
+                                            <div class="progress mb-2" style="height: 8px;">
+                                                <div class="progress-bar {% if progresso_tipo.progresso >= 100 %}bg-success{% elif progresso_tipo.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ progresso_tipo.progresso }}%"></div>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ progresso_tipo.respostas }} de {{ progresso_tipo.total }} respostas
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-clipboard-list text-muted mb-2" style="font-size: 2rem;"></i>
+                            <p class="text-muted">Nenhum tipo de assessment associado a este projeto.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Respondentes do Projeto -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Respondentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if respondentes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Cargo</th>
+                                        <th>Progresso</th>
+                                        <th>Último Acesso</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for respondente in respondentes %}
+                                        {% set progresso_respondente = projeto.get_progresso_respondente(respondente.id) %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                                        {{ respondente.nome[0].upper() }}
+                                                    </div>
+                                                    {{ respondente.nome }}
+                                                </div>
+                                            </td>
+                                            <td>{{ respondente.email }}</td>
+                                            <td>{{ respondente.cargo or '-' }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 100px; height: 8px;">
+                                                        <div class="progress-bar {% if progresso_respondente >= 100 %}bg-success{% elif progresso_respondente >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                             style="width: {{ progresso_respondente }}%"></div>
+                                                    </div>
+                                                    <small class="text-muted">{{ progresso_respondente }}%</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if respondente.ultimo_acesso %}
+                                                    {{ respondente.ultimo_acesso.strftime('%d/%m/%Y %H:%M') }}
+                                                {% else %}
+                                                    <span class="text-muted">Nunca acessou</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if respondente.ativo %}
+                                                    <span class="badge bg-success">Ativo</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inativo</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-users text-muted mb-2" style="font-size: 2rem;"></i>
+                            <p class="text-muted">Nenhum respondente associado a este projeto.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

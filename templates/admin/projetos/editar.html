@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Projeto - {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="card-title mb-1">
+                                <i class="fas fa-edit me-2"></i>Editar Projeto
+                            </h4>
+                            <p class="card-text mb-0">{{ projeto.nome }}</p>
+                        </div>
+                        <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário de Edição -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>Informações do Projeto
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Nome do Projeto -->
+                        <div class="mb-3">
+                            {{ form.nome.label(class="form-label fw-bold") }}
+                            {{ form.nome(class="form-control" + (" is-invalid" if form.nome.errors else "")) }}
+                            {% if form.nome.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nome.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Cliente -->
+                        <div class="mb-3">
+                            {{ form.cliente_id.label(class="form-label fw-bold") }}
+                            <div class="input-group">
+                                {{ form.cliente_id(class="form-select" + (" is-invalid" if form.cliente_id.errors else "")) }}
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNovoCliente">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            {% if form.cliente_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.cliente_id.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tipos de Assessment -->
+                        <div class="mb-3">
+                            {{ form.tipos_assessment.label(class="form-label fw-bold") }}
+                            <div class="border rounded p-3">
+                                {% for subfield in form.tipos_assessment %}
+                                    <div class="form-check mb-2">
+                                        {{ subfield(class="form-check-input") }}
+                                        {{ subfield.label(class="form-check-label") }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.tipos_assessment.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.tipos_assessment.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Descrição -->
+                        <div class="mb-4">
+                            {{ form.descricao.label(class="form-label fw-bold") }}
+                            {{ form.descricao(class="form-control" + (" is-invalid" if form.descricao.errors else ""), rows="4") }}
+                            {% if form.descricao.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.descricao.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Adicionais -->
+        <div class="col-lg-4">
+            <!-- Status do Projeto -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Status do Projeto
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="mb-1">{{ projeto.get_respondentes_ativos()|length }}</h5>
+                                <small class="text-muted">Respondentes</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="mb-1">{{ projeto.get_progresso_geral() }}%</h5>
+                            <small class="text-muted">Concluído</small>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar bg-primary" style="width: {{ projeto.get_progresso_geral() }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Histórico
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Projeto Criado</h6>
+                                <p class="timeline-text text-muted">{{ projeto.data_criacao.strftime('%d/%m/%Y às %H:%M') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Novo Cliente -->
+<div class="modal fade" id="modalNovoCliente" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-building me-2"></i>Novo Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovoCliente">
+                    {{ novo_cliente_form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ novo_cliente_form.nome.label(class="form-label") }}
+                        {{ novo_cliente_form.nome(class="form-control") }}
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="criarNovoCliente()">Criar Cliente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -38px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -33px;
+    top: 17px;
+    width: 2px;
+    height: calc(100% + 5px);
+    background-color: #dee2e6;
+}
+
+.timeline-title {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.timeline-text {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+</style>
+
+<script>
+function criarNovoCliente() {
+    const form = document.getElementById('formNovoCliente');
+    const formData = new FormData(form);
+    
+    fetch('{{ url_for("projeto.criar_cliente") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Adicionar novo cliente ao select
+            const clienteSelect = document.getElementById('cliente_id');
+            const newOption = new Option(data.cliente_nome, data.cliente_id, true, true);
+            clienteSelect.add(newOption);
+            
+            // Fechar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalNovoCliente'));
+            modal.hide();
+            
+            // Mostrar mensagem de sucesso
+            alert(data.message);
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao criar cliente');
+    });
+}
+</script>
+{% endblock %}
