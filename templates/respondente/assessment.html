@@ -92,7 +92,7 @@
                                 <div class="col-md-4">
                                     <!-- Rating System -->
                                     <div class="rating-container text-center">
-                                        <label class="form-label small text-muted d-block mb-2">Avaliação (0-5)</label>
+                                        <label class="form-label small text-muted d-block mb-2">Nível de Maturidade (0-5)</label>
                                         <div class="rating-buttons" data-pergunta-id="{{ pergunta.id }}">
                                             {% for nota in range(6) %}
                                                 <button type="button" 
@@ -103,9 +103,16 @@
                                                 </button>
                                             {% endfor %}
                                         </div>
-                                        <small class="text-muted d-block mt-2">
-                                            0 = Não aplicável | 5 = Excelente
-                                        </small>
+                                        <div class="rating-legend mt-2">
+                                            <small class="text-muted d-block">
+                                                <strong>0</strong> - Inexistente: nenhum controle implementado<br>
+                                                <strong>1</strong> - Inicial: práticas informais e não documentadas<br>
+                                                <strong>2</strong> - Básico: controles definidos, aplicação inconsistente<br>
+                                                <strong>3</strong> - Intermediário: controles padronizados e repetíveis<br>
+                                                <strong>4</strong> - Avançado: controles monitorados com métricas<br>
+                                                <strong>5</strong> - Otimizado: controles integrados e melhorados continuamente
+                                            </small>
+                                        </div>
                                         
                                         <!-- Status da resposta -->
                                         <div class="status-resposta mt-2">
@@ -187,6 +194,13 @@
     background: #007bff;
     border-color: #007bff;
     color: white;
+}
+
+.rating-legend {
+    max-width: 300px;
+    text-align: left;
+    font-size: 0.8rem;
+    line-height: 1.3;
 }
 
 .pergunta-container {
