@@ -128,6 +128,8 @@
                 </div>
                 <div class="card-body">
                     <!-- DEBUG: Total projetos_data = {{ projetos_data|length }} -->
+                    <!-- DEBUG: User authenticated = {{ current_user.is_authenticated }} -->
+                    <!-- DEBUG: User type = {{ current_user.tipo if current_user.is_authenticated else 'None' }} -->
                     {% if projetos_data %}
                         <div class="table-responsive">
                             <table class="table table-hover">
