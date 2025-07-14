@@ -66,6 +66,15 @@ class Respondente(UserMixin, db.Model):
         progresso = self.get_progresso_assessment(tipo_assessment_id)
         return progresso['percentual'] >= 100
     
+    def is_admin(self):
+        """Respondentes nunca são admins"""
+        return False
+    
+    def assessment_concluido(self):
+        """Verifica se respondente concluiu pelo menos um assessment"""
+        from models.resposta import Resposta
+        return Resposta.query.filter_by(respondente_id=self.id).count() > 0
+    
     def to_dict(self):
         """Converte o respondente para dicionário"""
         return {

@@ -72,22 +72,41 @@ def login():
 @login_required
 def dashboard():
     """Dashboard do respondente"""
+    print(f"DEBUG: Acessando dashboard - current_user: {current_user}")
+    print(f"DEBUG: Tipo do current_user: {type(current_user)}")
+    print(f"DEBUG: É Respondente? {isinstance(current_user, Respondente)}")
+    
     if not isinstance(current_user, Respondente):
+        print("DEBUG: Usuário não é respondente, redirecionando para auth.login")
         return redirect(url_for('auth.login'))
     
-    # Obter tipos de assessment do cliente
-    tipos_assessment = current_user.cliente.get_tipos_assessment()
-    
-    # Calcular progresso para cada tipo
-    progressos = {}
-    for tipo in tipos_assessment:
-        progresso = current_user.get_progresso_assessment(tipo.id)
-        progressos[tipo.id] = progresso
-    
-    return render_template('respondente/dashboard.html',
-                         respondente=current_user,
-                         tipos_assessment=tipos_assessment,
-                         progressos=progressos)
+    try:
+        print(f"DEBUG: Cliente do respondente: {current_user.cliente}")
+        
+        # Obter tipos de assessment do cliente
+        tipos_assessment = current_user.cliente.get_tipos_assessment()
+        print(f"DEBUG: Tipos de assessment encontrados: {len(tipos_assessment)}")
+        
+        # Calcular progresso para cada tipo
+        progressos = {}
+        for tipo in tipos_assessment:
+            print(f"DEBUG: Calculando progresso para tipo: {tipo.nome}")
+            progresso = current_user.get_progresso_assessment(tipo.id)
+            progressos[tipo.id] = progresso
+            print(f"DEBUG: Progresso calculado: {progresso}")
+        
+        print("DEBUG: Renderizando template dashboard")
+        return render_template('respondente/dashboard.html',
+                             respondente=current_user,
+                             tipos_assessment=tipos_assessment,
+                             progressos=progressos)
+                             
+    except Exception as e:
+        print(f"DEBUG: Erro no dashboard: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash('Erro ao carregar dashboard.', 'danger')
+        return redirect(url_for('respondente.login'))
 
 @respondente_bp.route('/assessment/<int:tipo_assessment_id>')
 @login_required
