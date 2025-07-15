@@ -293,7 +293,7 @@ def detalhar(projeto_id):
         if projeto_assessment.versao_assessment_id:
             # Novo sistema de versionamento
             versao = projeto_assessment.versao_assessment
-            tipo = versao.assessment_tipo
+            tipo = versao.tipo
             versao_info = f"Versão {versao.versao}"
         elif projeto_assessment.tipo_assessment_id:
             # Sistema antigo
