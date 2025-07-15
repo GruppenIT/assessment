@@ -24,30 +24,42 @@ class Projeto(db.Model):
         return f'<Projeto {self.nome}>'
     
     def get_progresso_geral(self):
-        """Calcula o progresso geral do projeto"""
+        """Calcula o progresso geral do projeto (colaborativo)"""
+        from models.resposta import Resposta
+        from models.pergunta import Pergunta
+        from models.dominio import Dominio
+        
         total_perguntas = 0
-        total_respostas = 0
+        total_respostas_unicas = 0
         
         for projeto_assessment in self.assessments:
             assessment = projeto_assessment.tipo_assessment
-            perguntas_count = sum(len(dominio.perguntas) for dominio in assessment.dominios if dominio.ativo)
-            respondentes_count = len([r for r in self.respondentes if r.ativo])
             
-            total_perguntas += perguntas_count * respondentes_count
+            # Contar total de perguntas deste assessment
+            perguntas_count = Pergunta.query.join(Dominio).filter(
+                Dominio.tipo_assessment_id == assessment.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            total_perguntas += perguntas_count
             
-            # Contar respostas existentes
-            for respondente_proj in self.respondentes:
-                if respondente_proj.ativo:
-                    respondente = respondente_proj.respondente
-                    respostas_count = len([r for r in respondente.respostas 
-                                         if r.projeto_id == self.id and 
-                                         r.pergunta.dominio.tipo_assessment_id == assessment.id])
-                    total_respostas += respostas_count
+            # Contar perguntas únicas respondidas (colaborativo)
+            # Uma pergunta respondida por qualquer pessoa conta como respondida
+            perguntas_respondidas = db.session.query(Pergunta.id).join(
+                Resposta, Pergunta.id == Resposta.pergunta_id
+            ).join(Dominio).filter(
+                Resposta.projeto_id == self.id,
+                Dominio.tipo_assessment_id == assessment.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).distinct().count()
+            
+            total_respostas_unicas += perguntas_respondidas
         
         if total_perguntas == 0:
             return 0
         
-        return round((total_respostas / total_perguntas) * 100, 1)
+        return round((total_respostas_unicas / total_perguntas) * 100, 1)
     
     def is_concluido(self):
         """Verifica se o projeto está concluído"""

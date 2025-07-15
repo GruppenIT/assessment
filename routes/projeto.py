@@ -270,11 +270,21 @@ def detalhar(projeto_id):
     respondentes = projeto.get_respondentes_ativos()
     tipos_assessment = projeto.get_tipos_assessment()
     
-    # Progresso por tipo de assessment
+    # Progresso por tipo de assessment (colaborativo)
     progressos_por_tipo = {}
-    for tipo in tipos_assessment:
+    assessments_com_versao = {}
+    
+    for projeto_assessment in projeto.assessments:
+        tipo = projeto_assessment.tipo_assessment
         from models.pergunta import Pergunta
         from models.dominio import Dominio
+        from models.resposta import Resposta
+        
+        # Identificar versão do assessment
+        versao_info = "Sistema Antigo"
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            versao_info = f"Versão {versao.versao}"
         
         total_perguntas = Pergunta.query.join(Dominio).filter(
             Dominio.tipo_assessment_id == tipo.id,
@@ -282,25 +292,24 @@ def detalhar(projeto_id):
             Pergunta.ativo == True
         ).count()
         
-        total_respostas = 0
-        for respondente in respondentes:
-            from models.resposta import Resposta
-            respostas_count = Resposta.query.filter_by(
-                respondente_id=respondente.id,
-                projeto_id=projeto.id
-            ).join(Pergunta).join(Dominio).filter(
-                Dominio.tipo_assessment_id == tipo.id
-            ).count()
-            total_respostas += respostas_count
+        # Contar perguntas únicas respondidas (colaborativo)
+        perguntas_respondidas = db.session.query(Pergunta.id).join(
+            Resposta, Pergunta.id == Resposta.pergunta_id
+        ).join(Dominio).filter(
+            Resposta.projeto_id == projeto.id,
+            Dominio.tipo_assessment_id == tipo.id,
+            Dominio.ativo == True,
+            Pergunta.ativo == True
+        ).distinct().count()
         
-        total_esperado = total_perguntas * len(respondentes)
-        progresso_tipo = round((total_respostas / total_esperado * 100) if total_esperado > 0 else 0, 1)
+        progresso_tipo = round((perguntas_respondidas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
         
         progressos_por_tipo[tipo.id] = {
             'tipo': tipo,
             'progresso': progresso_tipo,
-            'respostas': total_respostas,
-            'total': total_esperado
+            'perguntas_respondidas': perguntas_respondidas,
+            'total_perguntas': total_perguntas,
+            'versao': versao_info
         }
     
     return render_template('admin/projetos/detalhar.html',

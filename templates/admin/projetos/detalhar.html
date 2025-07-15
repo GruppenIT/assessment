@@ -96,13 +96,16 @@
                     {% if tipos_assessment %}
                         <div class="row">
                             {% for tipo in tipos_assessment %}
-                                {% set progresso_tipo = progressos_por_tipo.get(tipo.id, {'progresso': 0, 'respostas': 0, 'total': 0}) %}
+                                {% set progresso_tipo = progressos_por_tipo.get(tipo.id, {'progresso': 0, 'perguntas_respondidas': 0, 'total_perguntas': 0, 'versao': 'N/A'}) %}
                                 <div class="col-md-6 mb-3">
                                     <div class="card">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <h6 class="card-title mb-0">{{ tipo.nome }}</h6>
-                                                <span class="badge {% if progresso_tipo.progresso >= 100 %}bg-success{% elif progresso_tipo.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                <div>
+                                                    <h6 class="card-title mb-0">{{ tipo.nome }}</h6>
+                                                    <small class="text-muted">{{ progresso_tipo.versao }}</small>
+                                                </div>
+                                                <span class="badge {% if progresso_tipo.progresso >= 100 %}bg-success{% elif progresso_tipo.progresso >= 75 %}bg-info{% elif progresso_tipo.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
                                                     {{ progresso_tipo.progresso }}%
                                                 </span>
                                             </div>
@@ -110,11 +113,11 @@
                                                 <p class="card-text text-muted small">{{ tipo.descricao }}</p>
                                             {% endif %}
                                             <div class="progress mb-2" style="height: 8px;">
-                                                <div class="progress-bar {% if progresso_tipo.progresso >= 100 %}bg-success{% elif progresso_tipo.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                <div class="progress-bar {% if progresso_tipo.progresso >= 100 %}bg-success{% elif progresso_tipo.progresso >= 75 %}bg-info{% elif progresso_tipo.progresso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
                                                      style="width: {{ progresso_tipo.progresso }}%"></div>
                                             </div>
                                             <small class="text-muted">
-                                                {{ progresso_tipo.respostas }} de {{ progresso_tipo.total }} respostas
+                                                {{ progresso_tipo.perguntas_respondidas }} de {{ progresso_tipo.total_perguntas }} perguntas respondidas
                                             </small>
                                         </div>
                                     </div>
