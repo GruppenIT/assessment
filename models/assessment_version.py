@@ -129,6 +129,6 @@ class AssessmentDominio(db.Model):
         """Retorna perguntas ativas deste domínio ordenadas"""
         from models.pergunta import Pergunta
         return Pergunta.query.filter_by(
-            dominio_id=self.id,
+            dominio_versao_id=self.id,
             ativo=True
         ).order_by(Pergunta.ordem).all()
