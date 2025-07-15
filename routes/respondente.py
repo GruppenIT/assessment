@@ -156,7 +156,14 @@ def assessment(projeto_id, tipo_assessment_id):
         return redirect(url_for('respondente.dashboard'))
     
     projeto = projeto_respondente.projeto
-    dominios = tipo_assessment.get_dominios_ativos()
+    
+    # Obter domínios baseado no sistema usado
+    if projeto_assessment.versao_assessment_id:
+        # Novo sistema de versionamento - domínios da versão
+        dominios = projeto_assessment.versao_assessment.get_dominios_ativos()
+    else:
+        # Sistema antigo - domínios do tipo
+        dominios = tipo_assessment.get_dominios_ativos()
     
     # Buscar TODAS as respostas do projeto (colaborativo entre respondentes)
     respostas_existentes = {}
