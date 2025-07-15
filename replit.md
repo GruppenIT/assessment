@@ -193,6 +193,16 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - New projects use latest published version, existing projects keep their version
   - **INTERFACE REORGANIZATION**: Consolidated admin menu with dropdown structure for better UX
   - **DATABASE MIGRATION**: Fixed route conflicts and migrated existing assessment types (Cibersegurança, LGPD) to new versioning system with all domains and questions preserved
+- July 15, 2025. Logo System and Project Filtering Fixes:
+  - **LOGO URL GENERATION FIX**: Corrected logo URL generation issues in production environment
+  - Fixed system logo URL generation preventing duplicate path concatenation (logos/logos/ → logos/)
+  - Updated client logo display to use correct uploaded_file route instead of static route
+  - Fixed upload_logo route to store clean file paths without duplicate subfolder names
+  - Enhanced project filtering system with client-specific views
+  - **PROJECT FILTERING**: Implemented client-specific project filtering with `?cliente=ID` parameter
+  - Added visual indicators for filtered vs. general project views
+  - Created contextual navigation buttons for filtered project management
+  - Fixed template rendering to show client context in project listings
 
 ## User Preferences
 

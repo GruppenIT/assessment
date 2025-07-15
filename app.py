@@ -134,7 +134,8 @@ def create_app():
     def uploaded_file(filename):
         from flask import send_from_directory
         import os
-        return send_from_directory(os.path.join(app.root_path, app.config['UPLOAD_FOLDER']), filename)
+        upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+        return send_from_directory(upload_folder, filename)
     
     # Rota raiz
     @app.route('/')

@@ -1248,7 +1248,7 @@ def upload_logo():
             try:
                 # Salvar o arquivo
                 filename = save_uploaded_file(file, 'logos')
-                caminho_arquivo = f'logos/{filename}'
+                caminho_arquivo = filename  # Apenas o nome do arquivo, não duplicar 'logos/'
                 
                 # Desativar logo anterior
                 Logo.query.update({'ativo': False})

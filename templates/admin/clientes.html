@@ -44,7 +44,7 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 {% if cliente.logo_path %}
-                                                    <img src="{{ url_for('static', filename=cliente.logo_path.replace('static/', '')) }}" 
+                                                    <img src="{{ url_for('uploaded_file', filename=cliente.logo_path) }}" 
                                                          alt="Logo" class="me-2 rounded" style="width: 32px; height: 32px; object-fit: cover;">
                                                 {% else %}
                                                     <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-2" 
