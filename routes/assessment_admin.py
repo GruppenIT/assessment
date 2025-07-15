@@ -87,7 +87,7 @@ def publicar_versao(versao_id):
     
     return redirect(url_for('assessment_admin.ver_tipo', tipo_id=versao.tipo_id))
 
-@assessment_admin_bp.route('/assessments/versao/<int:versao_id>/nova-versao', methods=['POST'])
+@assessment_admin_bp.route('/tipos-assessment/versao/<int:versao_id>/nova-versao', methods=['POST'])
 @login_required
 @admin_required
 def nova_versao(versao_id):
@@ -146,7 +146,7 @@ def nova_versao(versao_id):
     flash(f'Nova versão {nova_versao_num} criada com sucesso!', 'success')
     return redirect(url_for('assessment_admin.editar_versao', versao_id=nova_versao.id))
 
-@assessment_admin_bp.route('/assessments/dominio/<int:versao_id>/novo', methods=['POST'])
+@assessment_admin_bp.route('/tipos-assessment/dominio/<int:versao_id>/novo', methods=['POST'])
 @login_required
 @admin_required
 def novo_dominio(versao_id):
@@ -181,7 +181,7 @@ def novo_dominio(versao_id):
     flash(f'Domínio "{nome}" adicionado com sucesso!', 'success')
     return redirect(url_for('assessment_admin.editar_versao', versao_id=versao_id))
 
-@assessment_admin_bp.route('/assessments/pergunta/<int:dominio_id>/nova', methods=['POST'])
+@assessment_admin_bp.route('/tipos-assessment/pergunta/<int:dominio_id>/nova', methods=['POST'])
 @login_required
 @admin_required
 def nova_pergunta(dominio_id):
@@ -223,6 +223,96 @@ def importar_csv():
     """Página de importação CSV para assessments versionados"""
     tipos = AssessmentTipo.query.filter_by(ativo=True).all()
     return render_template('admin/assessments/importar_csv.html', tipos=tipos)
+
+@assessment_admin_bp.route('/tipos-assessment/<int:tipo_id>/desativar', methods=['POST'])
+@login_required
+@admin_required
+def desativar_tipo(tipo_id):
+    """Desativa um tipo de assessment"""
+    tipo = AssessmentTipo.query.get_or_404(tipo_id)
+    
+    # Verificar se há projetos usando este tipo
+    from models.projeto import Projeto
+    projetos_ativo = Projeto.query.filter_by(tipo_assessment_id=tipo_id, ativo=True).count()
+    
+    if projetos_ativo > 0:
+        flash(f'Não é possível desativar o tipo "{tipo.nome}" pois há {projetos_ativo} projeto(s) ativo(s) usando-o.', 'error')
+        return redirect(url_for('assessment_admin.ver_tipo', tipo_id=tipo_id))
+    
+    tipo.ativo = False
+    db.session.commit()
+    
+    flash(f'Tipo "{tipo.nome}" desativado com sucesso!', 'success')
+    return redirect(url_for('assessment_admin.listar_tipos'))
+
+@assessment_admin_bp.route('/tipos-assessment/<int:tipo_id>/clonar', methods=['POST'])
+@login_required
+@admin_required
+def clonar_tipo(tipo_id):
+    """Clona um tipo de assessment criando um novo independente"""
+    tipo_original = AssessmentTipo.query.get_or_404(tipo_id)
+    novo_nome = request.form.get('nome')
+    nova_descricao = request.form.get('descricao', '')
+    
+    if not novo_nome:
+        flash('Nome é obrigatório para clonagem', 'error')
+        return redirect(url_for('assessment_admin.ver_tipo', tipo_id=tipo_id))
+    
+    # Verificar se nome já existe
+    existe = AssessmentTipo.query.filter_by(nome=novo_nome).first()
+    if existe:
+        flash('Já existe um tipo com este nome', 'error')
+        return redirect(url_for('assessment_admin.ver_tipo', tipo_id=tipo_id))
+    
+    # Criar novo tipo
+    novo_tipo = AssessmentTipo(
+        nome=novo_nome,
+        descricao=nova_descricao
+    )
+    db.session.add(novo_tipo)
+    db.session.flush()
+    
+    # Pegar versão ativa do tipo original
+    versao_original = tipo_original.get_versao_ativa()
+    if not versao_original:
+        flash('Tipo original não tem versão ativa para clonar', 'error')
+        return redirect(url_for('assessment_admin.ver_tipo', tipo_id=tipo_id))
+    
+    # Criar versão 1.0 para o novo tipo
+    nova_versao = AssessmentVersao(
+        tipo_id=novo_tipo.id,
+        versao='1.0',
+        status='draft',
+        criado_por=current_user.id,
+        notas_versao=f'Clonado de {tipo_original.nome} v{versao_original.versao}'
+    )
+    db.session.add(nova_versao)
+    db.session.flush()
+    
+    # Copiar domínios e perguntas
+    for dominio_original in versao_original.get_dominios_ativos():
+        novo_dominio = AssessmentDominio(
+            versao_id=nova_versao.id,
+            nome=dominio_original.nome,
+            descricao=dominio_original.descricao,
+            ordem=dominio_original.ordem
+        )
+        db.session.add(novo_dominio)
+        db.session.flush()
+        
+        # Copiar perguntas
+        for pergunta_original in dominio_original.get_perguntas_ativas():
+            nova_pergunta = Pergunta(
+                dominio_versao_id=novo_dominio.id,
+                texto=pergunta_original.texto,
+                descricao=pergunta_original.descricao,
+                ordem=pergunta_original.ordem
+            )
+            db.session.add(nova_pergunta)
+    
+    db.session.commit()
+    flash(f'Tipo "{novo_nome}" clonado com sucesso!', 'success')
+    return redirect(url_for('assessment_admin.editar_versao', versao_id=nova_versao.id))
 
 @assessment_admin_bp.route('/tipos-assessment/importar-csv', methods=['POST'])
 @login_required

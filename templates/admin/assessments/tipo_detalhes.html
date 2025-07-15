@@ -13,6 +13,15 @@
             <p class="text-muted mb-0">{{ tipo.descricao or 'Gerencie as versões deste tipo de assessment' }}</p>
         </div>
         <div class="btn-group">
+            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#clonarTipoModal">
+                <i class="fas fa-clone me-1"></i>Clonar Tipo
+            </button>
+            <form method="POST" action="{{ url_for('assessment_admin.desativar_tipo', tipo_id=tipo.id) }}" 
+                  class="d-inline" onsubmit="return confirm('Tem certeza? Este tipo será desativado permanentemente.')">
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-trash me-1"></i>Desativar
+                </button>
+            </form>
             <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Voltar
             </a>
@@ -63,10 +72,12 @@
                     </div>
                     
                     <div class="text-muted small">
+                        {% if versao.data_criacao %}
                         <div class="mb-1">
                             <i class="fas fa-calendar me-1"></i>
                             Criada em {{ versao.data_criacao.strftime('%d/%m/%Y') }}
                         </div>
+                        {% endif %}
                         {% if versao.data_publicacao %}
                         <div class="mb-1">
                             <i class="fas fa-rocket me-1"></i>
@@ -151,6 +162,56 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Criar Versão
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Clonar Tipo -->
+<div class="modal fade" id="clonarTipoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-clone me-2"></i>Clonar Tipo de Assessment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('assessment_admin.clonar_tipo', tipo_id=tipo.id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Será criado um novo tipo independente com todos os domínios e perguntas da versão ativa atual.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="clone_nome" class="form-label">Nome do Novo Tipo *</label>
+                        <input type="text" class="form-control" id="clone_nome" name="nome" 
+                               placeholder="Ex: {{ tipo.nome }} v2" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="clone_descricao" class="form-label">Descrição</label>
+                        <textarea class="form-control" id="clone_descricao" name="descricao" rows="3"
+                                  placeholder="Descrição do novo tipo...">{{ tipo.descricao }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-clone me-1"></i>Clonar Tipo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-plus me-1"></i>Criar Versão
