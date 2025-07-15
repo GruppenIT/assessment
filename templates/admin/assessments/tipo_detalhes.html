@@ -25,9 +25,9 @@
             <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Voltar
             </a>
-            {% set versao_draft = tipo.get_versao_draft() %}
-            {% if not versao_draft %}
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novaVersaoModal">
+            {% set versao_ativa = tipo.get_versao_ativa() %}
+            {% if versao_ativa %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novaVersaoModal" data-versao-base="{{ versao_ativa.id }}">
                 <i class="fas fa-plus me-1"></i>Nova Versão
             </button>
             {% endif %}
