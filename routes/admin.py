@@ -140,30 +140,34 @@ def dashboard():
         # === TIPOS DE ASSESSMENT - ESTATÍSTICAS ===
         tipos_stats = []
         for tipo in TipoAssessment.query.filter_by(ativo=True).all():
-            # Contar projetos usando este tipo
-            projetos_usando = db.session.query(Projeto.id).join(
-                db.text('projeto_assessments'), Projeto.id == db.text('projeto_assessments.projeto_id')
-            ).filter(
-                db.text('projeto_assessments.tipo_assessment_id') == tipo.id,
-                Projeto.ativo == True
-            ).count()
-            
-            # Contar respostas para este tipo
-            total_respostas = db.session.query(Resposta.id).join(
-                Projeto, Resposta.projeto_id == Projeto.id
-            ).join(
-                db.text('projeto_assessments'), Projeto.id == db.text('projeto_assessments.projeto_id')
-            ).filter(
-                db.text('projeto_assessments.tipo_assessment_id') == tipo.id
-            ).count()
-            
-            # Contar domínios e perguntas
+            # Contar domínios e perguntas diretamente
             dominios_count = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True).count()
             perguntas_count = Pergunta.query.join(Dominio).filter(
                 Dominio.tipo_assessment_id == tipo.id, 
                 Dominio.ativo == True, 
                 Pergunta.ativo == True
             ).count()
+            
+            # Contar projetos usando este tipo através de SQL direto
+            projetos_usando = db.session.execute(
+                db.text("""
+                    SELECT COUNT(DISTINCT p.id) 
+                    FROM projetos p 
+                    JOIN projeto_assessments pa ON p.id = pa.projeto_id 
+                    WHERE pa.tipo_assessment_id = :tipo_id AND p.ativo = true
+                """), {'tipo_id': tipo.id}
+            ).scalar() or 0
+            
+            # Contar respostas para este tipo
+            total_respostas = db.session.execute(
+                db.text("""
+                    SELECT COUNT(r.id) 
+                    FROM respostas r 
+                    JOIN projetos p ON r.projeto_id = p.id 
+                    JOIN projeto_assessments pa ON p.id = pa.projeto_id 
+                    WHERE pa.tipo_assessment_id = :tipo_id
+                """), {'tipo_id': tipo.id}
+            ).scalar() or 0
             
             tipos_stats.append({
                 'nome': tipo.nome,

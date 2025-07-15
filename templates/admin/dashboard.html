@@ -32,10 +32,10 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h6 class="text-muted mb-2">Clientes Ativos</h6>
-                            <h3 class="mb-1 text-primary">{{ estatisticas.total_clientes }}</h3>
+                            <h3 class="mb-1 text-primary">{{ stats.total_clientes }}</h3>
                             <small class="text-success">
                                 <i class="fas fa-arrow-up me-1"></i>
-                                {{ estatisticas.clientes_mes }} este mês
+                                {{ stats.clientes_mes }} este mês
                             </small>
                         </div>
                         <div class="bg-primary bg-opacity-10 p-3 rounded">
@@ -57,10 +57,10 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h6 class="text-muted mb-2">Respondentes</h6>
-                            <h3 class="mb-1 text-success">{{ estatisticas.total_respondentes }}</h3>
+                            <h3 class="mb-1 text-success">{{ stats.total_respondentes }}</h3>
                             <small class="text-muted">
                                 <i class="fas fa-users me-1"></i>
-                                {{ estatisticas.respondentes_ativos }} ativos
+                                {{ stats.total_respondentes }} ativos
                             </small>
                         </div>
                         <div class="bg-success bg-opacity-10 p-3 rounded">
@@ -82,10 +82,10 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h6 class="text-muted mb-2">Projetos</h6>
-                            <h3 class="mb-1 text-info">{{ estatisticas.total_projetos }}</h3>
+                            <h3 class="mb-1 text-info">{{ stats.total_projetos }}</h3>
                             <small class="text-warning">
                                 <i class="fas fa-clock me-1"></i>
-                                {{ estatisticas.projetos_pendentes }} pendentes
+                                {{ stats.projetos_pendentes }} pendentes
                             </small>
                         </div>
                         <div class="bg-info bg-opacity-10 p-3 rounded">
@@ -107,7 +107,7 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h6 class="text-muted mb-2">Completude Média</h6>
-                            <h3 class="mb-1 text-warning">{{ "%.1f"|format(estatisticas.progresso_medio) }}%</h3>
+                            <h3 class="mb-1 text-warning">{{ "%.1f"|format(stats.progresso_medio) }}%</h3>
                             <small class="text-muted">
                                 <i class="fas fa-chart-line me-1"></i>
                                 dos projetos
@@ -119,7 +119,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <span class="text-muted small">Baseado em {{ estatisticas.total_respostas }} respostas</span>
+                    <span class="text-muted small">Baseado em {{ stats.total_respostas }} respostas</span>
                 </div>
             </div>
         </div>
@@ -136,20 +136,20 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% if atividade_recente %}
+                    {% if atividade_diaria %}
                         <div class="timeline">
-                            {% for atividade in atividade_recente %}
+                            {% for atividade in atividade_diaria %}
                                 <div class="timeline-item mb-3">
                                     <div class="d-flex">
                                         <div class="flex-shrink-0">
-                                            <div class="bg-{{ atividade.cor }} rounded-circle p-2">
-                                                <i class="fas {{ atividade.icone }} text-white fa-sm"></i>
+                                            <div class="bg-primary rounded-circle p-2">
+                                                <i class="fas fa-chart-line text-white fa-sm"></i>
                                             </div>
                                         </div>
                                         <div class="flex-grow-1 ms-3">
-                                            <h6 class="mb-1">{{ atividade.titulo }}</h6>
-                                            <p class="text-muted mb-1">{{ atividade.descricao }}</p>
-                                            <small class="text-muted">{{ atividade.tempo_formatado }}</small>
+                                            <h6 class="mb-1">{{ atividade.data }}</h6>
+                                            <p class="text-muted mb-1">{{ atividade.respostas }} respostas de {{ atividade.respondentes_ativos }} respondentes</p>
+                                            <small class="text-muted">Atividade do dia</small>
                                         </div>
                                     </div>
                                 </div>
@@ -203,18 +203,19 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% if tipos_assessment %}
-                        {% for tipo in tipos_assessment %}
+                    {% if tipos_stats %}
+                        {% for tipo in tipos_stats %}
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between mb-1">
                                     <small class="fw-bold">{{ tipo.nome }}</small>
-                                    <small class="text-muted">{{ tipo.total_clientes }} cliente{{ "s" if tipo.total_clientes != 1 else "" }}</small>
+                                    <small class="text-muted">{{ tipo.projetos_usando }} projeto{{ "s" if tipo.projetos_usando != 1 else "" }}</small>
                                 </div>
                                 <div class="progress" style="height: 8px;">
                                     <div class="progress-bar bg-primary" role="progressbar" 
-                                         style="width: {{ (tipo.total_clientes / estatisticas.total_clientes * 100) if estatisticas.total_clientes > 0 else 0 }}%">
+                                         style="width: {{ (tipo.projetos_usando / stats.total_projetos * 100) if stats.total_projetos > 0 else 0 }}%">
                                     </div>
                                 </div>
+                                <small class="text-muted">{{ tipo.total_respostas }} respostas, {{ tipo.perguntas_count }} perguntas</small>
                             </div>
                         {% endfor %}
                     {% else %}
@@ -229,7 +230,7 @@
     </div>
     
     <!-- Alertas e notificações importantes -->
-    {% if alertas_importantes %}
+    {% if alertas %}
         <div class="row">
             <div class="col-12">
                 <div class="card border-warning">
@@ -240,7 +241,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        {% for alerta in alertas_importantes %}
+                        {% for alerta in alertas %}
                             <div class="alert alert-{{ alerta.tipo }} mb-2">
                                 <i class="fas {{ alerta.icone }} me-2"></i>
                                 <strong>{{ alerta.titulo }}:</strong> {{ alerta.mensagem }}
