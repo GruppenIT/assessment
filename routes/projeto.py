@@ -112,10 +112,12 @@ def listar_working():
 
         return render_template('admin/projetos/listar.html', 
                              projetos=projetos_data,
+                             projetos_data=projetos_data,
                              ordem_atual=ordem,
                              direcao_atual=direcao)
         
     except Exception as e:
+        logging.error(f"Erro em listar_working: {str(e)}")
         return f"<h1>Erro: {str(e)}</h1>"
 
 @projeto_bp.route('/')
@@ -155,12 +157,15 @@ def listar():
             
             return render_template('admin/projetos/listar.html', 
                                  projetos=projetos_data,
+                                 projetos_data=projetos_data,
                                  cliente=cliente,
                                  filtro_cliente=True,
                                  ordem_atual='data_criacao',
                                  direcao_atual='desc')
         except Exception as e:
-            return f"<h1>Erro ao filtrar projetos: {str(e)}</h1>"
+            logging.error(f"Erro ao filtrar projetos: {str(e)}")
+            flash(f'Erro ao filtrar projetos: {str(e)}', 'danger')
+            return redirect(url_for('projeto.listar_working'))
     else:
         # Listar todos os projetos - redireciona para versão working
         return redirect(url_for('projeto.listar_working'))
