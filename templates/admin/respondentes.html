@@ -156,15 +156,15 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% set projetos_count = respondente.projetos|length %}
-                                        {% if projetos_count > 0 %}
-                                            <span class="badge bg-primary">{{ projetos_count }} projeto{{ 's' if projetos_count != 1 else '' }}</span>
+                                        {% set projetos_respondente = respondente.projeto_respondentes %}
+                                        {% if projetos_respondente %}
+                                            <span class="badge bg-primary">{{ projetos_respondente|length }} projeto{{ 's' if projetos_respondente|length != 1 else '' }}</span>
                                             <div class="small text-muted mt-1">
-                                                {% for projeto in respondente.projetos[:2] %}
-                                                    <div>• {{ projeto.nome[:30] }}{{ '...' if projeto.nome|length > 30 else '' }}</div>
+                                                {% for projeto_resp in projetos_respondente[:2] %}
+                                                    <div>• {{ projeto_resp.projeto.nome[:30] }}{{ '...' if projeto_resp.projeto.nome|length > 30 else '' }}</div>
                                                 {% endfor %}
-                                                {% if projetos_count > 2 %}
-                                                    <div class="text-muted">+ {{ projetos_count - 2 }} mais</div>
+                                                {% if projetos_respondente|length > 2 %}
+                                                    <div class="text-muted">+ {{ projetos_respondente|length - 2 }} mais</div>
                                                 {% endif %}
                                             </div>
                                         {% else %}

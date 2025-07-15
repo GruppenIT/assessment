@@ -560,8 +560,8 @@ def respondente_projetos(respondente_id):
     # Buscar todos os projetos do cliente
     projetos_cliente = Projeto.query.filter_by(cliente_id=cliente.id).all()
     
-    # Projetos onde o respondente já participa
-    projetos_participando = respondente.projetos
+    # Projetos onde o respondente já participa (através do relacionamento many-to-many)
+    projetos_participando = [pr.projeto for pr in respondente.projeto_respondentes]
     
     # Projetos disponíveis para associar
     projetos_disponíveis = [p for p in projetos_cliente if p not in projetos_participando]
@@ -586,8 +586,14 @@ def associar_respondente_projeto(respondente_id, projeto_id):
         return redirect(url_for('admin.respondente_projetos', respondente_id=respondente_id))
     
     # Verificar se já não está associado
-    if projeto not in respondente.projetos:
-        respondente.projetos.append(projeto)
+    projetos_participando = [pr.projeto for pr in respondente.projeto_respondentes]
+    if projeto not in projetos_participando:
+        from models.projeto_respondente import ProjetoRespondente
+        projeto_respondente = ProjetoRespondente(
+            projeto_id=projeto.id,
+            respondente_id=respondente.id
+        )
+        db.session.add(projeto_respondente)
         db.session.commit()
         flash(f'Respondente associado ao projeto "{projeto.nome}" com sucesso!', 'success')
     else:
@@ -603,8 +609,15 @@ def desassociar_respondente_projeto(respondente_id, projeto_id):
     respondente = Respondente.query.get_or_404(respondente_id)
     projeto = Projeto.query.get_or_404(projeto_id)
     
-    if projeto in respondente.projetos:
-        respondente.projetos.remove(projeto)
+    # Buscar e remover a associação
+    from models.projeto_respondente import ProjetoRespondente
+    projeto_respondente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto.id, 
+        respondente_id=respondente.id
+    ).first()
+    
+    if projeto_respondente:
+        db.session.delete(projeto_respondente)
         db.session.commit()
         flash(f'Respondente removido do projeto "{projeto.nome}" com sucesso!', 'success')
     else:
