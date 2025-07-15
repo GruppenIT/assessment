@@ -100,8 +100,43 @@ def listar_working():
 
 @projeto_bp.route('/')
 def listar():
-    """Redireciona para a versão funcional - working como padrão"""
-    return redirect(url_for('projeto.listar_working'))
+    """Lista todos os projetos ou filtra por cliente"""
+    cliente_id = request.args.get('cliente')
+    
+    if cliente_id:
+        # Filtrar projetos por cliente específico
+        try:
+            cliente = Cliente.query.get_or_404(cliente_id)
+            projetos_raw = db.session.execute(
+                db.text("SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true AND p.cliente_id = :cliente_id ORDER BY p.data_criacao DESC"),
+                {'cliente_id': cliente_id}
+            ).fetchall()
+            
+            projetos_data = []
+            for p in projetos_raw:
+                projetos_data.append({
+                    'projeto': {
+                        'id': p.id,
+                        'nome': p.nome,
+                        'descricao': p.descricao,
+                        'data_criacao': p.data_criacao,
+                        'cliente': {'nome': p.cliente_nome}
+                    },
+                    'respondentes_count': 1,
+                    'tipos_count': 1
+                })
+            
+            return render_template('admin/projetos/listar.html', 
+                                 projetos_data=projetos_data,
+                                 cliente=cliente,
+                                 filtro_cliente=True,
+                                 ordem_atual='data_criacao',
+                                 direcao_atual='desc')
+        except Exception as e:
+            return f"<h1>Erro ao filtrar projetos: {str(e)}</h1>"
+    else:
+        # Listar todos os projetos - redireciona para versão working
+        return redirect(url_for('projeto.listar_working'))
 
 @projeto_bp.route('/criar', methods=['GET', 'POST'])
 @login_required
