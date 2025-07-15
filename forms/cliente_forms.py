@@ -50,6 +50,11 @@ class ResponenteForm(FlaskForm):
         Length(max=120, message='Email deve ter no máximo 120 caracteres')
     ], render_kw={'placeholder': 'Digite o email'})
     
+    login = StringField('Login', validators=[
+        DataRequired(message='Login é obrigatório'),
+        Length(min=3, max=120, message='Login deve ter entre 3 e 120 caracteres')
+    ], render_kw={'placeholder': 'Digite o login (ex: rodrigo.melnick)'})
+    
     senha = PasswordField('Senha', validators=[
         Length(min=6, message='Senha deve ter pelo menos 6 caracteres')
     ], render_kw={'placeholder': 'Digite uma senha (deixe vazio para manter atual)'})

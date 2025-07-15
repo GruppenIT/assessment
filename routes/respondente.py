@@ -17,7 +17,7 @@ respondente_bp = Blueprint('respondente', __name__)
 @respondente_bp.route('/auto-login')
 def auto_login():
     """Auto login de teste para respondente Rodrigo"""
-    respondente = Respondente.query.filter_by(email='rodrigo@gruppen.com.br').first()
+    respondente = Respondente.query.filter_by(login='rodrigo.gruppen').first()
     if respondente:
         login_user(respondente)
         session['user_type'] = 'respondente'
@@ -28,7 +28,7 @@ def auto_login():
 @respondente_bp.route('/auto-login-marcelo')
 def auto_login_marcelo():
     """Auto login de teste para respondente Marcelo"""
-    respondente = Respondente.query.filter_by(email='marcelo_barbosa@gruppen.com.br').first()
+    respondente = Respondente.query.filter_by(login='marcelo.gruppen').first()
     if respondente:
         login_user(respondente)
         session['user_type'] = 'respondente'

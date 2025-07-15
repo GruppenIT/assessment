@@ -115,11 +115,11 @@
                             <tr>
                                 <th>Nome</th>
                                 <th>Email</th>
+                                <th>Login</th>
                                 <th>Cargo</th>
                                 <th>Setor</th>
                                 <th>Status</th>
                                 <th>Data Criação</th>
-                                <th>Último Acesso</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -132,6 +132,9 @@
                                     <td>
                                         <i class="fas fa-envelope text-muted"></i>
                                         {{ respondente.email }}
+                                    </td>
+                                    <td>
+                                        <code>{{ respondente.login }}</code>
                                     </td>
                                     <td>
                                         {{ respondente.cargo or '-' }}
@@ -212,7 +215,7 @@
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-6 mb-3">
                             {{ form.email.label(class="form-label") }}
                             {{ form.email(class="form-control") }}
                             {% if form.email.errors %}
@@ -222,6 +225,19 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                            <small class="form-text text-muted">Pode ser o mesmo email em diferentes clientes</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.login.label(class="form-label") }}
+                            {{ form.login(class="form-control", required=True) }}
+                            {% if form.login.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.login.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Login único (ex: rodrigo.{{ cliente.nome.lower().replace(' ', '') }})</small>
                         </div>
                         <div class="col-md-12 mb-3">
                             {{ form.senha.label(class="form-label") }}
@@ -293,9 +309,15 @@
                             <label class="form-label">Nome do Respondente</label>
                             <input type="text" name="nome" class="form-control" value="{{ respondente.nome }}" required>
                         </div>
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Email</label>
                             <input type="email" name="email" class="form-control" value="{{ respondente.email }}" required>
+                            <small class="form-text text-muted">Pode ser o mesmo email em diferentes clientes</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Login</label>
+                            <input type="text" name="login" class="form-control" value="{{ respondente.login }}" required>
+                            <small class="form-text text-muted">Login único para autenticação</small>
                         </div>
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Nova Senha (deixe vazio para manter atual)</label>

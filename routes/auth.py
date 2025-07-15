@@ -41,8 +41,11 @@ def login():
             else:
                 return redirect(url_for('admin.dashboard'))
         
-        # Se não encontrou admin, tentar encontrar um respondente
-        respondente = Respondente.query.filter_by(email=email, ativo=True).first()
+        # Se não encontrou admin, tentar encontrar um respondente por email ou login
+        respondente = Respondente.query.filter(
+            ((Respondente.email == email) | (Respondente.login == email)),
+            Respondente.ativo == True
+        ).first()
         
         if respondente and check_password_hash(respondente.senha_hash, senha):
             # Login como respondente

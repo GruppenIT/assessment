@@ -437,16 +437,17 @@ def criar_respondente(cliente_id):
     if form.validate_on_submit():
         from werkzeug.security import generate_password_hash
         
-        # Verificar se email já existe
-        email_existente = Respondente.query.filter_by(email=form.email.data.lower().strip()).first()
-        if email_existente:
-            flash('Este email já está sendo usado por outro respondente.', 'danger')
+        # Verificar se login já existe (deve ser único globalmente)
+        login_existente = Respondente.query.filter_by(login=form.login.data.lower().strip()).first()
+        if login_existente:
+            flash('Este login já está sendo usado por outro respondente.', 'danger')
             return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
         
         respondente = Respondente(
             cliente_id=cliente_id,
             nome=form.nome.data.strip(),
             email=form.email.data.lower().strip(),
+            login=form.login.data.lower().strip(),
             senha_hash=generate_password_hash(form.senha.data),
             cargo=form.cargo.data.strip() if form.cargo.data else None,
             setor=form.setor.data.strip() if form.setor.data else None,
@@ -498,6 +499,7 @@ def editar_respondente(respondente_id):
         # Atualizar dados do respondente
         respondente.nome = request.form.get('nome')
         respondente.email = request.form.get('email')
+        respondente.login = request.form.get('login', '').lower().strip()
         respondente.cargo = request.form.get('cargo') or None
         respondente.setor = request.form.get('setor') or None
         respondente.ativo = bool(request.form.get('ativo'))
@@ -508,14 +510,14 @@ def editar_respondente(respondente_id):
             from werkzeug.security import generate_password_hash
             respondente.senha_hash = generate_password_hash(nova_senha)
         
-        # Validar email único (exceto para o próprio respondente)
-        email_existente = Respondente.query.filter(
-            Respondente.email == respondente.email,
+        # Validar login único (exceto para o próprio respondente)
+        login_existente = Respondente.query.filter(
+            Respondente.login == respondente.login,
             Respondente.id != respondente_id
         ).first()
         
-        if email_existente:
-            flash('Este email já está sendo usado por outro respondente.', 'danger')
+        if login_existente:
+            flash('Este login já está sendo usado por outro respondente.', 'danger')
             return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
         
         db.session.commit()

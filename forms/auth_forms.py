@@ -4,10 +4,9 @@ from wtforms.validators import DataRequired, Email, Length, EqualTo
 
 class LoginForm(FlaskForm):
     """Formulário de login"""
-    email = EmailField('Email', validators=[
-        DataRequired(message='Email é obrigatório'),
-        Email(message='Digite um email válido')
-    ], render_kw={'placeholder': 'Digite seu email'})
+    email = StringField('Email ou Login', validators=[
+        DataRequired(message='Email ou Login é obrigatório')
+    ], render_kw={'placeholder': 'Digite seu email ou login'})
     
     senha = PasswordField('Senha', validators=[
         DataRequired(message='Senha é obrigatória')

@@ -40,7 +40,7 @@
                         
                         <div class="row">
                             <!-- Nome -->
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-12 mb-3">
                                 {{ form.nome.label(class="form-label fw-bold") }}
                                 {{ form.nome(class="form-control" + (" is-invalid" if form.nome.errors else "")) }}
                                 {% if form.nome.errors %}
@@ -51,7 +51,9 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            
+                        </div>
+                        
+                        <div class="row">
                             <!-- Email -->
                             <div class="col-md-6 mb-3">
                                 {{ form.email.label(class="form-label fw-bold") }}
@@ -63,6 +65,21 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <small class="form-text text-muted">Pode ser o mesmo email em diferentes clientes</small>
+                            </div>
+                            
+                            <!-- Login -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.login.label(class="form-label fw-bold") }}
+                                {{ form.login(class="form-control" + (" is-invalid" if form.login.errors else "")) }}
+                                {% if form.login.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.login.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Login único para autenticação (ex: rodrigo.{{ cliente.nome.lower().replace(' ', '') }})</small>
                             </div>
                         </div>
                         
