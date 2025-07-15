@@ -9,7 +9,7 @@ from datetime import datetime
 
 assessment_admin_bp = Blueprint('assessment_admin', __name__)
 
-@assessment_admin_bp.route('/assessments')
+@assessment_admin_bp.route('/tipos-assessment')
 @login_required
 @admin_required
 def listar_tipos():
@@ -17,7 +17,7 @@ def listar_tipos():
     tipos = AssessmentTipo.query.filter_by(ativo=True).all()
     return render_template('admin/assessments/tipos.html', tipos=tipos)
 
-@assessment_admin_bp.route('/assessments/novo', methods=['GET', 'POST'])
+@assessment_admin_bp.route('/tipos-assessment/novo', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def novo_tipo():
@@ -54,7 +54,7 @@ def novo_tipo():
     
     return render_template('admin/assessments/tipo_form.html')
 
-@assessment_admin_bp.route('/assessments/<int:tipo_id>')
+@assessment_admin_bp.route('/tipos-assessment/<int:tipo_id>')
 @login_required
 @admin_required
 def ver_tipo(tipo_id):
@@ -63,7 +63,7 @@ def ver_tipo(tipo_id):
     versoes = tipo.get_versoes_ordenadas()
     return render_template('admin/assessments/tipo_detalhes.html', tipo=tipo, versoes=versoes)
 
-@assessment_admin_bp.route('/assessments/versao/<int:versao_id>')
+@assessment_admin_bp.route('/tipos-assessment/versao/<int:versao_id>')
 @login_required
 @admin_required
 def editar_versao(versao_id):
@@ -72,7 +72,7 @@ def editar_versao(versao_id):
     dominios = versao.get_dominios_ativos()
     return render_template('admin/assessments/versao_editor.html', versao=versao, dominios=dominios)
 
-@assessment_admin_bp.route('/assessments/versao/<int:versao_id>/publicar', methods=['POST'])
+@assessment_admin_bp.route('/tipos-assessment/versao/<int:versao_id>/publicar', methods=['POST'])
 @login_required
 @admin_required
 def publicar_versao(versao_id):
@@ -216,7 +216,7 @@ def nova_pergunta(dominio_id):
     flash('Pergunta adicionada com sucesso!', 'success')
     return redirect(url_for('assessment_admin.editar_versao', versao_id=dominio.versao_id))
 
-@assessment_admin_bp.route('/assessments/importar-csv')
+@assessment_admin_bp.route('/tipos-assessment/importar-csv')
 @login_required
 @admin_required
 def importar_csv():
@@ -224,7 +224,7 @@ def importar_csv():
     tipos = AssessmentTipo.query.filter_by(ativo=True).all()
     return render_template('admin/assessments/importar_csv.html', tipos=tipos)
 
-@assessment_admin_bp.route('/assessments/importar-csv', methods=['POST'])
+@assessment_admin_bp.route('/tipos-assessment/importar-csv', methods=['POST'])
 @login_required
 @admin_required
 def processar_importacao_csv():
