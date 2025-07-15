@@ -314,6 +314,125 @@ def clonar_tipo(tipo_id):
     flash(f'Tipo "{novo_nome}" clonado com sucesso!', 'success')
     return redirect(url_for('assessment_admin.editar_versao', versao_id=nova_versao.id))
 
+@assessment_admin_bp.route('/tipos-assessment/versao/<int:versao_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir_versao(versao_id):
+    """Exclui uma versão que ainda não foi publicada"""
+    versao = AssessmentVersao.query.get_or_404(versao_id)
+    
+    # Verificar se a versão pode ser excluída
+    if versao.status != 'draft':
+        flash('Apenas versões em draft podem ser excluídas', 'error')
+        return redirect(url_for('assessment_admin.ver_tipo', tipo_id=versao.tipo_id))
+    
+    # Verificar se há projetos usando esta versão
+    from models.projeto import Projeto
+    projetos_usando = Projeto.query.filter_by(versao_assessment_id=versao_id).count()
+    
+    if projetos_usando > 0:
+        flash(f'Não é possível excluir esta versão pois há {projetos_usando} projeto(s) usando-a.', 'error')
+        return redirect(url_for('assessment_admin.ver_tipo', tipo_id=versao.tipo_id))
+    
+    tipo_id = versao.tipo_id
+    tipo_nome = versao.tipo.nome
+    versao_num = versao.versao
+    
+    # Excluir perguntas primeiro (devido às foreign keys)
+    for dominio in versao.get_dominios_ativos():
+        Pergunta.query.filter_by(dominio_versao_id=dominio.id).delete()
+    
+    # Excluir domínios
+    AssessmentDominio.query.filter_by(versao_id=versao_id).delete()
+    
+    # Excluir a versão
+    db.session.delete(versao)
+    db.session.commit()
+    
+    flash(f'Versão {versao_num} do tipo "{tipo_nome}" excluída com sucesso!', 'success')
+    return redirect(url_for('assessment_admin.ver_tipo', tipo_id=tipo_id))
+
+@assessment_admin_bp.route('/tipos-assessment/versao/<int:versao_id>/importar-csv', methods=['POST'])
+@login_required
+@admin_required
+def importar_csv_versao(versao_id):
+    """Importa CSV para uma versão específica"""
+    versao = AssessmentVersao.query.get_or_404(versao_id)
+    
+    # Verificar se a versão pode receber importação
+    if versao.status != 'draft':
+        flash('Apenas versões em draft podem receber importação CSV', 'error')
+        return redirect(url_for('assessment_admin.editar_versao', versao_id=versao_id))
+    
+    # Verificar se a versão está vazia
+    if versao.get_total_perguntas() > 0:
+        flash('A versão deve estar vazia para receber importação CSV', 'error')
+        return redirect(url_for('assessment_admin.editar_versao', versao_id=versao_id))
+    
+    arquivo = request.files.get('arquivo_csv')
+    if not arquivo or arquivo.filename == '':
+        flash('Nenhum arquivo selecionado', 'error')
+        return redirect(url_for('assessment_admin.editar_versao', versao_id=versao_id))
+    
+    if not arquivo.filename.lower().endswith('.csv'):
+        flash('Arquivo deve ser um CSV', 'error')
+        return redirect(url_for('assessment_admin.editar_versao', versao_id=versao_id))
+    
+    try:
+        # Processar CSV
+        import csv
+        import io
+        
+        # Ler arquivo CSV
+        stream = io.StringIO(arquivo.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.DictReader(stream)
+        
+        dominios_criados = {}
+        perguntas_criadas = 0
+        
+        for row in csv_input:
+            dominio_nome = row.get('dominio', '').strip()
+            pergunta_texto = row.get('pergunta', '').strip()
+            pergunta_descricao = row.get('descricao', '').strip()
+            
+            if not dominio_nome or not pergunta_texto:
+                continue
+                
+            # Criar ou encontrar domínio
+            if dominio_nome not in dominios_criados:
+                ordem_dominio = len(dominios_criados) + 1
+                dominio = AssessmentDominio(
+                    versao_id=versao_id,
+                    nome=dominio_nome,
+                    descricao='',
+                    ordem=ordem_dominio
+                )
+                db.session.add(dominio)
+                db.session.flush()
+                dominios_criados[dominio_nome] = dominio
+            else:
+                dominio = dominios_criados[dominio_nome]
+            
+            # Criar pergunta
+            ordem_pergunta = len(dominio.get_perguntas_ativas()) + 1
+            pergunta = Pergunta(
+                dominio_versao_id=dominio.id,
+                texto=pergunta_texto,
+                descricao=pergunta_descricao,
+                ordem=ordem_pergunta
+            )
+            db.session.add(pergunta)
+            perguntas_criadas += 1
+        
+        db.session.commit()
+        flash(f'Importação concluída! {len(dominios_criados)} domínios e {perguntas_criadas} perguntas criadas.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao processar CSV: {str(e)}', 'error')
+    
+    return redirect(url_for('assessment_admin.editar_versao', versao_id=versao_id))
+
 @assessment_admin_bp.route('/tipos-assessment/importar-csv', methods=['POST'])
 @login_required
 @admin_required

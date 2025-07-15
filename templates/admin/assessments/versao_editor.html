@@ -85,9 +85,16 @@
     {% if versao.status == 'draft' %}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4><i class="fas fa-folder me-2"></i>Domínios</h4>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoDominioModal">
-            <i class="fas fa-plus me-1"></i>Novo Domínio
-        </button>
+        <div class="btn-group">
+            {% if versao.get_total_perguntas() == 0 %}
+            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importarCSVModal">
+                <i class="fas fa-file-csv me-1"></i>Importar CSV
+            </button>
+            {% endif %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoDominioModal">
+                <i class="fas fa-plus me-1"></i>Novo Domínio
+            </button>
+        </div>
     </div>
     {% endif %}
 
@@ -255,4 +262,52 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- Modal Importar CSV -->
+<div class="modal fade" id="importarCSVModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-csv me-2"></i>Importar Domínios e Perguntas via CSV
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('assessment_admin.importar_csv_versao', versao_id=versao.id) }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção:</strong> Esta ação irá adicionar domínios e perguntas à versão atual. 
+                        Certifique-se de que a versão está vazia antes de importar.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="arquivo_csv" class="form-label">Arquivo CSV *</label>
+                        <input type="file" class="form-control" id="arquivo_csv" name="arquivo_csv" 
+                               accept=".csv" required>
+                        <div class="form-text">
+                            O arquivo deve estar no formato CSV com colunas: dominio, pergunta, descricao
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Formato Esperado:</label>
+                        <div class="bg-light p-3 rounded small font-monospace">
+                            dominio,pergunta,descricao<br>
+                            "Governança","Existe política de segurança?","Avalie se há política documentada"<br>
+                            "Governança","Política é atualizada?","Verifique frequência de atualização"<br>
+                            "Controles Técnicos","Há firewall configurado?","Avalie configuração do firewall"
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-upload me-1"></i>Importar CSV
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
