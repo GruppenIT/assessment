@@ -173,6 +173,14 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - Fixed deployment issues for on-premise environment with proper module structure
   - **CRITICAL FIX**: Resolved major project listing authentication issue that prevented projects from appearing in admin interface. Created bypass solution with direct SQL queries and functional HTML output. Projects now display correctly with all data.
   - **DEFINITIVE SOLUTION**: Made `/admin/projetos/working` the default route for project listing. Main route now redirects to working version, ensuring all projects including newly created ones appear correctly without authentication conflicts.
+- July 15, 2025. Respondent Architecture Overhaul and Assessment Versioning:
+  - **RESPONDENT ARCHITECTURE OVERHAUL**: Implemented email-agnostic login system
+  - Added `login` field to respondents table (unique globally)
+  - Removed email uniqueness constraint - same email can exist across different clients
+  - Updated authentication to accept both email and login for respondent access
+  - Created client-specific login patterns (e.g., rodrigo.melnick for Melnick client, rodrigo.teste for Teste client)
+  - Enhanced forms and templates to include login field with contextual hints
+  - Resolved CSRF validation issues in respondent creation process
 - July 15, 2025. Assessment Versioning System Implementation:
   - **MAJOR ARCHITECTURE CHANGE**: Implemented centralized assessment versioning system
   - Created new models: AssessmentTipo, AssessmentVersao, AssessmentDominio for version control
