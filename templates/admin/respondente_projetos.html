@@ -8,7 +8,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('admin.clientes') }}">Clientes</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('cliente.dashboard') }}">Clientes</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}">Respondentes - {{ cliente.nome }}</a></li>
             <li class="breadcrumb-item active" aria-current="page">Projetos - {{ respondente.nome }}</li>
         </ol>

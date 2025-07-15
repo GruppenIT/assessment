@@ -33,28 +33,32 @@ class Projeto(db.Model):
         total_respostas_unicas = 0
         
         for projeto_assessment in self.assessments:
-            assessment = projeto_assessment.tipo_assessment
-            
-            # Contar total de perguntas deste assessment
-            perguntas_count = Pergunta.query.join(Dominio).filter(
-                Dominio.tipo_assessment_id == assessment.id,
-                Dominio.ativo == True,
-                Pergunta.ativo == True
-            ).count()
-            total_perguntas += perguntas_count
-            
-            # Contar perguntas únicas respondidas (colaborativo)
-            # Uma pergunta respondida por qualquer pessoa conta como respondida
-            perguntas_respondidas = db.session.query(Pergunta.id).join(
-                Resposta, Pergunta.id == Resposta.pergunta_id
-            ).join(Dominio).filter(
-                Resposta.projeto_id == self.id,
-                Dominio.tipo_assessment_id == assessment.id,
-                Dominio.ativo == True,
-                Pergunta.ativo == True
-            ).distinct().count()
-            
-            total_respostas_unicas += perguntas_respondidas
+            # Usar sistema novo de versionamento
+            if projeto_assessment.versao_assessment_id:
+                versao = projeto_assessment.versao_assessment
+                
+                # Contar total de perguntas desta versão
+                from models.assessment_version import AssessmentDominio
+                perguntas_count = db.session.query(Pergunta).join(
+                    AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+                ).filter(
+                    AssessmentDominio.versao_id == versao.id,
+                    AssessmentDominio.ativo == True,
+                    Pergunta.ativo == True
+                ).count()
+                total_perguntas += perguntas_count
+                
+                # Contar perguntas únicas respondidas (colaborativo)
+                perguntas_respondidas = db.session.query(Pergunta.id).join(
+                    Resposta, Pergunta.id == Resposta.pergunta_id
+                ).join(AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id).filter(
+                    Resposta.projeto_id == self.id,
+                    AssessmentDominio.versao_id == versao.id,
+                    AssessmentDominio.ativo == True,
+                    Pergunta.ativo == True
+                ).distinct().count()
+                
+                total_respostas_unicas += perguntas_respondidas
         
         if total_perguntas == 0:
             return 0
@@ -71,7 +75,11 @@ class Projeto(db.Model):
     
     def get_tipos_assessment(self):
         """Retorna lista de tipos de assessment do projeto"""
-        return [pa.tipo_assessment for pa in self.assessments]
+        tipos = []
+        for pa in self.assessments:
+            if pa.versao_assessment_id:
+                tipos.append(pa.versao_assessment.tipo)
+        return tipos
     
     def get_progresso_respondente(self, respondente_id):
         """Calcula o progresso individual de um respondente neste projeto"""
@@ -82,24 +90,31 @@ class Projeto(db.Model):
         total_perguntas = 0
         total_respostas = 0
         
-        for assessment in self.assessments:
-            tipo = assessment.tipo_assessment
-            perguntas = Pergunta.query.join(Dominio).filter(
-                Dominio.tipo_assessment_id == tipo.id,
-                Dominio.ativo == True,
-                Pergunta.ativo == True
-            ).count()
-            
-            # Contar apenas as respostas DESTE respondente específico
-            respostas = Resposta.query.filter_by(
-                projeto_id=self.id,
-                respondente_id=respondente_id
-            ).join(Pergunta).join(Dominio).filter(
-                Dominio.tipo_assessment_id == tipo.id
-            ).count()
-            
-            total_perguntas += perguntas
-            total_respostas += respostas
+        for projeto_assessment in self.assessments:
+            # Usar sistema novo de versionamento
+            if projeto_assessment.versao_assessment_id:
+                versao = projeto_assessment.versao_assessment
+                
+                # Contar total de perguntas desta versão
+                from models.assessment_version import AssessmentDominio
+                perguntas = db.session.query(Pergunta).join(
+                    AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+                ).filter(
+                    AssessmentDominio.versao_id == versao.id,
+                    AssessmentDominio.ativo == True,
+                    Pergunta.ativo == True
+                ).count()
+                
+                # Contar apenas as respostas DESTE respondente específico
+                respostas = Resposta.query.filter_by(
+                    projeto_id=self.id,
+                    respondente_id=respondente_id
+                ).join(Pergunta).join(AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id).filter(
+                    AssessmentDominio.versao_id == versao.id
+                ).count()
+                
+                total_perguntas += perguntas
+                total_respostas += respostas
         
         return round((total_respostas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
 

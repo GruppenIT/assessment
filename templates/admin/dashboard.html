@@ -44,7 +44,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('cliente.dashboard') }}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-arrow-right me-1"></i>Gerenciar Clientes
                     </a>
                 </div>
@@ -69,7 +69,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-success btn-sm">
+                    <a href="{{ url_for('cliente.dashboard') }}" class="btn btn-outline-success btn-sm">
                         <i class="fas fa-arrow-right me-1"></i>Ver Respondentes
                     </a>
                 </div>
@@ -176,19 +176,19 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('admin.criar_cliente') }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('projeto.criar_cliente') }}" class="btn btn-outline-primary">
                             <i class="fas fa-plus me-2"></i>Novo Cliente
                         </a>
-                        <a href="{{ url_for('admin.dominios') }}" class="btn btn-outline-success">
-                            <i class="fas fa-layer-group me-2"></i>Gerenciar Domínios
+                        <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-success">
+                            <i class="fas fa-layer-group me-2"></i>Gerenciar Assessments
                         </a>
-                        <a href="{{ url_for('admin.perguntas') }}" class="btn btn-outline-info">
-                            <i class="fas fa-question-circle me-2"></i>Gerenciar Perguntas
+                        <a href="{{ url_for('projeto.listar') }}" class="btn btn-outline-info">
+                            <i class="fas fa-question-circle me-2"></i>Gerenciar Projetos
                         </a>
-                        <a href="{{ url_for('admin.importar_csv') }}" class="btn btn-outline-warning">
+                        <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-warning">
                             <i class="fas fa-file-csv me-2"></i>Importar CSV
                         </a>
-                        <a href="{{ url_for('admin.configuracoes') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-cog me-2"></i>Configurações
                         </a>
                     </div>

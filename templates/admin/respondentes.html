@@ -8,7 +8,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('admin.clientes') }}">Clientes</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('cliente.dashboard') }}">Clientes</a></li>
             <li class="breadcrumb-item active" aria-current="page">Respondentes - {{ cliente.nome }}</li>
         </ol>
     </nav>
@@ -24,7 +24,7 @@
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoResponenteModal">
                 <i class="fas fa-plus"></i> Novo Respondente
             </button>
-            <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('cliente.dashboard') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> Voltar aos Clientes
             </a>
         </div>
