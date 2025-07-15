@@ -16,12 +16,18 @@
     <!-- Cabeçalho -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2><i class="fas fa-users"></i> Respondentes</h2>
+            <h2><i class="fas fa-users"></i> Respondentes do Cliente</h2>
             <p class="text-muted mb-0">{{ cliente.nome }} - {{ cliente.razao_social }}</p>
+            <small class="text-muted">Gerencie os respondentes que participarão dos assessments</small>
         </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoResponenteModal">
-            <i class="fas fa-plus"></i> Novo Respondente
-        </button>
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoResponenteModal">
+                <i class="fas fa-plus"></i> Novo Respondente
+            </button>
+            <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar aos Clientes
+            </a>
+        </div>
     </div>
 
     <!-- Alertas de Feedback -->
@@ -119,7 +125,7 @@
                                 <th>Cargo</th>
                                 <th>Setor</th>
                                 <th>Status</th>
-                                <th>Data Criação</th>
+                                <th>Projetos</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -150,14 +156,20 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <small class="text-muted">
-                                            {{ respondente.data_criacao.strftime('%d/%m/%Y') if respondente.data_criacao else '-' }}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">
-                                            {{ respondente.ultimo_acesso.strftime('%d/%m/%Y %H:%M') if respondente.ultimo_acesso else 'Nunca' }}
-                                        </small>
+                                        {% set projetos_count = respondente.projetos|length %}
+                                        {% if projetos_count > 0 %}
+                                            <span class="badge bg-primary">{{ projetos_count }} projeto{{ 's' if projetos_count != 1 else '' }}</span>
+                                            <div class="small text-muted mt-1">
+                                                {% for projeto in respondente.projetos[:2] %}
+                                                    <div>• {{ projeto.nome[:30] }}{{ '...' if projeto.nome|length > 30 else '' }}</div>
+                                                {% endfor %}
+                                                {% if projetos_count > 2 %}
+                                                    <div class="text-muted">+ {{ projetos_count - 2 }} mais</div>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">Nenhum projeto</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
@@ -167,6 +179,11 @@
                                                     title="Editar">
                                                 <i class="fas fa-edit"></i>
                                             </button>
+                                            <a href="{{ url_for('admin.respondente_projetos', respondente_id=respondente.id) }}" 
+                                               class="btn btn-outline-info btn-sm" 
+                                               title="Gerenciar Projetos">
+                                                <i class="fas fa-project-diagram"></i>
+                                            </a>
                                             <button type="button" class="btn btn-outline-danger btn-sm" 
                                                     onclick="confirmarExclusao({{ respondente.id }}, '{{ respondente.nome }}')"
                                                     title="Excluir">

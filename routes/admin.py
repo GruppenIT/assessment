@@ -549,6 +549,69 @@ def editar_respondente(respondente_id):
     
     return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
 
+@admin_bp.route('/respondentes/<int:respondente_id>/projetos')
+@login_required
+@admin_required
+def respondente_projetos(respondente_id):
+    """Gerenciamento de projetos de um respondente"""
+    respondente = Respondente.query.get_or_404(respondente_id)
+    cliente = respondente.cliente
+    
+    # Buscar todos os projetos do cliente
+    projetos_cliente = Projeto.query.filter_by(cliente_id=cliente.id).all()
+    
+    # Projetos onde o respondente já participa
+    projetos_participando = respondente.projetos
+    
+    # Projetos disponíveis para associar
+    projetos_disponíveis = [p for p in projetos_cliente if p not in projetos_participando]
+    
+    return render_template('admin/respondente_projetos.html', 
+                         respondente=respondente,
+                         cliente=cliente,
+                         projetos_participando=projetos_participando,
+                         projetos_disponíveis=projetos_disponíveis)
+
+@admin_bp.route('/respondentes/<int:respondente_id>/associar-projeto/<int:projeto_id>', methods=['POST'])
+@login_required
+@admin_required
+def associar_respondente_projeto(respondente_id, projeto_id):
+    """Associa um respondente a um projeto"""
+    respondente = Respondente.query.get_or_404(respondente_id)
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se o respondente e projeto são do mesmo cliente
+    if respondente.cliente_id != projeto.cliente_id:
+        flash('Erro: Respondente e projeto devem ser do mesmo cliente.', 'danger')
+        return redirect(url_for('admin.respondente_projetos', respondente_id=respondente_id))
+    
+    # Verificar se já não está associado
+    if projeto not in respondente.projetos:
+        respondente.projetos.append(projeto)
+        db.session.commit()
+        flash(f'Respondente associado ao projeto "{projeto.nome}" com sucesso!', 'success')
+    else:
+        flash('Respondente já está associado a este projeto.', 'warning')
+    
+    return redirect(url_for('admin.respondente_projetos', respondente_id=respondente_id))
+
+@admin_bp.route('/respondentes/<int:respondente_id>/desassociar-projeto/<int:projeto_id>', methods=['POST'])
+@login_required
+@admin_required
+def desassociar_respondente_projeto(respondente_id, projeto_id):
+    """Remove associação entre respondente e projeto"""
+    respondente = Respondente.query.get_or_404(respondente_id)
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    if projeto in respondente.projetos:
+        respondente.projetos.remove(projeto)
+        db.session.commit()
+        flash(f'Respondente removido do projeto "{projeto.nome}" com sucesso!', 'success')
+    else:
+        flash('Respondente não estava associado a este projeto.', 'warning')
+    
+    return redirect(url_for('admin.respondente_projetos', respondente_id=respondente_id))
+
 @admin_bp.route('/respondentes/<int:respondente_id>/excluir', methods=['POST'])
 @login_required
 @admin_required

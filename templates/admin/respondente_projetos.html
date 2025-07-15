@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Projetos - {{ respondente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.clientes') }}">Clientes</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}">Respondentes - {{ cliente.nome }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Projetos - {{ respondente.nome }}</li>
+        </ol>
+    </nav>
+
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-project-diagram"></i> Gerenciar Projetos</h2>
+            <p class="text-muted mb-0">
+                <strong>Respondente:</strong> {{ respondente.nome }} ({{ respondente.email }})
+            </p>
+            <p class="text-muted mb-0">
+                <strong>Cliente:</strong> {{ cliente.nome }}
+            </p>
+            <small class="text-muted">Gerencie em quais projetos este respondente participará</small>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('admin.respondentes_cliente', cliente_id=cliente.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar aos Respondentes
+            </a>
+        </div>
+    </div>
+
+    <!-- Alertas de Feedback -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Projetos onde participa -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-check-circle"></i> Projetos Participando ({{ projetos_participando|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if projetos_participando %}
+                        <div class="list-group list-group-flush">
+                            {% for projeto in projetos_participando %}
+                                <div class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">{{ projeto.nome }}</div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar"></i> Criado em {{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else '-' }}
+                                        </small>
+                                        {% if projeto.descricao %}
+                                            <div class="small text-muted mt-1">{{ projeto.descricao[:100] }}{{ '...' if projeto.descricao|length > 100 else '' }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('projeto.dashboard', projeto_id=projeto.id) }}" 
+                                           class="btn btn-outline-primary btn-sm" 
+                                           title="Ver Projeto">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('admin.desassociar_respondente_projeto', respondente_id=respondente.id, projeto_id=projeto.id) }}" 
+                                              style="display: inline;" 
+                                              onsubmit="return confirm('Tem certeza que deseja remover este respondente do projeto?')">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Remover do Projeto">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-project-diagram fa-3x mb-3"></i>
+                            <p>Este respondente ainda não participa de nenhum projeto.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Projetos disponíveis -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plus-circle"></i> Projetos Disponíveis ({{ projetos_disponíveis|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if projetos_disponíveis %}
+                        <div class="list-group list-group-flush">
+                            {% for projeto in projetos_disponíveis %}
+                                <div class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">{{ projeto.nome }}</div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar"></i> Criado em {{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else '-' }}
+                                        </small>
+                                        {% if projeto.descricao %}
+                                            <div class="small text-muted mt-1">{{ projeto.descricao[:100] }}{{ '...' if projeto.descricao|length > 100 else '' }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('projeto.dashboard', projeto_id=projeto.id) }}" 
+                                           class="btn btn-outline-primary btn-sm" 
+                                           title="Ver Projeto">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('admin.associar_respondente_projeto', respondente_id=respondente.id, projeto_id=projeto.id) }}" 
+                                              style="display: inline;">
+                                            <button type="submit" class="btn btn-success btn-sm" title="Adicionar ao Projeto">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <p>Este respondente já participa de todos os projetos disponíveis do cliente.</p>
+                            <a href="{{ url_for('projeto.criar', cliente_id=cliente.id) }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Criar Novo Projeto
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ projetos_participando|length }}</h4>
+                            <p class="card-text">Projetos Participando</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ projetos_disponíveis|length }}</h4>
+                            <p class="card-text">Disponíveis para Associar</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-plus-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ (projetos_participando|length + projetos_disponíveis|length) }}</h4>
+                            <p class="card-text">Total de Projetos do Cliente</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-project-diagram fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
