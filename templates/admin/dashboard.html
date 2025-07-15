@@ -81,21 +81,21 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h6 class="text-muted mb-2">Assessments</h6>
-                            <h3 class="mb-1 text-info">{{ estatisticas.total_assessments }}</h3>
+                            <h6 class="text-muted mb-2">Projetos</h6>
+                            <h3 class="mb-1 text-info">{{ estatisticas.total_projetos }}</h3>
                             <small class="text-warning">
                                 <i class="fas fa-clock me-1"></i>
-                                {{ estatisticas.assessments_pendentes }} pendentes
+                                {{ estatisticas.projetos_pendentes }} pendentes
                             </small>
                         </div>
                         <div class="bg-info bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-clipboard-check text-info fa-lg"></i>
+                            <i class="fas fa-project-diagram text-info fa-lg"></i>
                         </div>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <a href="{{ url_for('admin.assessments') }}" class="btn btn-outline-info btn-sm">
-                        <i class="fas fa-arrow-right me-1"></i>Ver Assessments
+                    <a href="{{ url_for('projetos.lista_projetos') }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i>Ver Projetos
                     </a>
                 </div>
             </div>
@@ -110,7 +110,7 @@
                             <h3 class="mb-1 text-warning">{{ "%.1f"|format(estatisticas.progresso_medio) }}%</h3>
                             <small class="text-muted">
                                 <i class="fas fa-chart-line me-1"></i>
-                                dos assessments
+                                dos projetos
                             </small>
                         </div>
                         <div class="bg-warning bg-opacity-10 p-3 rounded">

@@ -39,7 +39,9 @@ def dashboard():
         momento_do_dia = "Boa noite"
     
     # Estatísticas principais
+    from models.projeto import Projeto
     total_clientes = Cliente.query.filter_by(ativo=True).count()
+    total_projetos = Projeto.query.filter_by(ativo=True).count()
     total_respondentes = Respondente.query.count()
     respondentes_ativos = Respondente.query.filter_by(ativo=True).count()
     total_respostas = Resposta.query.count()
@@ -52,31 +54,18 @@ def dashboard():
         Cliente.ativo == True
     ).count()
     
-    # Calcular progresso médio e assessments pendentes
+    # Calcular progresso médio baseado em projetos
     progresso_medio = 0
-    assessments_pendentes = 0
+    projetos_pendentes = 0
     
-    if total_assessments > 0:
+    if total_projetos > 0:
         progressos = []
-        for ca in ClienteAssessment.query.filter_by(ativo=True).all():
-            total_perguntas = Pergunta.query.join(Dominio).filter(
-                Dominio.tipo_assessment_id == ca.tipo_assessment_id,
-                Dominio.ativo == True,
-                Pergunta.ativo == True
-            ).count()
-            
-            respostas_cliente = 0
-            for respondente in ca.cliente.respondentes:
-                respostas_cliente += Resposta.query.join(Pergunta).join(Dominio).filter(
-                    Resposta.respondente_id == respondente.id,
-                    Dominio.tipo_assessment_id == ca.tipo_assessment_id
-                ).count()
-            
-            if total_perguntas > 0 and ca.cliente.respondentes:
-                progresso = (respostas_cliente / (total_perguntas * len(ca.cliente.respondentes)) * 100)
-                progressos.append(progresso)
-                if progresso < 100:
-                    assessments_pendentes += 1
+        for projeto in Projeto.query.filter_by(ativo=True).all():
+            # Usar o método do modelo para calcular progresso
+            progresso = projeto.get_progresso_geral()
+            progressos.append(progresso)
+            if progresso < 100:
+                projetos_pendentes += 1
         
         progresso_medio = sum(progressos) / len(progressos) if progressos else 0
     
@@ -84,10 +73,11 @@ def dashboard():
     estatisticas = {
         'total_clientes': total_clientes,
         'clientes_mes': clientes_mes,
+        'total_projetos': total_projetos,
         'total_respondentes': total_respondentes,
         'respondentes_ativos': respondentes_ativos,
         'total_assessments': total_assessments,
-        'assessments_pendentes': assessments_pendentes,
+        'projetos_pendentes': projetos_pendentes,
         'progresso_medio': progresso_medio,
         'total_respostas': total_respostas
     }
@@ -152,15 +142,16 @@ def dashboard():
     # Alertas importantes
     alertas_importantes = []
     
-    # Verificar clientes sem respondentes
-    clientes_sem_respondentes = Cliente.query.filter_by(ativo=True).filter(~Cliente.respondentes.any()).count()
-    if clientes_sem_respondentes > 0:
+    # Verificar projetos sem respondentes
+    from models.projeto import Projeto
+    projetos_sem_respondentes = Projeto.query.filter_by(ativo=True).filter(~Projeto.respondentes.any()).count()
+    if projetos_sem_respondentes > 0:
         alertas_importantes.append({
             'tipo': 'warning',
-            'icone': 'fa-users',
-            'titulo': 'Clientes sem Respondentes',
-            'mensagem': f'{clientes_sem_respondentes} cliente(s) não possui(em) respondentes cadastrados',
-            'acao_url': url_for('admin.clientes'),
+            'icone': 'fa-project-diagram',
+            'titulo': 'Projetos sem Respondentes',
+            'mensagem': f'{projetos_sem_respondentes} projeto(s) não possui(em) respondentes cadastrados',
+            'acao_url': url_for('projetos.lista_projetos'),
             'acao_texto': 'Gerenciar'
         })
     
