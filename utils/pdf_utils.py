@@ -1,424 +1,371 @@
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.lib import colors
-from reportlab.lib.units import inch
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
-from reportlab.pdfgen import canvas
-from io import BytesIO
-from datetime import datetime
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import numpy as np
+"""
+Utilitário para geração de PDFs do sistema de assessment
+"""
+
 import os
 import tempfile
+from datetime import datetime
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.colors import Color, HexColor
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from models.assessment_version import AssessmentDominio
+from models.dominio import Dominio
+from models.pergunta import Pergunta
+from models.resposta import Resposta
+from app import db
+from sqlalchemy import func
 
-def gerar_grafico_radar(dados):
-    """Gera gráfico radar com os dados dos domínios"""
-    # Configurar matplotlib para não usar display
-    import matplotlib
-    matplotlib.use('Agg')  # Use backend sem display
+def gerar_relatorio_estatisticas(projeto):
+    """
+    Gera um relatório PDF completo das estatísticas do projeto
+    """
+    # Criar arquivo temporário
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+    temp_filename = temp_file.name
+    temp_file.close()
     
-    # Preparar dados para o gráfico radar
-    dominios = []
-    valores = []
+    # Criar documento
+    doc = SimpleDocTemplate(
+        temp_filename,
+        pagesize=A4,
+        rightMargin=72, leftMargin=72,
+        topMargin=72, bottomMargin=18
+    )
     
-    for est in dados['estatisticas_dominios']:
-        dominios.append(est['dominio'].nome)
-        valores.append(est['media'])
-    
-    # Se não houver dados, retornar None
-    if not dominios:
-        return None
-    
-    # Configurar o gráfico
-    N = len(dominios)
-    angles = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
-    valores += valores[:1]  # Fechar o polígono
-    angles += angles[:1]    # Fechar o polígono
-    
-    # Criar figura
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(projection='polar'))
-    
-    # Plotar o gráfico radar
-    ax.plot(angles, valores, 'o-', linewidth=2, label='Pontuação por Domínio', color='#1f77b4')
-    ax.fill(angles, valores, alpha=0.25, color='#1f77b4')
-    
-    # Configurar o gráfico
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(dominios, fontsize=10)
-    ax.set_ylim(0, 5)
-    ax.set_yticks([1, 2, 3, 4, 5])
-    ax.set_yticklabels(['1', '2', '3', '4', '5'], fontsize=8)
-    ax.grid(True)
-    
-    # Adicionar linhas de referência
-    ax.axhline(y=1, color='red', linestyle='--', alpha=0.5, label='Inicial')
-    ax.axhline(y=2, color='orange', linestyle='--', alpha=0.5, label='Básico')
-    ax.axhline(y=3, color='yellow', linestyle='--', alpha=0.5, label='Intermediário')
-    ax.axhline(y=4, color='lightgreen', linestyle='--', alpha=0.5, label='Avançado')
-    ax.axhline(y=5, color='green', linestyle='--', alpha=0.5, label='Otimizado')
-    
-    plt.title('Gráfico Radar - Avaliação por Domínio', size=16, weight='bold', pad=20)
-    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.0))
-    
-    # Salvar em arquivo temporário
-    temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-    plt.savefig(temp_file.name, dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    return temp_file.name
-
-def gerar_relatorio_pdf(dados):
-    """Gera relatório PDF do assessment"""
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    # Estilos
     styles = getSampleStyleSheet()
-    story = []
     
-    # Título principal
     title_style = ParagraphStyle(
         'CustomTitle',
-        parent=styles['Title'],
-        fontSize=24,
-        spaceAfter=20,
-        textColor=colors.darkblue,
-        alignment=1  # Center
-    )
-    
-    subtitle_style = ParagraphStyle(
-        'SubTitle',
-        parent=styles['Normal'],
-        fontSize=16,
+        parent=styles['Heading1'],
+        fontSize=18,
         spaceAfter=30,
-        textColor=colors.darkblue,
-        alignment=1  # Center
+        textColor=HexColor('#2c3e50'),
+        alignment=TA_CENTER
     )
     
-    story.append(Paragraph("RELATÓRIO DE AVALIAÇÃO DE MATURIDADE", title_style))
-    story.append(Paragraph(f"Assessment: {dados['tipo_assessment'].nome}", subtitle_style))
-    story.append(Spacer(1, 20))
-    
-    # Informações do cliente
-    header_style = ParagraphStyle(
-        'Header',
+    heading_style = ParagraphStyle(
+        'CustomHeading',
         parent=styles['Heading2'],
         fontSize=14,
+        spaceBefore=20,
         spaceAfter=10,
-        textColor=colors.darkblue
+        textColor=HexColor('#34495e'),
+        alignment=TA_LEFT
     )
     
-    story.append(Paragraph("INFORMAÇÕES DO CLIENTE", header_style))
+    subheading_style = ParagraphStyle(
+        'CustomSubHeading',
+        parent=styles['Heading3'],
+        fontSize=12,
+        spaceBefore=15,
+        spaceAfter=8,
+        textColor=HexColor('#7f8c8d'),
+        alignment=TA_LEFT
+    )
     
-    # Dados do cliente em tabela
-    cliente_data = [
-        ['Nome Fantasia:', dados['cliente'].nome],
-        ['Razão Social:', dados['cliente'].razao_social],
-        ['CNPJ:', dados['cliente'].cnpj or 'N/A'],
-        ['Localidade:', dados['cliente'].localidade or 'N/A'],
-        ['Segmento:', dados['cliente'].segmento or 'N/A'],
-        ['Tipo de Assessment:', dados['tipo_assessment'].nome],
-        ['Total de Respondentes:', str(dados['total_respondentes'])],
-        ['Data de Geração:', dados['data_geracao'].strftime('%d/%m/%Y às %H:%M')]
-    ]
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=6,
+        alignment=TA_LEFT
+    )
     
-    cliente_table = Table(cliente_data, colWidths=[2*inch, 4*inch])
-    cliente_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('BACKGROUND', (1, 0), (1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
+    # Elementos do documento
+    story = []
     
-    story.append(cliente_table)
+    # Cabeçalho
+    story.append(Paragraph("RELATÓRIO DE ESTATÍSTICAS", title_style))
+    story.append(Paragraph(f"Projeto: {projeto.nome}", heading_style))
+    story.append(Paragraph(f"Cliente: {projeto.cliente.nome}", normal_style))
+    story.append(Paragraph(f"Data de Geração: {datetime.now().strftime('%d/%m/%Y às %H:%M')}", normal_style))
     story.append(Spacer(1, 20))
     
-    # Descrição do Assessment
-    story.append(Paragraph("SOBRE O ASSESSMENT", header_style))
+    # Verificar se projeto está finalizado
+    finalizados, total_assessments = projeto.get_assessments_finalizados()
     
-    descricao_assessment = f"""
-    <b>Tipo:</b> {dados['tipo_assessment'].nome}<br/>
-    <b>Descrição:</b> {dados['tipo_assessment'].descricao or 'Este assessment avalia a maturidade organizacional através de múltiplos domínios.'}<br/>
-    <b>Total de Domínios:</b> {len(dados['estatisticas_dominios'])}<br/>
-    <b>Metodologia:</b> Avaliação baseada em escala de 0 a 5, onde cada nível representa um grau específico de maturidade organizacional.
-    """
+    if not projeto.is_totalmente_finalizado():
+        story.append(Paragraph("ATENÇÃO: Este projeto ainda não está totalmente finalizado.", normal_style))
+        story.append(Spacer(1, 20))
     
-    story.append(Paragraph(descricao_assessment, styles['Normal']))
-    story.append(Spacer(1, 20))
+    # Estatísticas gerais
+    story.append(Paragraph("RESUMO EXECUTIVO", heading_style))
     
-    # Resumo executivo
-    story.append(Paragraph("RESUMO EXECUTIVO", header_style))
+    # Calcular score médio geral
+    scores_gerais = []
+    estatisticas_assessments = []
     
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        versao_info = "Sistema Antigo"
+        
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            versao_info = f"Versão {versao.versao}"
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            versao_info = "Sistema Antigo"
+        
+        if not tipo:
+            continue
+        
+        # Calcular score geral do assessment
+        if projeto_assessment.versao_assessment_id:
+            score_query = db.session.query(
+                func.avg(Resposta.nota).label('score_medio'),
+                func.count(Resposta.id).label('total_respostas')
+            ).join(
+                Pergunta, Resposta.pergunta_id == Pergunta.id
+            ).join(
+                AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.ativo == True,
+                Pergunta.ativo == True
+            ).first()
+        else:
+            score_query = db.session.query(
+                func.avg(Resposta.nota).label('score_medio'),
+                func.count(Resposta.id).label('total_respostas')
+            ).join(
+                Pergunta, Resposta.pergunta_id == Pergunta.id
+            ).join(
+                Dominio, Pergunta.dominio_id == Dominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).first()
+        
+        score_geral = round(float(score_query.score_medio or 0), 2)
+        total_respostas = score_query.total_respostas or 0
+        
+        scores_gerais.append(score_geral)
+        estatisticas_assessments.append({
+            'tipo': tipo,
+            'versao_info': versao_info,
+            'score_geral': score_geral,
+            'total_respostas': total_respostas,
+            'data_finalizacao': projeto_assessment.data_finalizacao
+        })
+    
+    score_medio_projeto = round(sum(scores_gerais) / len(scores_gerais) if scores_gerais else 0, 2)
+    
+    # Tabela de resumo
     resumo_data = [
-        ['Média Geral:', f"{dados['media_geral']}/5.0"],
-        ['Nível de Maturidade:', dados['nivel_maturidade']],
-        ['Total de Respostas:', str(dados['total_respostas'])],
-        ['Percentual de Completude:', f"{round((dados['total_respostas'] / (sum(e['total_possivel'] for e in dados['estatisticas_dominios']) or 1)) * 100, 1)}%" if dados['estatisticas_dominios'] else "0%"]
+        ['Métrica', 'Valor'],
+        ['Score Médio Geral', f'{score_medio_projeto}/5.0'],
+        ['Total de Assessments', str(len(estatisticas_assessments))],
+        ['Total de Respondentes', str(len(projeto.get_respondentes_ativos()))],
+        ['Data de Criação', projeto.data_criacao.strftime('%d/%m/%Y')],
     ]
     
-    resumo_table = Table(resumo_data, colWidths=[2*inch, 4*inch])
+    # Encontrar data de finalização mais recente
+    data_finalizacao = None
+    for assessment in estatisticas_assessments:
+        if assessment['data_finalizacao']:
+            if not data_finalizacao or assessment['data_finalizacao'] > data_finalizacao:
+                data_finalizacao = assessment['data_finalizacao']
+    
+    if data_finalizacao:
+        resumo_data.append(['Data de Finalização', data_finalizacao.strftime('%d/%m/%Y')])
+    
+    resumo_table = Table(resumo_data, colWidths=[3*inch, 2*inch])
     resumo_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightblue),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('BACKGROUND', (1, 0), (1, -1), colors.lightcyan),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     
     story.append(resumo_table)
     story.append(Spacer(1, 20))
     
-    # Gráfico Radar
-    story.append(Paragraph("GRÁFICO RADAR - VISÃO GERAL", header_style))
-    
-    # Gerar gráfico radar
-    grafico_path = gerar_grafico_radar(dados)
-    if grafico_path:
-        # Adicionar gráfico ao PDF
-        radar_img = Image(grafico_path, width=5*inch, height=5*inch)
-        story.append(radar_img)
-        story.append(Spacer(1, 10))
+    # Detalhamento por assessment
+    for assessment in estatisticas_assessments:
+        story.append(Paragraph(f"ASSESSMENT: {assessment['tipo'].nome}", heading_style))
+        story.append(Paragraph(f"{assessment['versao_info']} - Score: {assessment['score_geral']}/5.0", subheading_style))
         
-        # Interpretar gráfico
-        interpretacao = """
-        <b>Interpretação do Gráfico Radar:</b><br/>
-        O gráfico radar apresenta a pontuação média de cada domínio avaliado. Quanto mais próximo do centro (0), 
-        menor a maturidade. Quanto mais próximo da borda externa (5), maior a maturidade. 
-        A área preenchida representa o perfil geral de maturidade da organização.
-        """
-        story.append(Paragraph(interpretacao, styles['Normal']))
+        # Buscar domínios e suas estatísticas
+        if projeto.assessments[0].versao_assessment_id:
+            versao = projeto.assessments[0].versao_assessment
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        else:
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=assessment['tipo'].id, ativo=True)
         
-        # Limpar arquivo temporário
-        try:
-            os.unlink(grafico_path)
-        except:
-            pass
-    
-    story.append(Spacer(1, 20))
-    
-    # Análise Detalhada por Domínio
-    story.append(Paragraph("ANÁLISE DETALHADA POR DOMÍNIO", header_style))
-    
-    if dados['estatisticas_dominios']:
-        # Tabela resumo dos domínios
-        dominio_data = [['Domínio', 'Média', 'Nível', 'Respostas', 'Completude']]
+        dominios_data = [['Domínio', 'Score', 'Nível de Maturidade']]
         
-        for est in dados['estatisticas_dominios']:
-            nivel = calcular_nivel_maturidade(est['media'])
-            dominio_data.append([
-                est['dominio'].nome,
-                f"{est['media']}/5.0",
-                nivel.split(' ')[0],  # Apenas o nível
-                f"{est['respondidas']}/{est['total_possivel']}",
-                f"{est['percentual_completude']}%"
+        for dominio in dominios_query.order_by('ordem'):
+            if projeto.assessments[0].versao_assessment_id:
+                dominio_score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Pergunta.dominio_versao_id == dominio.id,
+                    Pergunta.ativo == True
+                ).first()
+            else:
+                dominio_score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Pergunta.dominio_id == dominio.id,
+                    Pergunta.ativo == True
+                ).first()
+            
+            dominio_score = round(float(dominio_score_query.score_medio or 0), 2)
+            
+            # Determinar nível de maturidade
+            if dominio_score >= 4.5:
+                nivel_maturidade = "Otimizado"
+            elif dominio_score >= 3.5:
+                nivel_maturidade = "Avançado"
+            elif dominio_score >= 2.5:
+                nivel_maturidade = "Intermediário"
+            elif dominio_score >= 1.5:
+                nivel_maturidade = "Básico"
+            elif dominio_score >= 0.5:
+                nivel_maturidade = "Inicial"
+            else:
+                nivel_maturidade = "Inexistente"
+            
+            dominios_data.append([
+                dominio.nome,
+                f'{dominio_score}/5.0',
+                nivel_maturidade
             ])
         
-        dominio_table = Table(dominio_data, colWidths=[2*inch, 0.8*inch, 1.2*inch, 1*inch, 1*inch])
-        dominio_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        dominios_table = Table(dominios_data, colWidths=[3*inch, 1*inch, 1.5*inch])
+        dominios_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
             ('GRID', (0, 0), (-1, -1), 1, colors.black)
         ]))
         
-        story.append(dominio_table)
+        story.append(dominios_table)
         story.append(Spacer(1, 20))
-        
-        # Análise detalhada de cada domínio
-        for est in dados['estatisticas_dominios']:
-            dominio_title = ParagraphStyle(
-                'DominioTitle',
-                parent=styles['Heading3'],
-                fontSize=12,
-                spaceAfter=10,
-                textColor=colors.darkblue,
-                leftIndent=20
-            )
-            
-            story.append(Paragraph(f"• {est['dominio'].nome}", dominio_title))
-            
-            # Informações do domínio
-            descricao_dominio = f"""
-            <b>Descrição:</b> {est['dominio'].descricao or 'Domínio de avaliação de maturidade organizacional.'}<br/>
-            <b>Pontuação Média:</b> {est['media']}/5.0<br/>
-            <b>Nível de Maturidade:</b> {calcular_nivel_maturidade(est['media'])}<br/>
-            <b>Total de Perguntas:</b> {est['dominio'].contar_perguntas()}<br/>
-            <b>Respostas Coletadas:</b> {est['respondidas']} de {est['total_possivel']} possíveis<br/>
-            <b>Percentual de Completude:</b> {est['percentual_completude']}%
-            """
-            
-            detail_style = ParagraphStyle(
-                'Detail',
-                parent=styles['Normal'],
-                fontSize=10,
-                leftIndent=40,
-                spaceAfter=10
-            )
-            
-            story.append(Paragraph(descricao_dominio, detail_style))
-            
-            # Análise de desempenho
-            if est['media'] >= 4:
-                analise = "<b>Análise:</b> Excelente desempenho! Este domínio apresenta alta maturidade organizacional."
-            elif est['media'] >= 3:
-                analise = "<b>Análise:</b> Bom desempenho. Há oportunidades para melhorias incrementais."
-            elif est['media'] >= 2:
-                analise = "<b>Análise:</b> Desempenho moderado. Recomenda-se priorizar melhorias neste domínio."
-            else:
-                analise = "<b>Análise:</b> Necessita atenção urgente. Este domínio requer investimento significativo."
-            
-            story.append(Paragraph(analise, detail_style))
-            story.append(Spacer(1, 10))
-    else:
-        story.append(Paragraph("Nenhum domínio avaliado.", styles['Normal']))
     
+    # Memorial de respostas
     story.append(PageBreak())
+    story.append(Paragraph("MEMORIAL DE RESPOSTAS E COMENTÁRIOS", heading_style))
     
-    # Recomendações
-    story.append(Paragraph("RECOMENDAÇÕES E PRÓXIMOS PASSOS", header_style))
+    # Coletar memorial de respostas
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+        
+        story.append(Paragraph(f"Assessment: {tipo.nome}", subheading_style))
+        
+        for dominio in dominios_query.order_by('ordem'):
+            story.append(Paragraph(f"Domínio: {dominio.nome}", subheading_style))
+            
+            # Coletar perguntas e respostas do domínio
+            if projeto_assessment.versao_assessment_id:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_versao_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            else:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            
+            for pergunta in perguntas_dominio:
+                # Buscar resposta mais recente desta pergunta no projeto
+                resposta = Resposta.query.filter_by(
+                    projeto_id=projeto.id,
+                    pergunta_id=pergunta.id
+                ).order_by(Resposta.data_criacao.desc()).first()
+                
+                if resposta:
+                    story.append(Paragraph(f"<b>Pergunta:</b> {pergunta.texto}", normal_style))
+                    story.append(Paragraph(f"<b>Nota:</b> {resposta.nota}/5", normal_style))
+                    
+                    if resposta.comentario:
+                        story.append(Paragraph(f"<b>Comentário:</b> {resposta.comentario}", normal_style))
+                    else:
+                        story.append(Paragraph("<b>Comentário:</b> Nenhum comentário fornecido", normal_style))
+                    
+                    respondente_nome = resposta.respondente.nome if resposta.respondente else 'Sistema'
+                    data_resposta = resposta.data_criacao.strftime('%d/%m/%Y às %H:%M')
+                    story.append(Paragraph(f"<b>Respondente:</b> {respondente_nome} - {data_resposta}", normal_style))
+                    story.append(Spacer(1, 10))
+            
+            story.append(Spacer(1, 15))
     
-    # Analisar e gerar recomendações baseadas na média geral
-    if dados['media_geral'] >= 4:
-        recomendacoes = """
-        <b>Situação Atual:</b> Excelente nível de maturidade organizacional.<br/><br/>
-        <b>Recomendações Prioritárias:</b><br/>
-        • Manter os controles atuais e buscar melhorias contínuas<br/>
-        • Implementar processos de monitoramento e otimização<br/>
-        • Compartilhar boas práticas com outras organizações<br/>
-        • Investir em inovação e tecnologias emergentes<br/><br/>
-        <b>Próximos Passos:</b><br/>
-        • Revisar e atualizar políticas regularmente<br/>
-        • Estabelecer métricas avançadas de performance<br/>
-        • Considerar certificações e padrões internacionais
-        """
-    elif dados['media_geral'] >= 3:
-        recomendacoes = """
-        <b>Situação Atual:</b> Bom nível de maturidade com oportunidades claras de melhoria.<br/><br/>
-        <b>Recomendações Prioritárias:</b><br/>
-        • Focar nos domínios com pontuação mais baixa<br/>
-        • Implementar processos de monitoramento contínuo<br/>
-        • Investir em treinamento e capacitação das equipes<br/>
-        • Estabelecer métricas de controle e acompanhamento<br/><br/>
-        <b>Próximos Passos:</b><br/>
-        • Criar plano de ação específico para cada domínio<br/>
-        • Definir responsáveis e prazos para implementação<br/>
-        • Estabelecer ciclo de revisão e melhoria contínua
-        """
-    elif dados['media_geral'] >= 2:
-        recomendacoes = """
-        <b>Situação Atual:</b> Nível básico de maturidade - necessita melhorias estruturais.<br/><br/>
-        <b>Recomendações Prioritárias:</b><br/>
-        • Priorizar domínios com pontuação mais crítica<br/>
-        • Implementar controles básicos de forma consistente<br/>
-        • Investir significativamente em capacitação<br/>
-        • Estabelecer processos documentados e padronizados<br/><br/>
-        <b>Próximos Passos:</b><br/>
-        • Elaborar plano de melhoria com cronograma detalhado<br/>
-        • Alocar recursos específicos para cada domínio<br/>
-        • Implementar controles de acompanhamento rigorosos
-        """
-    else:
-        recomendacoes = """
-        <b>Situação Atual:</b> Nível crítico - requer atenção e investimento urgente.<br/><br/>
-        <b>Recomendações Prioritárias:</b><br/>
-        • Implementar plano de ação imediato e abrangente<br/>
-        • Priorizar domínios com maior impacto no negócio<br/>
-        • Investir em consultoria especializada<br/>
-        • Estabelecer governança e controles básicos<br/><br/>
-        <b>Próximos Passos:</b><br/>
-        • Criar comitê de melhoria com patrocínio executivo<br/>
-        • Definir metas e indicadores de progresso<br/>
-        • Implementar ciclo curto de avaliação e correção
-        """
+    # Legenda de níveis de maturidade
+    story.append(PageBreak())
+    story.append(Paragraph("LEGENDA - NÍVEIS DE MATURIDADE", heading_style))
     
-    story.append(Paragraph(recomendacoes, styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Escala de maturidade
-    story.append(Paragraph("ESCALA DE MATURIDADE", header_style))
-    
-    escala_data = [
-        ['Nível', 'Descrição'],
-        ['5 - Otimizado', 'Controles integrados e melhorados continuamente'],
-        ['4 - Avançado', 'Controles monitorados com métricas'],
-        ['3 - Intermediário', 'Controles padronizados e repetíveis'],
-        ['2 - Básico', 'Controles definidos, aplicação inconsistente'],
-        ['1 - Inicial', 'Práticas informais e não documentadas'],
-        ['0 - Inexistente', 'Nenhum controle implementado']
+    legenda_data = [
+        ['Faixa de Score', 'Nível', 'Descrição'],
+        ['0.0 - 0.5', 'Inexistente', 'Nenhum controle implementado'],
+        ['0.5 - 1.5', 'Inicial', 'Práticas informais e não documentadas'],
+        ['1.5 - 2.5', 'Básico', 'Controles definidos, aplicação inconsistente'],
+        ['2.5 - 3.5', 'Intermediário', 'Controles padronizados e repetíveis'],
+        ['3.5 - 4.5', 'Avançado', 'Controles monitorados com métricas'],
+        ['4.5 - 5.0', 'Otimizado', 'Controles integrados e melhorados continuamente']
     ]
     
-    escala_table = Table(escala_data, colWidths=[1.5*inch, 4.5*inch])
-    escala_table.setStyle(TableStyle([
+    legenda_table = Table(legenda_data, colWidths=[1.2*inch, 1.5*inch, 3.3*inch])
+    legenda_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     
-    story.append(escala_table)
-    story.append(Spacer(1, 20))
+    story.append(legenda_table)
     
-    # Informações Adicionais
-    story.append(Paragraph("INFORMAÇÕES ADICIONAIS", header_style))
-    
-    info_adicional = f"""
-    <b>Período de Avaliação:</b> {dados['data_geracao'].strftime('%d/%m/%Y')}<br/>
-    <b>Respondentes Participantes:</b> {dados['total_respondentes']}<br/>
-    <b>Total de Respostas Coletadas:</b> {dados['total_respostas']}<br/>
-    <b>Metodologia:</b> Avaliação quantitativa baseada em escala Likert de 6 pontos (0-5)<br/>
-    <b>Validade:</b> Este relatório reflete o estado atual da organização na data de geração<br/>
-    <b>Recomendação:</b> Reavaliar periodicamente para acompanhar evolução da maturidade
-    """
-    
-    story.append(Paragraph(info_adicional, styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Rodapé
-    story.append(Spacer(1, 40))
-    footer_style = ParagraphStyle(
-        'Footer',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.grey,
-        alignment=1  # Center
-    )
-    
-    story.append(Paragraph("Relatório gerado pelo Sistema de Avaliações de Maturidade", footer_style))
-    story.append(Paragraph("© Gruppen Serviços de Informática Ltda", footer_style))
-    story.append(Paragraph(f"Gerado em: {dados['data_geracao'].strftime('%d/%m/%Y às %H:%M:%S')}", footer_style))
-    
-    # Gerar PDF
+    # Construir documento
     doc.build(story)
-    pdf_value = buffer.getvalue()
-    buffer.close()
     
-    return pdf_value
+    return temp_filename
 
-def calcular_nivel_maturidade(media):
-    """Calcula o nível de maturidade baseado na média"""
-    if media >= 4.5:
-        return "Otimizado (Nível 5)"
-    elif media >= 3.5:
-        return "Avançado (Nível 4)"
-    elif media >= 2.5:
-        return "Intermediário (Nível 3)"
-    elif media >= 1.5:
-        return "Básico (Nível 2)"
-    elif media >= 0.5:
-        return "Inicial (Nível 1)"
-    else:
-        return "Inexistente (Nível 0)"
+def allowed_file(filename, allowed_extensions):
+    """Verifica se a extensão do arquivo é permitida"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in allowed_extensions

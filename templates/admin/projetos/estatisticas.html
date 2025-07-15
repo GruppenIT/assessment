@@ -26,6 +26,9 @@
                                 <span class="badge bg-light text-dark fs-6">Score Médio: {{ score_medio_projeto }}/5.0</span>
                             </div>
                             <div class="btn-group">
+                                <a href="{{ url_for('projeto.exportar_estatisticas_pdf', projeto_id=projeto.id) }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-file-pdf me-1"></i>Exportar PDF
+                                </a>
                                 <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" class="btn btn-light btn-sm">
                                     <i class="fas fa-arrow-left me-1"></i>Voltar aos Detalhes
                                 </a>
@@ -252,6 +255,114 @@
             </div>
         </div>
     </div>
+
+    <!-- Memorial de Respostas -->
+    {% if memorial_respostas %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-book me-2"></i>Memorial de Respostas e Comentários
+                    </h4>
+                    <p class="mb-0 mt-2 small">Registro completo de todas as respostas fornecidas durante o assessment, organizadas por domínio</p>
+                </div>
+                <div class="card-body">
+                    {% for assessment_nome, dominios_memorial in memorial_respostas.items() %}
+                    <div class="mb-5">
+                        <h5 class="text-primary border-bottom pb-2 mb-4">
+                            <i class="fas fa-shield-alt me-2"></i>{{ assessment_nome }}
+                        </h5>
+                        
+                        {% for dominio_data in dominios_memorial %}
+                        <div class="mb-4">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-layer-group me-2"></i>{{ dominio_data.dominio.nome }}
+                            </h6>
+                            {% if dominio_data.dominio.descricao %}
+                                <p class="text-muted small mb-3">{{ dominio_data.dominio.descricao }}</p>
+                            {% endif %}
+                            
+                            <div class="row">
+                                {% for resposta_data in dominio_data.respostas %}
+                                <div class="col-12 mb-4">
+                                    <div class="card border-left-primary">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <h6 class="card-title mb-0">{{ resposta_data.pergunta.texto }}</h6>
+                                                <div class="text-end">
+                                                    {% set nota = resposta_data.resposta_final.nota %}
+                                                    <span class="badge {% if nota >= 4 %}bg-success{% elif nota >= 3 %}bg-info{% elif nota >= 2 %}bg-warning{% elif nota >= 1 %}bg-secondary{% else %}bg-danger{% endif %} fs-6">
+                                                        Nota: {{ nota }}/5
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if resposta_data.pergunta.descricao %}
+                                                <p class="text-muted small mb-3">{{ resposta_data.pergunta.descricao }}</p>
+                                            {% endif %}
+                                            
+                                            <!-- Resposta Final -->
+                                            <div class="mb-3">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="fas fa-comment text-primary me-2"></i>
+                                                    <strong>Resposta Final:</strong>
+                                                </div>
+                                                <div class="bg-light p-3 rounded">
+                                                    {% if resposta_data.resposta_final.comentario %}
+                                                        <p class="mb-2">{{ resposta_data.resposta_final.comentario }}</p>
+                                                    {% else %}
+                                                        <p class="text-muted mb-2"><em>Nenhum comentário fornecido</em></p>
+                                                    {% endif %}
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-user me-1"></i>{{ resposta_data.resposta_final.respondente.nome if resposta_data.resposta_final.respondente else 'Sistema' }}
+                                                        <i class="fas fa-clock ms-3 me-1"></i>{{ resposta_data.resposta_final.data_criacao.strftime('%d/%m/%Y às %H:%M') }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Histórico de Respostas (se houver mais de uma) -->
+                                            {% if resposta_data.historico|length > 1 %}
+                                            <div class="mt-3">
+                                                <button class="btn btn-link btn-sm p-0" type="button" data-bs-toggle="collapse" data-bs-target="#historico{{ loop.index0 }}-{{ loop.index }}" aria-expanded="false">
+                                                    <i class="fas fa-history me-1"></i>Ver histórico de respostas ({{ resposta_data.historico|length }} versões)
+                                                </button>
+                                                <div class="collapse mt-2" id="historico{{ loop.index0 }}-{{ loop.index }}">
+                                                    {% for historico in resposta_data.historico %}
+                                                    <div class="border-start border-2 border-secondary ps-3 mb-2">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div class="flex-grow-1">
+                                                                {% if historico.comentario %}
+                                                                    <p class="mb-1 small">{{ historico.comentario }}</p>
+                                                                {% else %}
+                                                                    <p class="mb-1 small text-muted"><em>Sem comentário</em></p>
+                                                                {% endif %}
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-user me-1"></i>{{ historico.respondente }}
+                                                                    <i class="fas fa-clock ms-2 me-1"></i>{{ historico.data.strftime('%d/%m/%Y às %H:%M') }}
+                                                                </small>
+                                                            </div>
+                                                            <span class="badge bg-secondary ms-2">{{ historico.nota }}/5</span>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

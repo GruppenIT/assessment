@@ -111,7 +111,7 @@ def listar_working():
             })
 
         return render_template('admin/projetos/listar.html', 
-                             projetos_data=projetos_data,
+                             projetos=projetos_data,
                              ordem_atual=ordem,
                              direcao_atual=direcao)
         
@@ -154,7 +154,7 @@ def listar():
                 })
             
             return render_template('admin/projetos/listar.html', 
-                                 projetos_data=projetos_data,
+                                 projetos=projetos_data,
                                  cliente=cliente,
                                  filtro_cliente=True,
                                  ordem_atual='data_criacao',
@@ -568,6 +568,75 @@ def estatisticas(projeto_id):
     # Score médio geral do projeto
     score_medio_projeto = round(sum(scores_gerais) / len(scores_gerais) if scores_gerais else 0, 2)
     
+    # Coletar memorial de respostas por domínio
+    memorial_respostas = {}
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+            
+        memorial_respostas[tipo.nome] = []
+        
+        for dominio in dominios_query.order_by('ordem'):
+            # Coletar perguntas e respostas do domínio
+            if projeto_assessment.versao_assessment_id:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_versao_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            else:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            
+            respostas_dominio = []
+            for pergunta in perguntas_dominio:
+                # Buscar respostas desta pergunta no projeto
+                respostas_pergunta = Resposta.query.filter_by(
+                    projeto_id=projeto.id,
+                    pergunta_id=pergunta.id
+                ).order_by(Resposta.data_criacao.desc()).all()
+                
+                if respostas_pergunta:
+                    # Pegar a resposta mais recente (colaborativa)
+                    resposta_final = respostas_pergunta[0]
+                    
+                    # Coletar histórico de respostas para mostrar evolução
+                    historico_respostas = []
+                    for resp in respostas_pergunta:
+                        historico_respostas.append({
+                            'nota': resp.nota,
+                            'comentario': resp.comentario,
+                            'respondente': resp.respondente.nome if resp.respondente else 'Sistema',
+                            'data': resp.data_criacao
+                        })
+                    
+                    respostas_dominio.append({
+                        'pergunta': pergunta,
+                        'resposta_final': resposta_final,
+                        'historico': historico_respostas
+                    })
+            
+            if respostas_dominio:
+                memorial_respostas[tipo.nome].append({
+                    'dominio': dominio,
+                    'respostas': respostas_dominio
+                })
+    
     # Preparar dados para gráficos
     dados_graficos = {
         'radar': dados_grafico_radar,
@@ -580,7 +649,37 @@ def estatisticas(projeto_id):
                          estatisticas_assessments=estatisticas_assessments,
                          score_medio_projeto=score_medio_projeto,
                          respondentes=respondentes,
-                         dados_graficos=dados_graficos)
+                         dados_graficos=dados_graficos,
+                         memorial_respostas=memorial_respostas)
+
+@projeto_bp.route('/<int:projeto_id>/estatisticas/pdf')
+@login_required
+@admin_required
+def exportar_estatisticas_pdf(projeto_id):
+    """Exporta as estatísticas do projeto para PDF"""
+    from utils.pdf_utils import gerar_relatorio_estatisticas
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('As estatísticas só podem ser exportadas quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+    
+    try:
+        # Gerar o PDF
+        filename = gerar_relatorio_estatisticas(projeto)
+        
+        from flask import send_file
+        return send_file(
+            filename,
+            as_attachment=True,
+            download_name=f"estatisticas_{projeto.nome.replace(' ', '_')}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        flash(f'Erro ao gerar o PDF: {str(e)}', 'danger')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
 
 @projeto_bp.route('/<int:projeto_id>/respondentes')
 @login_required
