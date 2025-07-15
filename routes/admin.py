@@ -151,7 +151,7 @@ def dashboard():
             'icone': 'fa-project-diagram',
             'titulo': 'Projetos sem Respondentes',
             'mensagem': f'{projetos_sem_respondentes} projeto(s) não possui(em) respondentes cadastrados',
-            'acao_url': url_for('projetos.lista_projetos'),
+            'acao_url': url_for('projeto.listar'),
             'acao_texto': 'Gerenciar'
         })
     
