@@ -17,7 +17,7 @@ respondente_bp = Blueprint('respondente', __name__)
 @respondente_bp.route('/auto-login')
 def auto_login():
     """Auto login de teste para respondente Rodrigo"""
-    respondente = Respondente.query.filter_by(login='rodrigo.gruppen').first()
+    respondente = Respondente.query.filter_by(login='rodrigo.melnick').first()
     if respondente:
         login_user(respondente)
         session['user_type'] = 'respondente'
@@ -130,16 +130,32 @@ def assessment(projeto_id, tipo_assessment_id):
     
     # Verificar se o tipo de assessment está no projeto
     projeto_assessment = ProjetoAssessment.query.filter_by(
-        projeto_id=projeto_id,
-        tipo_assessment_id=tipo_assessment_id
+        projeto_id=projeto_id
     ).first()
     
     if not projeto_assessment:
         flash('Este tipo de assessment não está disponível neste projeto.', 'danger')
         return redirect(url_for('respondente.dashboard'))
     
+    # Determinar o tipo de assessment baseado no sistema usado
+    if projeto_assessment.versao_assessment_id:
+        # Novo sistema de versionamento
+        versao = projeto_assessment.versao_assessment
+        tipo_assessment = versao.tipo
+        if tipo_assessment.id != tipo_assessment_id:
+            flash('Este tipo de assessment não está disponível neste projeto.', 'danger')
+            return redirect(url_for('respondente.dashboard'))
+    elif projeto_assessment.tipo_assessment_id:
+        # Sistema antigo
+        if projeto_assessment.tipo_assessment_id != tipo_assessment_id:
+            flash('Este tipo de assessment não está disponível neste projeto.', 'danger')
+            return redirect(url_for('respondente.dashboard'))
+        tipo_assessment = projeto_assessment.tipo_assessment
+    else:
+        flash('Este tipo de assessment não está disponível neste projeto.', 'danger')
+        return redirect(url_for('respondente.dashboard'))
+    
     projeto = projeto_respondente.projeto
-    tipo_assessment = TipoAssessment.query.get_or_404(tipo_assessment_id)
     dominios = tipo_assessment.get_dominios_ativos()
     
     # Buscar TODAS as respostas do projeto (colaborativo entre respondentes)
