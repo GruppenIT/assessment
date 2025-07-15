@@ -62,17 +62,43 @@ def dashboard():
             # Tipos de assessment do projeto
             tipos_assessment = projeto.get_tipos_assessment()
             
-            # Calcular progresso para cada tipo do projeto
+            # Calcular progresso colaborativo para cada tipo do projeto
             progressos = {}
             for tipo in tipos_assessment:
-                progresso = current_user.get_progresso_assessment_projeto(tipo.id, projeto.id)
-                progressos[tipo.id] = progresso
+                from models.pergunta import Pergunta
+                from models.dominio import Dominio
+                from models.resposta import Resposta
+                
+                # Total de perguntas do tipo
+                total_perguntas = Pergunta.query.join(Dominio).filter(
+                    Dominio.tipo_assessment_id == tipo.id,
+                    Dominio.ativo == True,
+                    Pergunta.ativo == True
+                ).count()
+                
+                # Perguntas únicas respondidas por qualquer respondente (colaborativo)
+                perguntas_respondidas = db.session.query(Pergunta.id).join(
+                    Resposta, Pergunta.id == Resposta.pergunta_id
+                ).join(Dominio).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Dominio.tipo_assessment_id == tipo.id,
+                    Dominio.ativo == True,
+                    Pergunta.ativo == True
+                ).distinct().count()
+                
+                percentual = round((perguntas_respondidas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
+                
+                progressos[tipo.id] = {
+                    'percentual': percentual,
+                    'respondidas': perguntas_respondidas,
+                    'total': total_perguntas
+                }
             
             projetos_data.append({
                 'projeto': projeto,
                 'tipos_assessment': tipos_assessment,
                 'progressos': progressos,
-                'progresso_geral': projeto.get_progresso_respondente(current_user.id)
+                'progresso_geral': projeto.get_progresso_geral()  # Usar progresso geral colaborativo
             })
         
         return render_template('respondente/dashboard_projetos.html',
