@@ -314,7 +314,7 @@ def gerar_relatorio_estatisticas(projeto):
                 resposta = Resposta.query.filter_by(
                     projeto_id=projeto.id,
                     pergunta_id=pergunta.id
-                ).order_by(Resposta.data_criacao.desc()).first()
+                ).order_by(Resposta.data_resposta.desc()).first()
                 
                 if resposta:
                     story.append(Paragraph(f"<b>Pergunta:</b> {pergunta.texto}", normal_style))
@@ -326,7 +326,7 @@ def gerar_relatorio_estatisticas(projeto):
                         story.append(Paragraph("<b>Comentário:</b> Nenhum comentário fornecido", normal_style))
                     
                     respondente_nome = resposta.respondente.nome if resposta.respondente else 'Sistema'
-                    data_resposta = resposta.data_criacao.strftime('%d/%m/%Y às %H:%M')
+                    data_resposta = resposta.data_resposta.strftime('%d/%m/%Y às %H:%M')
                     story.append(Paragraph(f"<b>Respondente:</b> {respondente_nome} - {data_resposta}", normal_style))
                     story.append(Spacer(1, 10))
             

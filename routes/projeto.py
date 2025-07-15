@@ -609,7 +609,7 @@ def estatisticas(projeto_id):
                 respostas_pergunta = Resposta.query.filter_by(
                     projeto_id=projeto.id,
                     pergunta_id=pergunta.id
-                ).order_by(Resposta.data_criacao.desc()).all()
+                ).order_by(Resposta.data_resposta.desc()).all()
                 
                 if respostas_pergunta:
                     # Pegar a resposta mais recente (colaborativa)
@@ -622,7 +622,7 @@ def estatisticas(projeto_id):
                             'nota': resp.nota,
                             'comentario': resp.comentario,
                             'respondente': resp.respondente.nome if resp.respondente else 'Sistema',
-                            'data': resp.data_criacao
+                            'data': resp.data_resposta
                         })
                     
                     respostas_dominio.append({
