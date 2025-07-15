@@ -282,16 +282,27 @@ def detalhar(projeto_id):
     assessments_com_versao = {}
     
     for projeto_assessment in projeto.assessments:
-        tipo = projeto_assessment.tipo_assessment
         from models.pergunta import Pergunta
         from models.dominio import Dominio
         from models.resposta import Resposta
         
-        # Identificar versão do assessment
+        # Determinar tipo e versão do assessment
+        tipo = None
         versao_info = "Sistema Antigo"
+        
         if projeto_assessment.versao_assessment_id:
+            # Novo sistema de versionamento
             versao = projeto_assessment.versao_assessment
+            tipo = versao.assessment_tipo
             versao_info = f"Versão {versao.versao}"
+        elif projeto_assessment.tipo_assessment_id:
+            # Sistema antigo
+            tipo = projeto_assessment.tipo_assessment
+            versao_info = "Sistema Antigo"
+        
+        # Pular se não conseguir determinar o tipo
+        if not tipo:
+            continue
         
         total_perguntas = Pergunta.query.join(Dominio).filter(
             Dominio.tipo_assessment_id == tipo.id,
