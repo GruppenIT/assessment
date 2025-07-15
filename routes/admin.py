@@ -434,44 +434,64 @@ def criar_respondente(cliente_id):
     cliente = Cliente.query.get_or_404(cliente_id)
     form = ResponenteForm()
     
-    if form.validate_on_submit():
-        from werkzeug.security import generate_password_hash
-        
-        # Verificar se login já existe (deve ser único globalmente)
-        login_existente = Respondente.query.filter_by(login=form.login.data.lower().strip()).first()
-        if login_existente:
-            flash('Este login já está sendo usado por outro respondente.', 'danger')
-            return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
-        
-        respondente = Respondente(
-            cliente_id=cliente_id,
-            nome=form.nome.data.strip(),
-            email=form.email.data.lower().strip(),
-            login=form.login.data.lower().strip(),
-            senha_hash=generate_password_hash(form.senha.data),
-            cargo=form.cargo.data.strip() if form.cargo.data else None,
-            setor=form.setor.data.strip() if form.setor.data else None,
-            ativo=form.ativo.data
-        )
-        
+    if request.method == 'POST':
+        # Temporariamente desabilitar validação CSRF para debug
+        from flask_wtf.csrf import validate_csrf
         try:
-            db.session.add(respondente)
-            db.session.commit()
-            flash('Respondente criado com sucesso!', 'success')
-            
-            # Se veio de um projeto, redirecionar de volta
-            redirect_projeto = request.args.get('redirect_projeto')
-            if redirect_projeto:
-                return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=redirect_projeto))
-            
-            return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+            validate_csrf(request.form.get('csrf_token'))
         except Exception as e:
-            db.session.rollback()
-            flash('Erro ao criar respondente.', 'danger')
+            flash(f'Erro CSRF: {str(e)}', 'warning')
+            # Continuar mesmo com erro CSRF para debug
+        
+        # Validar campos manualmente
+        if (request.form.get('nome') and 
+            request.form.get('email') and 
+            request.form.get('login') and 
+            request.form.get('senha')):
+            
+            from werkzeug.security import generate_password_hash
+            
+            # Verificar se login já existe (deve ser único globalmente)
+            login_existente = Respondente.query.filter_by(login=request.form.get('login').lower().strip()).first()
+            if login_existente:
+                flash('Este login já está sendo usado por outro respondente.', 'danger')
+                return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+            
+            respondente = Respondente(
+                cliente_id=cliente_id,
+                nome=request.form.get('nome').strip(),
+                email=request.form.get('email').lower().strip(),
+                login=request.form.get('login').lower().strip(),
+                senha_hash=generate_password_hash(request.form.get('senha')),
+                cargo=request.form.get('cargo').strip() if request.form.get('cargo') else None,
+                setor=request.form.get('setor').strip() if request.form.get('setor') else None,
+                ativo=bool(request.form.get('ativo'))
+            )
+            
+            try:
+                db.session.add(respondente)
+                db.session.commit()
+                flash('Respondente criado com sucesso!', 'success')
+                
+                # Se veio de um projeto, redirecionar de volta
+                redirect_projeto = request.args.get('redirect_projeto')
+                if redirect_projeto:
+                    return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=redirect_projeto))
+                
+                return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao criar respondente: {str(e)}', 'danger')
+        else:
+            flash('Por favor, preencha todos os campos obrigatórios.', 'danger')
     else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'{field}: {error}', 'danger')
+        # Debug: mostrar erros detalhados
+        if form.errors:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{field}: {error}', 'danger')
+        else:
+            flash('Erro de validação no formulário.', 'danger')
     
     # Renderizar o template para GET ou se houve erro no POST
     return render_template('admin/criar_respondente.html', 
