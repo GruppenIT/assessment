@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Importar CSV - Assessments{% endblock %}
+{% block title %}Importar Tipo de Assessment via CSV{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -8,10 +8,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">
-                <i class="fas fa-file-csv me-2"></i>Importar Assessment via CSV
+                <i class="fas fa-file-csv me-2"></i>Importar Tipo de Assessment via CSV
             </h1>
             <p class="text-muted mb-0">
-                Importe domínios e perguntas criando uma nova versão draft
+                Importe domínios e perguntas criando uma nova versão draft do tipo
             </p>
         </div>
         <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-secondary">
