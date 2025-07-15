@@ -79,6 +79,15 @@
                                                        class="btn btn-outline-success" title="Novo Projeto">
                                                         <i class="fas fa-plus"></i>
                                                     </a>
+                                                    <a href="{{ url_for('admin.editar_cliente', cliente_id=item.cliente.id) }}" 
+                                                       class="btn btn-outline-warning" title="Editar Cliente">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" 
+                                                            onclick="confirmarExclusao({{ item.cliente.id }}, '{{ item.cliente.nome }}')"
+                                                            title="Excluir Cliente">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -101,4 +110,36 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="modalExclusao" tabindex="-1" aria-labelledby="modalExclusaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalExclusaoLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o cliente <strong id="nomeCliente"></strong>?</p>
+                <p class="text-muted">Esta ação não pode ser desfeita e irá remover todos os projetos e dados associados.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formExclusao" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarExclusao(clienteId, clienteNome) {
+    document.getElementById('nomeCliente').textContent = clienteNome;
+    document.getElementById('formExclusao').action = '/admin/clientes/' + clienteId + '/excluir';
+    var modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+    modal.show();
+}
+</script>
+
 {% endblock %}

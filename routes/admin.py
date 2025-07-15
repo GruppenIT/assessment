@@ -328,3 +328,65 @@ def clientes():
         })
     
     return render_template('admin/clientes.html', clientes=clientes_data)
+
+@admin_bp.route('/clientes/<int:cliente_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar_cliente(cliente_id):
+    """Edita um cliente existente"""
+    from models.cliente import Cliente
+    from forms.cliente_forms import ClienteForm
+    from flask import request, flash, redirect, url_for
+    
+    cliente = Cliente.query.get_or_404(cliente_id)
+    form = ClienteForm(obj=cliente)
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            # Atualizar dados do cliente
+            cliente.nome = form.nome.data
+            cliente.razao_social = form.razao_social.data
+            cliente.cnpj = form.cnpj.data
+            cliente.localidade = form.localidade.data
+            cliente.segmento = form.segmento.data
+            
+            # Processar upload de logo se houver
+            if form.logo.data:
+                from utils.upload_utils import save_uploaded_file
+                filename = save_uploaded_file(form.logo.data, 'logos')
+                if filename:
+                    cliente.logo = filename
+            
+            db.session.commit()
+            flash(f'Cliente "{cliente.nome}" atualizado com sucesso!', 'success')
+            return redirect(url_for('admin.clientes'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao atualizar cliente. Tente novamente.', 'danger')
+            logging.error(f"Erro ao atualizar cliente: {e}")
+    
+    return render_template('admin/editar_cliente.html', form=form, cliente=cliente)
+
+@admin_bp.route('/clientes/<int:cliente_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir_cliente(cliente_id):
+    """Exclui um cliente (soft delete)"""
+    from models.cliente import Cliente
+    from flask import flash, redirect, url_for
+    
+    cliente = Cliente.query.get_or_404(cliente_id)
+    
+    try:
+        # Soft delete - apenas marca como inativo
+        cliente.ativo = False
+        db.session.commit()
+        flash(f'Cliente "{cliente.nome}" excluído com sucesso!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao excluir cliente. Tente novamente.', 'danger')
+        logging.error(f"Erro ao excluir cliente: {e}")
+    
+    return redirect(url_for('admin.clientes'))
