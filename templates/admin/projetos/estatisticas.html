@@ -316,7 +316,7 @@
                                                     {% endif %}
                                                     <small class="text-muted">
                                                         <i class="fas fa-user me-1"></i>{{ resposta_data.resposta_final.respondente.nome if resposta_data.resposta_final.respondente else 'Sistema' }}
-                                                        <i class="fas fa-clock ms-3 me-1"></i>{{ resposta_data.resposta_final.data_criacao.strftime('%d/%m/%Y às %H:%M') }}
+                                                        <i class="fas fa-clock ms-3 me-1"></i>{{ resposta_data.resposta_final.data_resposta.strftime('%d/%m/%Y às %H:%M') }}
                                                     </small>
                                                 </div>
                                             </div>
