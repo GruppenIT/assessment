@@ -44,6 +44,12 @@ def listar_working():
         
         projetos_data = []
         for p in projetos_raw:
+            # Calcular dados reais do projeto
+            projeto_obj = Projeto.query.get(p.id)
+            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
+            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
+            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+            
             projetos_data.append({
                 'projeto': {
                     'id': p.id,
@@ -52,8 +58,9 @@ def listar_working():
                     'data_criacao': p.data_criacao,
                     'cliente': {'nome': p.cliente_nome}
                 },
-                'respondentes_count': 1,
-                'tipos_count': 1
+                'respondentes_count': respondentes_count,
+                'tipos_count': tipos_count,
+                'progresso': progresso
             })
         
         # Obter parâmetro de ordenação
@@ -78,6 +85,12 @@ def listar_working():
         # Recriar dados com ordenação
         projetos_data = []
         for p in projetos_raw_ordenados:
+            # Calcular dados reais do projeto
+            projeto_obj = Projeto.query.get(p.id)
+            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
+            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
+            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+            
             projetos_data.append({
                 'projeto': {
                     'id': p.id,
@@ -86,8 +99,9 @@ def listar_working():
                     'data_criacao': p.data_criacao,
                     'cliente': {'nome': p.cliente_nome}
                 },
-                'respondentes_count': 1,
-                'tipos_count': 1
+                'respondentes_count': respondentes_count,
+                'tipos_count': tipos_count,
+                'progresso': progresso
             })
 
         return render_template('admin/projetos/listar.html', 
@@ -114,6 +128,12 @@ def listar():
             
             projetos_data = []
             for p in projetos_raw:
+                # Calcular dados reais do projeto
+                projeto_obj = Projeto.query.get(p.id)
+                progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
+                respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
+                tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+                
                 projetos_data.append({
                     'projeto': {
                         'id': p.id,
@@ -122,8 +142,9 @@ def listar():
                         'data_criacao': p.data_criacao,
                         'cliente': {'nome': p.cliente_nome}
                     },
-                    'respondentes_count': 1,
-                    'tipos_count': 1
+                    'respondentes_count': respondentes_count,
+                    'tipos_count': tipos_count,
+                    'progresso': progresso
                 })
             
             return render_template('admin/projetos/listar.html', 
