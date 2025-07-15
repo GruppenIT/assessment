@@ -56,8 +56,8 @@ class ResponenteForm(FlaskForm):
     ], render_kw={'placeholder': 'Digite o login (ex: rodrigo.melnick)'})
     
     senha = PasswordField('Senha', validators=[
-        Length(min=6, message='Senha deve ter pelo menos 6 caracteres')
-    ], render_kw={'placeholder': 'Digite uma senha (deixe vazio para manter atual)'})
+        DataRequired(message='Senha é obrigatória')
+    ], render_kw={'placeholder': 'Digite uma senha'})
     
     cargo = StringField('Cargo', validators=[
         Optional(),
