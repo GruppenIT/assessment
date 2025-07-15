@@ -97,12 +97,21 @@ def listar_working():
             respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
             tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
             
+            # Garantir que data_criacao seja um objeto datetime
+            data_criacao = p.data_criacao
+            if isinstance(data_criacao, str):
+                from datetime import datetime
+                try:
+                    data_criacao = datetime.fromisoformat(data_criacao.replace('Z', '+00:00'))
+                except:
+                    data_criacao = datetime.now()
+            
             projetos_data.append({
                 'projeto': {
                     'id': p.id,
                     'nome': p.nome,
                     'descricao': p.descricao,
-                    'data_criacao': p.data_criacao,
+                    'data_criacao': data_criacao,
                     'cliente': {'nome': p.cliente_nome}
                 },
                 'respondentes_count': respondentes_count,
@@ -142,12 +151,21 @@ def listar():
                 respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
                 tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
                 
+                # Garantir que data_criacao seja um objeto datetime
+                data_criacao = p.data_criacao
+                if isinstance(data_criacao, str):
+                    from datetime import datetime
+                    try:
+                        data_criacao = datetime.fromisoformat(data_criacao.replace('Z', '+00:00'))
+                    except:
+                        data_criacao = datetime.now()
+                
                 projetos_data.append({
                     'projeto': {
                         'id': p.id,
                         'nome': p.nome,
                         'descricao': p.descricao,
-                        'data_criacao': p.data_criacao,
+                        'data_criacao': data_criacao,
                         'cliente': {'nome': p.cliente_nome}
                     },
                     'respondentes_count': respondentes_count,
