@@ -24,6 +24,10 @@ class Usuario(UserMixin, db.Model):
         """Verifica se o usuário é administrador"""
         return self.tipo == 'admin'
     
+    def is_cliente(self):
+        """Verifica se o usuário é cliente (sempre False para Usuario)"""
+        return False
+    
     def to_dict(self):
         """Converte o usuário para dicionário"""
         return {
