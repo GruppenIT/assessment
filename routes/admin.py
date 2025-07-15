@@ -390,3 +390,44 @@ def excluir_cliente(cliente_id):
         logging.error(f"Erro ao excluir cliente: {e}")
     
     return redirect(url_for('admin.clientes'))
+
+@admin_bp.route('/clientes/<int:cliente_id>/respondentes')
+@login_required
+@admin_required
+def respondentes_cliente(cliente_id):
+    """Lista e gerencia respondentes de um cliente específico"""
+    from models.cliente import Cliente
+    from models.respondente import Respondente
+    from models.projeto import Projeto
+    from sqlalchemy import func
+    
+    cliente = Cliente.query.get_or_404(cliente_id)
+    
+    # Buscar respondentes do cliente
+    respondentes = Respondente.query.filter_by(cliente_id=cliente_id, ativo=True).all()
+    
+    # Buscar projetos do cliente para associações
+    projetos = Projeto.query.filter_by(cliente_id=cliente_id, ativo=True).all()
+    
+    # Estatísticas por respondente
+    respondentes_data = []
+    for respondente in respondentes:
+        # Contar projetos associados
+        projetos_associados = db.session.query(func.count(Projeto.id)).filter(
+            Projeto.respondentes.any(id=respondente.id)
+        ).scalar() or 0
+        
+        # Contar respostas dadas
+        from models.resposta import Resposta
+        respostas_count = Resposta.query.filter_by(respondente_id=respondente.id).count()
+        
+        respondentes_data.append({
+            'respondente': respondente,
+            'projetos_associados': projetos_associados,
+            'respostas_count': respostas_count
+        })
+    
+    return render_template('admin/respondentes_cliente.html', 
+                         cliente=cliente, 
+                         respondentes=respondentes_data,
+                         projetos=projetos)

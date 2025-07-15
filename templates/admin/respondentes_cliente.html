@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Respondentes - {{ cliente.nome }} - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Respondentes
+                    </h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-building me-1"></i>
+                        {{ cliente.nome }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar aos Clientes
+                    </a>
+                    <a href="{{ url_for('projeto.criar_respondente', cliente_id=cliente.id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Novo Respondente
+                    </a>
+                </div>
+            </div>
+            
+            {% if respondentes %}
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Respondente</th>
+                                        <th>Email</th>
+                                        <th>Login</th>
+                                        <th>Cargo</th>
+                                        <th>Setor</th>
+                                        <th>Projetos</th>
+                                        <th>Respostas</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in respondentes %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-info rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                                         style="width: 32px; height: 32px;">
+                                                        <i class="fas fa-user text-white fa-sm"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">{{ item.respondente.nome }}</div>
+                                                        <small class="text-muted">
+                                                            Criado em {{ item.respondente.data_criacao.strftime('%d/%m/%Y') if item.respondente.data_criacao else '-' }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ item.respondente.email }}</td>
+                                            <td>
+                                                <code class="text-primary">{{ item.respondente.login }}</code>
+                                            </td>
+                                            <td>{{ item.respondente.cargo or '-' }}</td>
+                                            <td>{{ item.respondente.setor or '-' }}</td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ item.projetos_associados }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">{{ item.respostas_count }}</span>
+                                            </td>
+                                            <td>
+                                                {% if item.respondente.ativo %}
+                                                    <span class="badge bg-success">Ativo</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inativo</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ url_for('projeto.editar_respondente', respondente_id=item.respondente.id) }}" 
+                                                       class="btn btn-outline-warning" title="Editar Respondente">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger" 
+                                                            onclick="confirmarExclusaoRespondente({{ item.respondente.id }}, '{{ item.respondente.nome }}')"
+                                                            title="Excluir Respondente">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum respondente cadastrado</h5>
+                    <p class="text-muted">Adicione respondentes para que possam participar dos assessments.</p>
+                    <a href="{{ url_for('projeto.criar_respondente', cliente_id=cliente.id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Adicionar Primeiro Respondente
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação de exclusão de respondente -->
+<div class="modal fade" id="modalExclusaoRespondente" tabindex="-1" aria-labelledby="modalExclusaoRespondenteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalExclusaoRespondenteLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o respondente <strong id="nomeRespondente"></strong>?</p>
+                <p class="text-muted">Esta ação não pode ser desfeita e irá remover todas as respostas associadas.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formExclusaoRespondente" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarExclusaoRespondente(respondenteId, respondenteNome) {
+    document.getElementById('nomeRespondente').textContent = respondenteNome;
+    document.getElementById('formExclusaoRespondente').action = '/admin/respondentes/' + respondenteId + '/excluir';
+    var modal = new bootstrap.Modal(document.getElementById('modalExclusaoRespondente'));
+    modal.show();
+}
+</script>
+
+{% endblock %}
