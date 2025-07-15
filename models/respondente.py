@@ -80,7 +80,7 @@ class Respondente(UserMixin, db.Model):
         return self.data_conclusao is not None
     
     def get_progresso_assessment_projeto(self, tipo_assessment_id, projeto_id):
-        """Calcula o progresso do assessment em um projeto específico"""
+        """Calcula o progresso individual deste respondente no assessment de um projeto específico"""
         from models.pergunta import Pergunta
         from models.dominio import Dominio
         from models.resposta import Resposta
@@ -91,9 +91,10 @@ class Respondente(UserMixin, db.Model):
             Pergunta.ativo == True
         ).count()
         
-        # Contar TODAS as respostas do projeto (colaborativo)
+        # Contar apenas as respostas DESTE respondente específico
         respostas_dadas = Resposta.query.filter_by(
-            projeto_id=projeto_id
+            projeto_id=projeto_id,
+            respondente_id=self.id
         ).join(Pergunta).join(Dominio).filter(
             Dominio.tipo_assessment_id == tipo_assessment_id
         ).count()

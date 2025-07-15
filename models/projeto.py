@@ -62,7 +62,7 @@ class Projeto(db.Model):
         return [pa.tipo_assessment for pa in self.assessments]
     
     def get_progresso_respondente(self, respondente_id):
-        """Calcula o progresso geral de um respondente neste projeto"""
+        """Calcula o progresso individual de um respondente neste projeto"""
         from models.resposta import Resposta
         from models.pergunta import Pergunta
         from models.dominio import Dominio
@@ -78,9 +78,10 @@ class Projeto(db.Model):
                 Pergunta.ativo == True
             ).count()
             
-            # Contar TODAS as respostas do projeto (colaborativo)
+            # Contar apenas as respostas DESTE respondente específico
             respostas = Resposta.query.filter_by(
-                projeto_id=self.id
+                projeto_id=self.id,
+                respondente_id=respondente_id
             ).join(Pergunta).join(Dominio).filter(
                 Dominio.tipo_assessment_id == tipo.id
             ).count()
