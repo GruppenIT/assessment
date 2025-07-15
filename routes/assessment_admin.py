@@ -232,8 +232,8 @@ def desativar_tipo(tipo_id):
     tipo = AssessmentTipo.query.get_or_404(tipo_id)
     
     # Verificar se há projetos usando este tipo
-    from models.projeto import Projeto
-    projetos_ativo = Projeto.query.filter_by(tipo_assessment_id=tipo_id, ativo=True).count()
+    from models.projeto import ProjetoAssessment
+    projetos_ativo = ProjetoAssessment.query.filter_by(tipo_assessment_id=tipo_id).count()
     
     if projetos_ativo > 0:
         flash(f'Não é possível desativar o tipo "{tipo.nome}" pois há {projetos_ativo} projeto(s) ativo(s) usando-o.', 'error')
@@ -327,8 +327,8 @@ def excluir_versao(versao_id):
         return redirect(url_for('assessment_admin.ver_tipo', tipo_id=versao.tipo_id))
     
     # Verificar se há projetos usando esta versão
-    from models.projeto import Projeto
-    projetos_usando = Projeto.query.filter_by(versao_assessment_id=versao_id).count()
+    from models.projeto import ProjetoAssessment
+    projetos_usando = ProjetoAssessment.query.filter_by(versao_assessment_id=versao_id).count()
     
     if projetos_usando > 0:
         flash(f'Não é possível excluir esta versão pois há {projetos_usando} projeto(s) usando-a.', 'error')
