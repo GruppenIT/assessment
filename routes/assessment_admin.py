@@ -121,26 +121,8 @@ def nova_versao(versao_id):
     db.session.add(nova_versao)
     db.session.flush()
     
-    # Copiar domínios e perguntas da versão base
-    for dominio_base in versao_base.get_dominios_ativos():
-        novo_dominio = AssessmentDominio(
-            versao_id=nova_versao.id,
-            nome=dominio_base.nome,
-            descricao=dominio_base.descricao,
-            ordem=dominio_base.ordem
-        )
-        db.session.add(novo_dominio)
-        db.session.flush()
-        
-        # Copiar perguntas
-        for pergunta_base in dominio_base.get_perguntas_ativas():
-            nova_pergunta = Pergunta(
-                dominio_versao_id=novo_dominio.id,
-                texto=pergunta_base.texto,
-                descricao=pergunta_base.descricao,
-                ordem=pergunta_base.ordem
-            )
-            db.session.add(nova_pergunta)
+    # Nova versão é criada vazia (sem domínios e perguntas)
+    # O usuário pode adicionar conteúdo manualmente ou via CSV
     
     db.session.commit()
     flash(f'Nova versão {nova_versao_num} criada com sucesso!', 'success')

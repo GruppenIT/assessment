@@ -119,7 +119,7 @@
                         <button type="button" class="btn btn-warning btn-sm" 
                                 data-bs-toggle="modal" data-bs-target="#novaVersaoModal" 
                                 data-versao-base="{{ versao.id }}">
-                            <i class="fas fa-copy me-1"></i>Clonar
+                            <i class="fas fa-plus me-1"></i>Nova Versão
                         </button>
                         {% endif %}
                     </div>
@@ -150,7 +150,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('assessment_admin.nova_versao', versao_id=versoes[0].id if versoes else 0) }}">
+            <form method="POST" id="novaVersaoForm">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="versao" class="form-label">Número da Versão *</label>
@@ -177,6 +177,24 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar modal para nova versão
+    const novaVersaoModal = document.getElementById('novaVersaoModal');
+    const novaVersaoForm = document.getElementById('novaVersaoForm');
+    
+    novaVersaoModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const versaoBase = button.getAttribute('data-versao-base');
+        
+        // Se não tem versão base, usar a primeira versão disponível
+        const versaoId = versaoBase || '{{ versoes[0].id if versoes else 0 }}';
+        
+        novaVersaoForm.action = `/admin/tipos-assessment/versao/${versaoId}/nova-versao`;
+    });
+});
+</script>
 
 <!-- Modal Clonar Tipo -->
 <div class="modal fade" id="clonarTipoModal" tabindex="-1">
