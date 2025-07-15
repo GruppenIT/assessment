@@ -216,6 +216,16 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - Removed all clients, projects, respondents, responses, assessment types
   - Cleared assessment versioning data and dependencies
   - Database now ready for comprehensive testing with new data structure
+- July 15, 2025. Project Creation System Integration Fix:
+  - **FIXED PROJECT CREATION WITH NEW VERSIONING**: Resolved conflict between old and new assessment systems
+  - Fixed ProjetoForm to use AssessmentTipo from new versioning system (assessment_tipos table)
+  - Updated project creation route to use versao_assessment_id instead of deprecated tipo_assessment_id
+  - Modified database schema to allow nullable tipo_assessment_id for backward compatibility
+  - Projects now correctly associate with published assessment versions
+  - Assessment types created via CSV import now properly display in project creation forms
+  - **SYSTEM INTEGRATION**: Seamless integration between assessment versioning and project management
+  - Fixed foreign key constraints allowing both old and new system coexistence
+  - Validated successful project creation with assessment type "Cibersegurança (NIST / ISO27001 / CIS)"
 
 ## User Preferences
 

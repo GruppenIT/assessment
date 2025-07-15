@@ -196,13 +196,20 @@ def criar():
                 db.session.add(projeto)
                 db.session.flush()  # Para obter o ID do projeto
                 
-                # Associar tipos de assessment
+                # Associar tipos de assessment (sistema novo)
+                from models.assessment_version import AssessmentTipo
                 for tipo_id in tipos_ids:
-                    projeto_assessment = ProjetoAssessment(
-                        projeto_id=projeto.id,
-                        tipo_assessment_id=int(tipo_id)
-                    )
-                    db.session.add(projeto_assessment)
+                    # Buscar o tipo de assessment
+                    tipo_assessment = AssessmentTipo.query.get(int(tipo_id))
+                    if tipo_assessment:
+                        # Buscar a versão publicada
+                        versao_ativa = tipo_assessment.get_versao_ativa()
+                        if versao_ativa:
+                            projeto_assessment = ProjetoAssessment(
+                                projeto_id=projeto.id,
+                                versao_assessment_id=versao_ativa.id
+                            )
+                            db.session.add(projeto_assessment)
                 
                 db.session.commit()
                 flash(f'Projeto "{projeto.nome}" criado com sucesso!', 'success')
