@@ -299,3 +299,32 @@ def dashboard():
                              alertas=[],
                              agora_local=datetime.now(),
                              fuso_horario="UTC")
+
+@admin_bp.route('/clientes')
+@login_required
+@admin_required
+def clientes():
+    """Lista todos os clientes do sistema"""
+    from models.cliente import Cliente
+    from models.projeto import Projeto
+    from models.respondente import Respondente
+    from sqlalchemy import func
+    
+    # Buscar todos os clientes com estatísticas
+    clientes = db.session.query(Cliente).filter_by(ativo=True).all()
+    
+    clientes_data = []
+    for cliente in clientes:
+        # Contar projetos do cliente
+        projetos_count = Projeto.query.filter_by(cliente_id=cliente.id, ativo=True).count()
+        
+        # Contar respondentes do cliente
+        respondentes_count = Respondente.query.filter_by(cliente_id=cliente.id, ativo=True).count()
+        
+        clientes_data.append({
+            'cliente': cliente,
+            'projetos_count': projetos_count,
+            'respondentes_count': respondentes_count
+        })
+    
+    return render_template('admin/clientes.html', clientes=clientes_data)
