@@ -25,142 +25,247 @@ admin_bp = Blueprint('admin', __name__)
 @login_required
 @admin_required
 def dashboard():
-    """Dashboard principal do administrador com informações completas"""
+    """Dashboard principal do administrador com informações completas e fuso horário"""
+    
+    from models.projeto import Projeto
     from datetime import datetime, timedelta
     from sqlalchemy import func
+    import pytz
     
-    # Determinar momento do dia
-    hora = datetime.now().hour
-    if hora < 12:
-        momento_do_dia = "Bom dia"
-    elif hora < 18:
-        momento_do_dia = "Boa tarde"
-    else:
-        momento_do_dia = "Boa noite"
-    
-    # Estatísticas principais
-    from models.projeto import Projeto
-    total_clientes = Cliente.query.filter_by(ativo=True).count()
-    total_projetos = Projeto.query.filter_by(ativo=True).count()
-    total_respondentes = Respondente.query.count()
-    respondentes_ativos = Respondente.query.filter_by(ativo=True).count()
-    total_respostas = Resposta.query.count()
-    total_assessments = ClienteAssessment.query.filter_by(ativo=True).count()
-    
-    # Clientes criados este mês
-    inicio_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    clientes_mes = Cliente.query.filter(
-        Cliente.data_criacao >= inicio_mes,
-        Cliente.ativo == True
-    ).count()
-    
-    # Calcular progresso médio baseado em projetos
-    progresso_medio = 0
-    projetos_pendentes = 0
-    
-    if total_projetos > 0:
-        progressos = []
-        for projeto in Projeto.query.filter_by(ativo=True).all():
-            # Usar o método do modelo para calcular progresso
-            progresso = projeto.get_progresso_geral()
-            progressos.append(progresso)
-            if progresso < 100:
-                projetos_pendentes += 1
+    try:
+        # Obter fuso horário configurado
+        fuso_horario = Configuracao.get_fuso_horario()
+        tz = pytz.timezone(fuso_horario)
+        agora_local = datetime.now(tz)
         
-        progresso_medio = sum(progressos) / len(progressos) if progressos else 0
-    
-    # Estatísticas organizadas
-    estatisticas = {
-        'total_clientes': total_clientes,
-        'clientes_mes': clientes_mes,
-        'total_projetos': total_projetos,
-        'total_respondentes': total_respondentes,
-        'respondentes_ativos': respondentes_ativos,
-        'total_assessments': total_assessments,
-        'projetos_pendentes': projetos_pendentes,
-        'progresso_medio': progresso_medio,
-        'total_respostas': total_respostas
-    }
-    
-    # Distribuição por tipo de assessment
-    tipos_assessment = []
-    for tipo in TipoAssessment.query.filter_by(ativo=True).all():
-        total_clientes_tipo = ClienteAssessment.query.filter_by(
-            tipo_assessment_id=tipo.id,
-            ativo=True
+        # Determinar momento do dia no fuso local
+        hora = agora_local.hour
+        if hora < 12:
+            momento_do_dia = "Bom dia"
+        elif hora < 18:
+            momento_do_dia = "Boa tarde"
+        else:
+            momento_do_dia = "Boa noite"
+        
+        # === ESTATÍSTICAS PRINCIPAIS ===
+        stats = {
+            'total_clientes': Cliente.query.filter_by(ativo=True).count(),
+            'total_respondentes': Respondente.query.filter_by(ativo=True).count(),
+            'total_projetos': Projeto.query.filter_by(ativo=True).count(),
+            'total_tipos': TipoAssessment.query.filter_by(ativo=True).count(),
+            'total_respostas': Resposta.query.count()
+        }
+        
+        # Clientes criados este mês (no fuso local)
+        inicio_mes_local = agora_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        inicio_mes_utc = inicio_mes_local.astimezone(pytz.UTC).replace(tzinfo=None)
+        stats['clientes_mes'] = Cliente.query.filter(
+            Cliente.data_criacao >= inicio_mes_utc,
+            Cliente.ativo == True
         ).count()
         
-        tipos_assessment.append({
-            'nome': tipo.nome,
-            'total_clientes': total_clientes_tipo
-        })
-    
-    # Atividade recente
-    atividade_recente = []
-    
-    # Últimos clientes criados
-    ultimos_clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.data_criacao.desc()).limit(3).all()
-    for cliente in ultimos_clientes:
-        tempo_delta = datetime.now() - cliente.data_criacao
-        if tempo_delta.days == 0:
-            tempo_formatado = f"Hoje às {cliente.data_criacao.strftime('%H:%M')}"
-        elif tempo_delta.days == 1:
-            tempo_formatado = "Ontem"
+        # Calcular progresso médio dos projetos
+        projetos_ativos = Projeto.query.filter_by(ativo=True).all()
+        if projetos_ativos:
+            progressos = [projeto.get_progresso_geral() for projeto in projetos_ativos]
+            stats['progresso_medio'] = sum(progressos) / len(progressos)
+            stats['projetos_pendentes'] = len([p for p in progressos if p < 100])
         else:
-            tempo_formatado = f"{tempo_delta.days} dias atrás"
+            stats['progresso_medio'] = 0
+            stats['projetos_pendentes'] = 0
         
-        atividade_recente.append({
-            'titulo': 'Novo Cliente Cadastrado',
-            'descricao': f'{cliente.nome} foi adicionado ao sistema',
-            'tempo_formatado': tempo_formatado,
-            'icone': 'fa-building',
-            'cor': 'primary'
-        })
-    
-    # Últimas respostas de assessments
-    ultimas_respostas = Resposta.query.order_by(Resposta.data_resposta.desc()).limit(2).all()
-    for resposta in ultimas_respostas:
-        tempo_delta = datetime.now() - resposta.data_resposta
-        if tempo_delta.days == 0:
-            tempo_formatado = f"Hoje às {resposta.data_resposta.strftime('%H:%M')}"
-        elif tempo_delta.days == 1:
-            tempo_formatado = "Ontem"
-        else:
-            tempo_formatado = f"{tempo_delta.days} dias atrás"
+        # === ATIVIDADE RECENTE (últimos 7 dias) ===
+        sete_dias_atras = agora_local - timedelta(days=7)
+        sete_dias_utc = sete_dias_atras.astimezone(pytz.UTC).replace(tzinfo=None)
         
-        atividade_recente.append({
-            'titulo': 'Resposta de Assessment',
-            'descricao': f'{resposta.respondente.nome} respondeu uma pergunta',
-            'tempo_formatado': tempo_formatado,
-            'icone': 'fa-clipboard-check',
-            'cor': 'success'
-        })
-    
-    # Manter apenas as 5 mais recentes
-    atividade_recente = atividade_recente[:5]
-    
-    # Alertas importantes
-    alertas_importantes = []
-    
-    # Verificar projetos sem respondentes
-    from models.projeto import Projeto
-    projetos_sem_respondentes = Projeto.query.filter_by(ativo=True).filter(~Projeto.respondentes.any()).count()
-    if projetos_sem_respondentes > 0:
-        alertas_importantes.append({
-            'tipo': 'warning',
-            'icone': 'fa-project-diagram',
-            'titulo': 'Projetos sem Respondentes',
-            'mensagem': f'{projetos_sem_respondentes} projeto(s) não possui(em) respondentes cadastrados',
-            'acao_url': url_for('projeto.listar'),
-            'acao_texto': 'Gerenciar'
-        })
-    
-    return render_template('admin/dashboard.html',
-                         momento_do_dia=momento_do_dia,
-                         estatisticas=estatisticas,
-                         tipos_assessment=tipos_assessment,
-                         atividade_recente=atividade_recente,
-                         alertas_importantes=alertas_importantes)
+        # Atividade por dia
+        atividade_diaria = db.session.query(
+            func.date(Resposta.data_resposta).label('data'),
+            func.count(Resposta.id).label('respostas'),
+            func.count(func.distinct(Resposta.respondente_id)).label('respondentes_ativos')
+        ).filter(
+            Resposta.data_resposta >= sete_dias_utc
+        ).group_by(
+            func.date(Resposta.data_resposta)
+        ).order_by(
+            func.date(Resposta.data_resposta).desc()
+        ).all()
+        
+        # === PROJETOS DETALHADOS ===
+        projetos_stats = db.session.query(
+            Projeto.id,
+            Projeto.nome,
+            Projeto.data_criacao,
+            Cliente.nome.label('cliente_nome'),
+            func.count(func.distinct(Resposta.pergunta_id)).label('perguntas_respondidas'),
+            func.count(func.distinct(Resposta.respondente_id)).label('respondentes_participando'),
+            func.max(Resposta.data_resposta).label('ultima_atividade')
+        ).join(
+            Cliente, Projeto.cliente_id == Cliente.id
+        ).outerjoin(
+            Resposta, Projeto.id == Resposta.projeto_id
+        ).filter(
+            Projeto.ativo == True
+        ).group_by(
+            Projeto.id, Projeto.nome, Projeto.data_criacao, Cliente.nome
+        ).order_by(
+            func.max(Resposta.data_resposta).desc().nullslast()
+        ).limit(10).all()
+        
+        # Calcular progresso e converter datas para fuso local
+        projetos_detalhados = []
+        for projeto_stat in projetos_stats:
+            projeto = Projeto.query.get(projeto_stat.id)
+            progresso = projeto.get_progresso_geral() if projeto else 0
+            
+            # Converter datas para fuso horário local
+            data_criacao_local = None
+            ultima_atividade_local = None
+            
+            if projeto_stat.data_criacao:
+                data_criacao_utc = projeto_stat.data_criacao.replace(tzinfo=pytz.UTC)
+                data_criacao_local = data_criacao_utc.astimezone(tz)
+            
+            if projeto_stat.ultima_atividade:
+                ultima_atividade_utc = projeto_stat.ultima_atividade.replace(tzinfo=pytz.UTC)
+                ultima_atividade_local = ultima_atividade_utc.astimezone(tz)
+            
+            projetos_detalhados.append({
+                'projeto': projeto_stat,
+                'progresso': progresso,
+                'data_criacao_local': data_criacao_local,
+                'ultima_atividade_local': ultima_atividade_local
+            })
+        
+        # === TIPOS DE ASSESSMENT - ESTATÍSTICAS ===
+        tipos_stats = []
+        for tipo in TipoAssessment.query.filter_by(ativo=True).all():
+            # Contar projetos usando este tipo
+            projetos_usando = db.session.query(Projeto.id).join(
+                db.text('projeto_assessments'), Projeto.id == db.text('projeto_assessments.projeto_id')
+            ).filter(
+                db.text('projeto_assessments.tipo_assessment_id') == tipo.id,
+                Projeto.ativo == True
+            ).count()
+            
+            # Contar respostas para este tipo
+            total_respostas = db.session.query(Resposta.id).join(
+                Projeto, Resposta.projeto_id == Projeto.id
+            ).join(
+                db.text('projeto_assessments'), Projeto.id == db.text('projeto_assessments.projeto_id')
+            ).filter(
+                db.text('projeto_assessments.tipo_assessment_id') == tipo.id
+            ).count()
+            
+            # Contar domínios e perguntas
+            dominios_count = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True).count()
+            perguntas_count = Pergunta.query.join(Dominio).filter(
+                Dominio.tipo_assessment_id == tipo.id, 
+                Dominio.ativo == True, 
+                Pergunta.ativo == True
+            ).count()
+            
+            tipos_stats.append({
+                'nome': tipo.nome,
+                'descricao': tipo.descricao,
+                'projetos_usando': projetos_usando,
+                'total_respostas': total_respostas,
+                'dominios_count': dominios_count,
+                'perguntas_count': perguntas_count
+            })
+        
+        # === CLIENTES MAIS ATIVOS ===
+        clientes_stats = db.session.query(
+            Cliente.id,
+            Cliente.nome,
+            Cliente.razao_social,
+            func.count(func.distinct(Projeto.id)).label('projetos_count'),
+            func.count(func.distinct(Respondente.id)).label('respondentes_count'),
+            func.count(Resposta.id).label('respostas_count'),
+            func.max(Resposta.data_resposta).label('ultima_atividade')
+        ).outerjoin(
+            Projeto, Cliente.id == Projeto.cliente_id
+        ).outerjoin(
+            Respondente, Cliente.id == Respondente.cliente_id
+        ).outerjoin(
+            Resposta, Projeto.id == Resposta.projeto_id
+        ).filter(
+            Cliente.ativo == True
+        ).group_by(
+            Cliente.id, Cliente.nome, Cliente.razao_social
+        ).order_by(
+            func.count(Resposta.id).desc()
+        ).limit(5).all()
+        
+        # Converter última atividade dos clientes para fuso local
+        clientes_detalhados = []
+        for cliente in clientes_stats:
+            ultima_atividade_local = None
+            if cliente.ultima_atividade:
+                ultima_atividade_utc = cliente.ultima_atividade.replace(tzinfo=pytz.UTC)
+                ultima_atividade_local = ultima_atividade_utc.astimezone(tz)
+            
+            clientes_detalhados.append({
+                'cliente': cliente,
+                'ultima_atividade_local': ultima_atividade_local
+            })
+        
+        # === ALERTAS IMPORTANTES ===
+        alertas = []
+        
+        # Projetos sem respondentes
+        from models.projeto import ProjetoRespondente
+        projetos_sem_respondentes = Projeto.query.filter_by(ativo=True).filter(
+            ~Projeto.id.in_(
+                db.session.query(ProjetoRespondente.projeto_id).filter(
+                    ProjetoRespondente.ativo == True
+                )
+            )
+        ).count()
+        
+        if projetos_sem_respondentes > 0:
+            alertas.append({
+                'tipo': 'warning',
+                'icone': 'fa-users',
+                'titulo': 'Projetos sem Respondentes',
+                'mensagem': f'{projetos_sem_respondentes} projeto(s) sem respondentes cadastrados',
+                'acao_url': url_for('projeto.listar'),
+                'acao_texto': 'Gerenciar'
+            })
+        
+        # Clientes sem projetos
+        clientes_sem_projetos = Cliente.query.filter_by(ativo=True).filter(
+            ~Cliente.id.in_(
+                db.session.query(Projeto.cliente_id).filter(Projeto.ativo == True)
+            )
+        ).count()
+        
+        if clientes_sem_projetos > 0:
+            alertas.append({
+                'tipo': 'info',
+                'icone': 'fa-building',
+                'titulo': 'Clientes sem Projetos',
+                'mensagem': f'{clientes_sem_projetos} cliente(s) ainda não possuem projetos',
+                'acao_url': url_for('projeto.listar'),
+                'acao_texto': 'Criar Projeto'
+            })
+        
+        return render_template('admin/dashboard.html',
+                             momento_do_dia=momento_do_dia,
+                             stats=stats,
+                             atividade_diaria=atividade_diaria,
+                             projetos_detalhados=projetos_detalhados,
+                             tipos_stats=tipos_stats,
+                             clientes_detalhados=clientes_detalhados,
+                             alertas=alertas,
+                             agora_local=agora_local,
+                             fuso_horario=fuso_horario)
+                             
+    except Exception as e:
+        import logging
+        logging.error(f"Erro no dashboard: {e}")
+        flash('Erro ao carregar dashboard. Tente novamente.', 'danger')
+        return render_template('admin/dashboard.html')
 
 # Rotas para Tipos de Assessment
 @admin_bp.route('/tipos_assessment')
