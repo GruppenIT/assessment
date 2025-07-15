@@ -21,7 +21,7 @@
                     <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary me-2">
                         <i class="fas fa-arrow-left me-1"></i>Voltar aos Clientes
                     </a>
-                    <a href="{{ url_for('projeto.criar_respondente', cliente_id=cliente.id) }}" class="btn btn-primary">
+                    <a href="{{ url_for('admin.criar_respondente', cliente_id=cliente.id) }}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>Novo Respondente
                     </a>
                 </div>
@@ -83,7 +83,7 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="{{ url_for('projeto.editar_respondente', respondente_id=item.respondente.id) }}" 
+                                                    <a href="{{ url_for('admin.editar_respondente', respondente_id=item.respondente.id) }}" 
                                                        class="btn btn-outline-warning" title="Editar Respondente">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
@@ -106,7 +106,7 @@
                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">Nenhum respondente cadastrado</h5>
                     <p class="text-muted">Adicione respondentes para que possam participar dos assessments.</p>
-                    <a href="{{ url_for('projeto.criar_respondente', cliente_id=cliente.id) }}" class="btn btn-primary">
+                    <a href="{{ url_for('admin.criar_respondente', cliente_id=cliente.id) }}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>Adicionar Primeiro Respondente
                     </a>
                 </div>

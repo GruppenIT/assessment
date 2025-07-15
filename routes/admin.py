@@ -431,3 +431,105 @@ def respondentes_cliente(cliente_id):
                          cliente=cliente, 
                          respondentes=respondentes_data,
                          projetos=projetos)
+
+@admin_bp.route('/clientes/<int:cliente_id>/respondentes/criar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def criar_respondente(cliente_id):
+    """Cria um novo respondente para um cliente específico"""
+    from models.cliente import Cliente
+    from forms.cliente_forms import ResponenteForm
+    from flask import request, flash, redirect, url_for
+    
+    cliente = Cliente.query.get_or_404(cliente_id)
+    form = ResponenteForm()
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            # Criar novo respondente
+            respondente = Respondente(
+                nome=form.nome.data,
+                email=form.email.data,
+                login=form.login.data,
+                cargo=form.cargo.data,
+                setor=form.setor.data,
+                cliente_id=cliente_id,
+                ativo=form.ativo.data
+            )
+            
+            # Hash da senha
+            from werkzeug.security import generate_password_hash
+            respondente.senha_hash = generate_password_hash(form.senha.data)
+            
+            db.session.add(respondente)
+            db.session.commit()
+            
+            flash(f'Respondente "{respondente.nome}" criado com sucesso!', 'success')
+            return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao criar respondente. Tente novamente.', 'danger')
+            logging.error(f"Erro ao criar respondente: {e}")
+    
+    return render_template('admin/criar_respondente.html', form=form, cliente=cliente)
+
+@admin_bp.route('/respondentes/<int:respondente_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar_respondente(respondente_id):
+    """Edita um respondente existente"""
+    from forms.cliente_forms import ResponenteForm
+    from flask import request, flash, redirect, url_for
+    
+    respondente = Respondente.query.get_or_404(respondente_id)
+    form = ResponenteForm(obj=respondente)
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            # Atualizar dados do respondente
+            respondente.nome = form.nome.data
+            respondente.email = form.email.data
+            respondente.login = form.login.data
+            respondente.cargo = form.cargo.data
+            respondente.setor = form.setor.data
+            respondente.ativo = form.ativo.data
+            
+            # Atualizar senha se fornecida
+            if form.senha.data:
+                from werkzeug.security import generate_password_hash
+                respondente.senha_hash = generate_password_hash(form.senha.data)
+            
+            db.session.commit()
+            flash(f'Respondente "{respondente.nome}" atualizado com sucesso!', 'success')
+            return redirect(url_for('admin.respondentes_cliente', cliente_id=respondente.cliente_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao atualizar respondente. Tente novamente.', 'danger')
+            logging.error(f"Erro ao atualizar respondente: {e}")
+    
+    return render_template('admin/editar_respondente.html', form=form, respondente=respondente)
+
+@admin_bp.route('/respondentes/<int:respondente_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir_respondente(respondente_id):
+    """Exclui um respondente (soft delete)"""
+    from flask import flash, redirect, url_for
+    
+    respondente = Respondente.query.get_or_404(respondente_id)
+    cliente_id = respondente.cliente_id
+    
+    try:
+        # Soft delete - apenas marca como inativo
+        respondente.ativo = False
+        db.session.commit()
+        flash(f'Respondente "{respondente.nome}" excluído com sucesso!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao excluir respondente. Tente novamente.', 'danger')
+        logging.error(f"Erro ao excluir respondente: {e}")
+    
+    return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
