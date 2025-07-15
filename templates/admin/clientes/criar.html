@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Criar Cliente - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h2><i class="fas fa-plus text-primary me-2"></i>Criar Novo Cliente</h2>
+                    <p class="text-muted mb-0">Cadastre um novo cliente no sistema</p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Nome Fantasia -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.nome.label(class="form-label") }}
+                                {{ form.nome(class="form-control" + (" is-invalid" if form.nome.errors else "")) }}
+                                {% if form.nome.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Razão Social -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.razao_social.label(class="form-label") }}
+                                {{ form.razao_social(class="form-control" + (" is-invalid" if form.razao_social.errors else "")) }}
+                                {% if form.razao_social.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.razao_social.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- CNPJ -->
+                            <div class="col-md-4 mb-3">
+                                {{ form.cnpj.label(class="form-label") }}
+                                {{ form.cnpj(class="form-control" + (" is-invalid" if form.cnpj.errors else "")) }}
+                                {% if form.cnpj.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.cnpj.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Localidade -->
+                            <div class="col-md-4 mb-3">
+                                {{ form.localidade.label(class="form-label") }}
+                                {{ form.localidade(class="form-control" + (" is-invalid" if form.localidade.errors else "")) }}
+                                {% if form.localidade.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.localidade.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Segmento -->
+                            <div class="col-md-4 mb-3">
+                                {{ form.segmento.label(class="form-label") }}
+                                {{ form.segmento(class="form-control" + (" is-invalid" if form.segmento.errors else "")) }}
+                                {% if form.segmento.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.segmento.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Logo -->
+                        <div class="mb-4">
+                            {{ form.logo.label(class="form-label") }}
+                            {{ form.logo(class="form-control" + (" is-invalid" if form.logo.errors else "")) }}
+                            {% if form.logo.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.logo.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Formatos aceitos: PNG, JPG, JPEG, GIF (máximo 2MB)</div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin.clientes') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

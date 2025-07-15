@@ -5,9 +5,49 @@ from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.resposta import Resposta
 from forms.assessment_forms import RespostaForm
-from utils.auth_utils import cliente_required
+from utils.auth_utils import cliente_required, admin_required
 
 cliente_bp = Blueprint('cliente', __name__)
+
+@cliente_bp.route('/criar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def criar():
+    """Cria um novo cliente"""
+    from forms.cliente_forms import ClienteForm
+    from models.cliente import Cliente
+    
+    form = ClienteForm()
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            cliente = Cliente(
+                nome=form.nome.data,
+                razao_social=form.razao_social.data,
+                cnpj=form.cnpj.data,
+                localidade=form.localidade.data,
+                segmento=form.segmento.data,
+                ativo=True
+            )
+            
+            # Processar upload de logo se houver
+            if form.logo.data:
+                from utils.upload_utils import save_uploaded_file
+                filename = save_uploaded_file(form.logo.data, 'logos')
+                if filename:
+                    cliente.logo = filename
+            
+            db.session.add(cliente)
+            db.session.commit()
+            
+            flash(f'Cliente "{cliente.nome}" criado com sucesso!', 'success')
+            return redirect(url_for('admin.clientes'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao criar cliente. Tente novamente.', 'danger')
+    
+    return render_template('admin/clientes/criar.html', form=form)
 
 @cliente_bp.route('/dashboard')
 @login_required
