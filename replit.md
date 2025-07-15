@@ -184,6 +184,7 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - Projects now maintain their opening assessment version throughout lifecycle
   - New projects use latest published version, existing projects keep their version
   - **INTERFACE REORGANIZATION**: Consolidated admin menu with dropdown structure for better UX
+  - **DATABASE MIGRATION**: Fixed route conflicts and migrated existing assessment types (Cibersegurança, LGPD) to new versioning system with all domains and questions preserved
 
 ## User Preferences
 
