@@ -26,6 +26,11 @@
                                 <span class="badge bg-light text-dark fs-6">{{ progresso }}% concluído</span>
                             </div>
                             <div class="btn-group">
+                                {% if projeto.is_totalmente_finalizado() %}
+                                <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-chart-line me-1"></i>Estatísticas
+                                </a>
+                                {% endif %}
                                 <a href="{{ url_for('projeto.editar', projeto_id=projeto.id) }}" class="btn btn-light btn-sm">
                                     <i class="fas fa-edit me-1"></i>Editar
                                 </a>
@@ -82,6 +87,24 @@
             </div>
         </div>
     </div>
+
+    <!-- Alerta de Projeto Finalizado -->
+    {% if projeto.is_totalmente_finalizado() %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-success d-flex align-items-center">
+                <i class="fas fa-check-circle me-3" style="font-size: 1.5rem;"></i>
+                <div class="flex-grow-1">
+                    <strong>Projeto Finalizado!</strong> 
+                    Todos os assessments foram completados. 
+                    <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="alert-link">
+                        <i class="fas fa-chart-line me-1"></i>Ver estatísticas detalhadas com gráficos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Tipos de Assessment do Projeto -->
     <div class="row mb-4">

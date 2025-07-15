@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Estatísticas - {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="card-title mb-2">
+                                <i class="fas fa-chart-line me-2"></i>Estatísticas Finais - {{ projeto.nome }}
+                            </h4>
+                            <p class="card-text mb-2">
+                                <i class="fas fa-building me-2"></i>{{ projeto.cliente.nome }}
+                            </p>
+                            <p class="card-text mb-0">
+                                <i class="fas fa-check-circle me-2"></i>Projeto finalizado com todos os assessments completos
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark fs-6">Score Médio: {{ score_medio_projeto }}/5.0</span>
+                            </div>
+                            <div class="btn-group">
+                                <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-arrow-left me-1"></i>Voltar aos Detalhes
+                                </a>
+                                <a href="{{ url_for('projeto.listar') }}" class="btn btn-outline-light btn-sm">
+                                    <i class="fas fa-list me-1"></i>Lista de Projetos
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas Gerais -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-trophy text-warning mb-3" style="font-size: 2.5rem;"></i>
+                    <h4 class="card-title text-warning">{{ score_medio_projeto }}</h4>
+                    <p class="card-text text-muted">Score Médio Geral</p>
+                    <small class="text-muted">Escala 0-5</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-clipboard-check text-primary mb-3" style="font-size: 2.5rem;"></i>
+                    <h4 class="card-title">{{ estatisticas_gerais.total_assessments }}</h4>
+                    <p class="card-text text-muted">Assessments Finalizados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-users text-info mb-3" style="font-size: 2.5rem;"></i>
+                    <h4 class="card-title">{{ estatisticas_gerais.total_respondentes }}</h4>
+                    <p class="card-text text-muted">Respondentes Participantes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-calendar-check text-success mb-3" style="font-size: 2.5rem;"></i>
+                    <h5 class="card-title">{{ estatisticas_gerais.data_finalizacao.strftime('%d/%m/%Y') if estatisticas_gerais.data_finalizacao else 'N/A' }}</h5>
+                    <p class="card-text text-muted">Data de Finalização</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Comparação de Assessments -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Comparação de Scores por Assessment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoAssessments" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas Detalhadas por Assessment -->
+    {% for assessment in estatisticas_assessments %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>{{ assessment.tipo.nome }}
+                        </h5>
+                        <div>
+                            <span class="badge bg-light text-dark me-2">{{ assessment.versao_info }}</span>
+                            <span class="badge bg-warning">Score: {{ assessment.score_geral }}/5.0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Gráfico Radar para este assessment -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">
+                                <i class="fas fa-radar-dish me-2"></i>Análise por Domínios - Gráfico Radar
+                            </h6>
+                            <canvas id="graficoRadar{{ loop.index }}" height="200"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">
+                                <i class="fas fa-layer-group me-2"></i>Resumo do Assessment
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Score Geral:</strong></td>
+                                        <td>
+                                            <span class="badge bg-warning fs-6">{{ assessment.score_geral }}/5.0</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total de Respostas:</strong></td>
+                                        <td>{{ assessment.total_respostas }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Data de Finalização:</strong></td>
+                                        <td>{{ assessment.data_finalizacao.strftime('%d/%m/%Y às %H:%M') if assessment.data_finalizacao else 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total de Domínios:</strong></td>
+                                        <td>{{ assessment.scores_dominios|length }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalhamento por Domínios -->
+                    <h6 class="mb-3">
+                        <i class="fas fa-tasks me-2"></i>Detalhamento por Domínios
+                    </h6>
+                    <div class="row">
+                        {% for dominio_data in assessment.scores_dominios %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0" style="font-size: 0.9rem;">{{ dominio_data.dominio.nome }}</h6>
+                                        <span class="badge bg-{{ dominio_data.classe_css }}">
+                                            {{ dominio_data.score }}/5.0
+                                        </span>
+                                    </div>
+                                    {% if dominio_data.dominio.descricao %}
+                                        <p class="card-text text-muted small">{{ dominio_data.dominio.descricao[:100] }}...</p>
+                                    {% endif %}
+                                    <div class="mb-2">
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ dominio_data.classe_css }}" 
+                                                 style="width: {{ (dominio_data.score / 5 * 100) }}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            {{ dominio_data.total_respostas }}/{{ dominio_data.total_perguntas }} perguntas
+                                        </small>
+                                        <span class="badge bg-{{ dominio_data.classe_css }} bg-opacity-25 text-{{ dominio_data.classe_css }}">
+                                            {{ dominio_data.nivel_maturidade }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Legenda de Níveis de Maturidade -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Legenda - Níveis de Maturidade
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <span class="badge bg-dark p-2 d-block mb-2">0.0 - 0.5</span>
+                                <strong>Inexistente</strong>
+                                <br><small class="text-muted">Nenhum controle implementado</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <span class="badge bg-danger p-2 d-block mb-2">0.5 - 1.5</span>
+                                <strong>Inicial</strong>
+                                <br><small class="text-muted">Práticas informais e não documentadas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <span class="badge bg-secondary p-2 d-block mb-2">1.5 - 2.5</span>
+                                <strong>Básico</strong>
+                                <br><small class="text-muted">Controles definidos, aplicação inconsistente</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <span class="badge bg-warning p-2 d-block mb-2">2.5 - 3.5</span>
+                                <strong>Intermediário</strong>
+                                <br><small class="text-muted">Controles padronizados e repetíveis</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <span class="badge bg-info p-2 d-block mb-2">3.5 - 4.5</span>
+                                <strong>Avançado</strong>
+                                <br><small class="text-muted">Controles monitorados com métricas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="text-center">
+                                <span class="badge bg-success p-2 d-block mb-2">4.5 - 5.0</span>
+                                <strong>Otimizado</strong>
+                                <br><small class="text-muted">Controles integrados e melhorados continuamente</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dados dos gráficos passados do backend
+    const dadosGraficos = {{ dados_graficos | tojson }};
+    
+    // Gráfico de Comparação de Assessments
+    const ctxAssessments = document.getElementById('graficoAssessments').getContext('2d');
+    const assessmentLabels = Object.keys(dadosGraficos.scores_assessments);
+    const assessmentScores = Object.values(dadosGraficos.scores_assessments);
+    
+    new Chart(ctxAssessments, {
+        type: 'bar',
+        data: {
+            labels: assessmentLabels,
+            datasets: [{
+                label: 'Score Médio',
+                data: assessmentScores,
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 205, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 5,
+                    title: {
+                        display: true,
+                        text: 'Score (0-5)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Comparação de Scores entre Assessments'
+                }
+            }
+        }
+    });
+    
+    // Gráficos Radar para cada assessment
+    {% for assessment in estatisticas_assessments %}
+    {% set assessment_nome = assessment.tipo.nome %}
+    if (dadosGraficos.radar['{{ assessment_nome }}']) {
+        const ctxRadar{{ loop.index }} = document.getElementById('graficoRadar{{ loop.index }}').getContext('2d');
+        const radarData{{ loop.index }} = dadosGraficos.radar['{{ assessment_nome }}'];
+        
+        new Chart(ctxRadar{{ loop.index }}, {
+            type: 'radar',
+            data: {
+                labels: radarData{{ loop.index }}.dominios,
+                datasets: [{
+                    label: '{{ assessment_nome }}',
+                    data: radarData{{ loop.index }}.scores,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+    {% endfor %}
+});
+</script>
+{% endblock %}
