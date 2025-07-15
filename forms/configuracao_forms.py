@@ -10,12 +10,12 @@ class ConfiguracaoForm(FlaskForm):
     cor_primaria = StringField('Cor Primária', 
                                validators=[DataRequired(message='Cor primária é obrigatória')],
                                widget=ColorInput(),
-                               render_kw={'value': '#0d6efd'})
+                               render_kw={'value': '#1a73e8'})
     
     cor_secundaria = StringField('Cor Secundária',
                                 validators=[DataRequired(message='Cor secundária é obrigatória')],
                                 widget=ColorInput(),
-                                render_kw={'value': '#6c757d'})
+                                render_kw={'value': '#445063'})
     
     cor_fundo = StringField('Cor de Fundo',
                            validators=[DataRequired(message='Cor de fundo é obrigatória')],

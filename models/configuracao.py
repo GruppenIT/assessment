@@ -52,8 +52,8 @@ class Configuracao(db.Model):
         """Obter cores do sistema configuradas"""
         try:
             cores = {
-                'primaria': Configuracao.get_valor('cor_primaria', '#0d6efd'),
-                'secundaria': Configuracao.get_valor('cor_secundaria', '#6c757d'),
+                'primaria': Configuracao.get_valor('cor_primaria', '#1a73e8'),
+                'secundaria': Configuracao.get_valor('cor_secundaria', '#445063'),
                 'fundo': Configuracao.get_valor('cor_fundo', '#ffffff'),
                 'texto': Configuracao.get_valor('cor_texto', '#212529')
             }
@@ -61,8 +61,8 @@ class Configuracao(db.Model):
         except Exception:
             # Retornar cores padrão em caso de erro
             return {
-                'primaria': '#0d6efd',
-                'secundaria': '#6c757d', 
+                'primaria': '#1a73e8',
+                'secundaria': '#445063', 
                 'fundo': '#ffffff',
                 'texto': '#212529'
             }
@@ -107,8 +107,8 @@ class Configuracao(db.Model):
             
             configuracoes_padrao = [
                 # Cores básicas do sistema
-                ('cor_primaria', '#0d6efd', 'Cor primária do sistema', 'color'),
-                ('cor_secundaria', '#6c757d', 'Cor secundária do sistema', 'color'),
+                ('cor_primaria', '#1a73e8', 'Cor primária do sistema', 'color'),
+                ('cor_secundaria', '#445063', 'Cor secundária do sistema', 'color'),
                 ('cor_fundo', '#ffffff', 'Cor de fundo', 'color'),
                 ('cor_texto', '#212529', 'Cor do texto', 'color'),
                 
@@ -149,8 +149,8 @@ class Configuracao(db.Model):
     def get_cores_sistema():
         """Retorna as cores configuradas do sistema"""
         return {
-            'primaria': Configuracao.get_valor('cor_primaria', '#0d6efd'),
-            'secundaria': Configuracao.get_valor('cor_secundaria', '#6c757d'),
+            'primaria': Configuracao.get_valor('cor_primaria', '#1a73e8'),
+            'secundaria': Configuracao.get_valor('cor_secundaria', '#445063'),
             'fundo': Configuracao.get_valor('cor_fundo', '#ffffff'),
             'texto': Configuracao.get_valor('cor_texto', '#212529')
         }
