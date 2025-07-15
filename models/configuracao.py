@@ -127,6 +127,9 @@ class Configuracao(db.Model):
                 ('escala_3_cor', '#20c997', 'Cor para pontuação 3', 'color'),
                 ('escala_4_cor', '#0dcaf0', 'Cor para pontuação 4', 'color'),
                 ('escala_5_cor', '#198754', 'Cor para pontuação 5', 'color'),
+                
+                # Configurações de sistema
+                ('fuso_horario', 'America/Sao_Paulo', 'Fuso horário do sistema', 'timezone'),
             ]
             
             for chave, valor, descricao, tipo in configuracoes_padrao:
@@ -165,3 +168,8 @@ class Configuracao(db.Model):
                 'cor': Configuracao.get_valor(f'escala_{i}_cor', '#6c757d')
             }
         return escala
+    
+    @staticmethod
+    def get_fuso_horario():
+        """Retorna o fuso horário configurado do sistema"""
+        return Configuracao.get_valor('fuso_horario', 'America/Sao_Paulo')

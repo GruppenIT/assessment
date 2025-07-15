@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, SelectField
 from wtforms.validators import DataRequired
 from wtforms.widgets import ColorInput
 
@@ -26,6 +26,23 @@ class ConfiguracaoForm(FlaskForm):
                            validators=[DataRequired(message='Cor do texto é obrigatória')],
                            widget=ColorInput(),
                            render_kw={'value': '#212529'})
+    
+    # Fuso horário do sistema
+    fuso_horario = SelectField('Fuso Horário',
+                               validators=[DataRequired(message='Fuso horário é obrigatório')],
+                               choices=[
+                                   ('America/Sao_Paulo', 'GMT-3 (Brasil - São Paulo)'),
+                                   ('America/Manaus', 'GMT-4 (Brasil - Manaus)'),
+                                   ('America/Rio_Branco', 'GMT-5 (Brasil - Rio Branco)'),
+                                   ('UTC', 'GMT+0 (UTC)'),
+                                   ('America/New_York', 'GMT-5 (Estados Unidos - Nova York)'),
+                                   ('Europe/London', 'GMT+0 (Reino Unido - Londres)'),
+                                   ('Europe/Paris', 'GMT+1 (França - Paris)'),
+                                   ('Asia/Tokyo', 'GMT+9 (Japão - Tóquio)'),
+                                   ('Australia/Sydney', 'GMT+10 (Austrália - Sydney)')
+                               ],
+                               default='America/Sao_Paulo',
+                               render_kw={'class': 'form-select'})
     
     # Escala de pontuação - Nomes (sem validação obrigatória)
     escala_0_nome = StringField('Nome Nível 0', render_kw={'value': 'Inexistente'})

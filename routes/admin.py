@@ -1093,6 +1093,9 @@ def configuracoes():
             config_form.cor_fundo.data = cores.get('fundo', '#ffffff')
             config_form.cor_texto.data = cores.get('texto', '#212529')
             
+            # Carregar fuso horário
+            config_form.fuso_horario.data = Configuracao.get_valor('fuso_horario', 'America/Sao_Paulo')
+            
             try:
                 for i in range(6):
                     nome_field = getattr(config_form, f'escala_{i}_nome', None)
@@ -1151,12 +1154,13 @@ def salvar_configuracoes():
             import logging
             logging.info(f"Salvando configurações")
             
-            # Salvar apenas as cores básicas primeiro (mais simples)
+            # Salvar configurações básicas
             configuracoes = [
                 ('cor_primaria', form.cor_primaria.data),
                 ('cor_secundaria', form.cor_secundaria.data),
                 ('cor_fundo', form.cor_fundo.data),
                 ('cor_texto', form.cor_texto.data),
+                ('fuso_horario', form.fuso_horario.data),
             ]
             
             # Tentar salvar escala também (se existir)
