@@ -52,9 +52,9 @@ class ProjetoForm(FlaskForm):
         clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
         self.cliente_id.choices = [(c.id, c.nome) for c in clientes]
         
-        # Popular tipos de assessment
-        from models.tipo_assessment import TipoAssessment
-        tipos = TipoAssessment.query.filter_by(ativo=True).order_by(TipoAssessment.ordem).all()
+        # Popular tipos de assessment (usando sistema novo)
+        from models.assessment_version import AssessmentTipo
+        tipos = AssessmentTipo.query.filter_by(ativo=True).order_by(AssessmentTipo.nome).all()
         self.tipos_assessment.choices = [(t.id, t.nome) for t in tipos]
 
 
