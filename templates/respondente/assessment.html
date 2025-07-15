@@ -33,20 +33,54 @@
         </div>
     </div>
 
-    <!-- Progress Bar -->
+    <!-- Progress Bar e Status -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
+                    <!-- Status de Finalização -->
+                    {% if not pode_editar %}
+                    <div class="alert alert-success d-flex align-items-center mb-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <div>
+                            <strong>Assessment Finalizado!</strong> 
+                            Este assessment foi finalizado em {{ projeto_assessment.data_finalizacao.strftime('%d/%m/%Y às %H:%M') }} e não pode mais ser editado.
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Progresso -->
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold">Progresso do Assessment</span>
-                        <span id="progress-text" class="text-primary fw-bold">0%</span>
+                        <span id="progress-text" class="text-primary fw-bold">{{ "%.1f"|format(progresso_assessment) }}%</span>
                     </div>
                     <div class="progress" style="height: 8px;">
                         <div id="progress-bar" class="progress-bar bg-primary" role="progressbar" 
-                             style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                             style="width: {{ progresso_assessment }}%" aria-valuenow="{{ progresso_assessment }}" aria-valuemin="0" aria-valuemax="100">
                         </div>
                     </div>
+                    
+                    <!-- Botão de Finalizar -->
+                    {% if pode_editar and todas_respondidas %}
+                    <div class="mt-3 text-center">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Todas as perguntas foram respondidas!</strong> 
+                            Você pode finalizar este assessment quando estiver satisfeito com suas respostas. 
+                            Após finalizar, não será mais possível editar as respostas.
+                        </div>
+                        <button id="btn-finalizar" class="btn btn-success btn-lg">
+                            <i class="fas fa-flag-checkered me-2"></i>Finalizar Assessment
+                        </button>
+                    </div>
+                    {% elif pode_editar %}
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Responda todas as perguntas para habilitar a finalização do assessment
+                        </small>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -142,7 +176,8 @@
                                                 <textarea class="form-control comentario-input" 
                                                         rows="3" 
                                                         placeholder="Adicione observações, evidências ou justificativas para esta questão..."
-                                                        data-pergunta-id="{{ pergunta.id }}">{{ form_data.resposta.comentario if form_data.resposta else '' }}</textarea>
+                                                        data-pergunta-id="{{ pergunta.id }}"
+                                                        {% if not pode_editar %}readonly{% endif %}>{{ form_data.resposta.comentario if form_data.resposta else '' }}</textarea>
                                             </div>
                                         </div>
                                         
@@ -155,7 +190,8 @@
                                                         <button type="button" 
                                                                 class="btn rating-btn-new {% if form_data.resposta and form_data.resposta.nota == nota %}active{% endif %}" 
                                                                 data-nota="{{ nota }}"
-                                                                data-pergunta-id="{{ pergunta.id }}">
+                                                                data-pergunta-id="{{ pergunta.id }}"
+                                                                {% if not pode_editar %}disabled{% endif %}>
                                                             <div class="d-flex align-items-center">
                                                                 <span class="rating-number">{{ nota }}</span>
                                                                 <span class="rating-text">
@@ -184,25 +220,6 @@
     </div>
     {% endfor %}
 
-    <!-- Botão de Conclusão -->
-    <div class="row">
-        <div class="col-12 text-center">
-            <div class="card bg-light">
-                <div class="card-body">
-                    <h5 class="mb-3">
-                        <i class="fas fa-flag-checkered me-2 text-success"></i>
-                        Finalizando o Assessment
-                    </h5>
-                    <p class="text-muted mb-3">
-                        Revise suas respostas antes de finalizar. Você pode alterá-las a qualquer momento antes da conclusão final.
-                    </p>
-                    <button id="btn-finalizar" class="btn btn-success btn-lg" disabled>
-                        <i class="fas fa-check me-2"></i>Finalizar Assessment
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Toast para notificações -->
@@ -335,6 +352,45 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1000); // Auto-save após 1 segundo de inatividade
         });
     });
+    
+    // Botão de finalizar assessment
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    if (btnFinalizar) {
+        btnFinalizar.addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja finalizar este assessment? Após finalizar, não será mais possível editar as respostas.')) {
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Finalizando...';
+                
+                fetch(`/respondente/assessment/finalizar/{{ projeto.id }}/{{ tipo_assessment.id }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert('Erro: ' + data.message);
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fas fa-flag-checkered me-2"></i>Finalizar Assessment';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao finalizar assessment');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-flag-checkered me-2"></i>Finalizar Assessment';
+                });
+            }
+        });
+    }
     
     function getNotaAtual(perguntaId) {
         const activeBtn = document.querySelector(`.rating-buttons[data-pergunta-id="${perguntaId}"] .rating-btn-new.active`);

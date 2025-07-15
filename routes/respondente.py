@@ -195,6 +195,9 @@ def assessment(projeto_id, tipo_assessment_id):
     
     projeto = projeto_respondente.projeto
     
+    # Verificar se o assessment ainda pode ser editado
+    pode_editar = projeto_assessment.pode_editar()
+    
     # Obter domínios baseado no sistema usado
     if projeto_assessment.versao_assessment_id:
         # Novo sistema de versionamento - domínios da versão
@@ -228,12 +231,79 @@ def assessment(projeto_id, tipo_assessment_id):
                 'resposta': respostas_existentes.get(pergunta.id) if pergunta.id in respostas_existentes else None
             }
 
+    # Calcular progresso do assessment
+    progresso_assessment = projeto_assessment.get_progresso_percentual()
+    todas_respondidas = progresso_assessment >= 100
+    
     return render_template('respondente/assessment.html',
                          projeto=projeto,
+                         projeto_assessment=projeto_assessment,
                          tipo_assessment=tipo_assessment, 
                          dominios=dominios,
                          forms_data=forms_data,
-                         respostas_existentes=respostas_existentes)
+                         respostas_existentes=respostas_existentes,
+                         pode_editar=pode_editar,
+                         progresso_assessment=progresso_assessment,
+                         todas_respondidas=todas_respondidas)
+
+@respondente_bp.route('/assessment/finalizar/<int:projeto_id>/<int:tipo_assessment_id>', methods=['POST'])
+@login_required
+def finalizar_assessment(projeto_id, tipo_assessment_id):
+    """Finaliza um assessment, bloqueando edições futuras"""
+    if not isinstance(current_user, Respondente):
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+    
+    # Verificar acesso ao projeto
+    from models.projeto import ProjetoRespondente, ProjetoAssessment
+    projeto_respondente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto_id,
+        respondente_id=current_user.id,
+        ativo=True
+    ).first()
+    
+    if not projeto_respondente:
+        return jsonify({'success': False, 'message': 'Acesso negado a este projeto'}), 403
+    
+    # Buscar o assessment específico
+    projeto_assessment = ProjetoAssessment.query.filter_by(
+        projeto_id=projeto_id
+    ).first()
+    
+    if not projeto_assessment:
+        return jsonify({'success': False, 'message': 'Assessment não encontrado'}), 404
+    
+    # Verificar se ainda pode ser editado
+    if not projeto_assessment.pode_editar():
+        return jsonify({'success': False, 'message': 'Este assessment já foi finalizado'}), 400
+    
+    # Verificar se todas as perguntas foram respondidas
+    progresso = projeto_assessment.get_progresso_percentual()
+    if progresso < 100:
+        return jsonify({
+            'success': False, 
+            'message': f'Para finalizar, todas as perguntas devem ser respondidas. Progresso atual: {progresso:.1f}%'
+        }), 400
+    
+    # Finalizar o assessment
+    try:
+        projeto_assessment.finalizar()
+        
+        # Verificar se o projeto está totalmente finalizado
+        projeto = projeto_respondente.projeto
+        finalizados, total = projeto.get_assessments_finalizados()
+        
+        message = f'Assessment finalizado com sucesso! ({finalizados}/{total} assessments finalizados)'
+        if projeto.is_totalmente_finalizado():
+            message = 'Todos os assessments foram finalizados! Aguarde o envio do relatório.'
+        
+        return jsonify({
+            'success': True, 
+            'message': message,
+            'redirect': url_for('respondente.dashboard')
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Erro ao finalizar assessment'}), 500
 
 @respondente_bp.route('/assessment/salvar', methods=['POST'])
 @login_required
@@ -255,7 +325,7 @@ def salvar_resposta():
             return jsonify({'success': False, 'message': 'Pergunta não encontrada'}), 404
         
         # Verificar acesso ao projeto
-        from models.projeto import ProjetoRespondente
+        from models.projeto import ProjetoRespondente, ProjetoAssessment
         projeto_respondente = ProjetoRespondente.query.filter_by(
             projeto_id=projeto_id,
             respondente_id=current_user.id,
@@ -264,6 +334,14 @@ def salvar_resposta():
         
         if not projeto_respondente:
             return jsonify({'success': False, 'message': 'Acesso negado ao projeto'}), 403
+        
+        # Verificar se o assessment ainda pode ser editado
+        projeto_assessment = ProjetoAssessment.query.filter_by(
+            projeto_id=projeto_id
+        ).first()
+        
+        if projeto_assessment and not projeto_assessment.pode_editar():
+            return jsonify({'success': False, 'message': 'Este assessment foi finalizado e não pode ser editado'}), 403
         
         # Buscar resposta existente para a pergunta (qualquer respondente do projeto)
         resposta = Resposta.query.filter_by(
@@ -309,50 +387,6 @@ def salvar_resposta():
     except Exception as e:
         db.session.rollback()
         print(f"DEBUG: Erro ao salvar resposta: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@respondente_bp.route('/assessment/finalizar', methods=['POST'])
-@login_required
-def finalizar_assessment():
-    """Finalizar assessment do respondente"""
-    try:
-        if not isinstance(current_user, Respondente):
-            return jsonify({'success': False, 'message': 'Usuário não autorizado'}), 401
-        
-        # Verificar se o respondente tem respostas
-        total_respostas = Resposta.query.filter_by(respondente_id=current_user.id).count()
-        
-        if total_respostas == 0:
-            return jsonify({'success': False, 'message': 'Nenhuma resposta encontrada'}), 400
-        
-        # Verificar se tem assessments completos
-        tipos_assessment = current_user.cliente.get_tipos_assessment()
-        algum_completo = False
-        
-        for tipo in tipos_assessment:
-            progresso = current_user.get_progresso_assessment(tipo.id)
-            if progresso['percentual'] >= 100:
-                algum_completo = True
-                break
-        
-        if not algum_completo:
-            return jsonify({'success': False, 'message': 'Você deve completar pelo menos um assessment antes de finalizar'}), 400
-        
-        # Atualizar data de conclusão do respondente
-        current_user.data_conclusao = datetime.utcnow()
-        db.session.commit()
-        
-        print(f"DEBUG: Assessment finalizado pelo respondente {current_user.nome} - {current_user.email}")
-        
-        return jsonify({
-            'success': True, 
-            'message': 'Assessment finalizado com sucesso',
-            'data_conclusao': current_user.data_conclusao.isoformat()
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"DEBUG: Erro ao finalizar assessment: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @respondente_bp.route('/logout')

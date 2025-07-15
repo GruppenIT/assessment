@@ -53,6 +53,8 @@
                     {% set tipos_assessment = projeto_data.tipos_assessment %}
                     {% set progressos = projeto_data.progressos %}
                     {% set progresso_geral = projeto_data.progresso_geral %}
+                    {% set finalizados, total_assessments = projeto.get_assessments_finalizados() %}
+                    {% set totalmente_finalizado = projeto.is_totalmente_finalizado() %}
                     
                     <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
@@ -79,19 +81,46 @@
                                 </div>
                             </div>
                             
+                            <!-- Status de Finalização do Projeto -->
+                            {% if totalmente_finalizado %}
+                            <div class="alert alert-success d-flex align-items-center mb-4">
+                                <i class="fas fa-check-circle me-3"></i>
+                                <div>
+                                    <strong>Projeto Finalizado!</strong> 
+                                    Todos os assessments foram finalizados ({{ finalizados }}/{{ total_assessments }}). 
+                                    Aguarde o envio do relatório de maturidade.
+                                </div>
+                            </div>
+                            {% elif finalizados > 0 %}
+                            <div class="alert alert-info d-flex align-items-center mb-4">
+                                <i class="fas fa-info-circle me-3"></i>
+                                <div>
+                                    <strong>Assessments Finalizados:</strong> {{ finalizados }}/{{ total_assessments }} 
+                                    {% if finalizados < total_assessments %}
+                                        - Continue finalizando os assessments restantes.
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
                             <!-- Tipos de Assessment do Projeto -->
                             {% if tipos_assessment %}
                                 <div class="row">
                                     {% for tipo in tipos_assessment %}
                                         {% set progresso = progressos.get(tipo.id, {'percentual': 0, 'respondidas': 0, 'total': 0}) %}
+                                        {% set assessment_finalizado = projeto.assessments|selectattr('versao_assessment.tipo.id', 'equalto', tipo.id)|selectattr('finalizado', 'equalto', true)|list|length > 0 %}
                                         <div class="col-md-6 col-lg-4 mb-3">
                                             <div class="card h-100 assessment-card" onclick="location.href='{{ url_for('respondente.assessment', projeto_id=projeto.id, tipo_assessment_id=tipo.id) }}'">
                                                 <div class="card-body">
                                                     <div class="d-flex justify-content-between align-items-start mb-3">
                                                         <h6 class="card-title mb-0">{{ tipo.nome }}</h6>
-                                                        {% if progresso.percentual >= 100 %}
+                                                        {% if assessment_finalizado %}
                                                             <span class="badge bg-success">
-                                                                <i class="fas fa-check me-1"></i>Concluído
+                                                                <i class="fas fa-flag-checkered me-1"></i>Finalizado
+                                                            </span>
+                                                        {% elif progresso.percentual >= 100 %}
+                                                            <span class="badge bg-info">
+                                                                <i class="fas fa-check me-1"></i>Pronto para finalizar
                                                             </span>
                                                         {% elif progresso.percentual > 0 %}
                                                             <span class="badge bg-warning">
