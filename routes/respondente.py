@@ -64,27 +64,65 @@ def dashboard():
             
             # Calcular progresso colaborativo para cada tipo do projeto
             progressos = {}
-            for tipo in tipos_assessment:
+            
+            # Obter assessments do projeto para calcular progresso
+            assessments_projeto = projeto.assessments
+            for assessment in assessments_projeto:
                 from models.pergunta import Pergunta
                 from models.dominio import Dominio
                 from models.resposta import Resposta
+                from models.assessment_version import AssessmentDominio
                 
-                # Total de perguntas do tipo
-                total_perguntas = Pergunta.query.join(Dominio).filter(
-                    Dominio.tipo_assessment_id == tipo.id,
-                    Dominio.ativo == True,
-                    Pergunta.ativo == True
-                ).count()
-                
-                # Perguntas únicas respondidas por qualquer respondente (colaborativo)
-                perguntas_respondidas = db.session.query(Pergunta.id).join(
-                    Resposta, Pergunta.id == Resposta.pergunta_id
-                ).join(Dominio).filter(
-                    Resposta.projeto_id == projeto.id,
-                    Dominio.tipo_assessment_id == tipo.id,
-                    Dominio.ativo == True,
-                    Pergunta.ativo == True
-                ).distinct().count()
+                # Determinar tipo e total de perguntas baseado no sistema
+                if assessment.versao_assessment_id:
+                    # Novo sistema de versionamento
+                    versao = assessment.versao_assessment
+                    tipo = versao.tipo
+                    
+                    # Total de perguntas da versão
+                    total_perguntas = db.session.query(Pergunta).join(
+                        AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+                    ).filter(
+                        AssessmentDominio.versao_id == versao.id,
+                        AssessmentDominio.ativo == True,
+                        Pergunta.ativo == True
+                    ).count()
+                    
+                    # Perguntas respondidas do projeto
+                    perguntas_respondidas = db.session.query(Pergunta.id).join(
+                        Resposta, Pergunta.id == Resposta.pergunta_id
+                    ).join(
+                        AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+                    ).filter(
+                        Resposta.projeto_id == projeto.id,
+                        AssessmentDominio.versao_id == versao.id,
+                        AssessmentDominio.ativo == True,
+                        Pergunta.ativo == True
+                    ).distinct().count()
+                    
+                elif assessment.tipo_assessment_id:
+                    # Sistema antigo
+                    tipo = assessment.tipo_assessment
+                    
+                    # Total de perguntas do tipo
+                    total_perguntas = Pergunta.query.join(Dominio).filter(
+                        Dominio.tipo_assessment_id == tipo.id,
+                        Dominio.ativo == True,
+                        Pergunta.ativo == True
+                    ).count()
+                    
+                    # Perguntas únicas respondidas por qualquer respondente (colaborativo)
+                    perguntas_respondidas = db.session.query(Pergunta.id).join(
+                        Resposta, Pergunta.id == Resposta.pergunta_id
+                    ).join(Dominio).filter(
+                        Resposta.projeto_id == projeto.id,
+                        Dominio.tipo_assessment_id == tipo.id,
+                        Dominio.ativo == True,
+                        Pergunta.ativo == True
+                    ).distinct().count()
+                else:
+                    # Sistema sem dados válidos
+                    continue
                 
                 percentual = round((perguntas_respondidas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
                 
