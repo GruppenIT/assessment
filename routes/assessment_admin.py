@@ -215,3 +215,110 @@ def nova_pergunta(dominio_id):
     
     flash('Pergunta adicionada com sucesso!', 'success')
     return redirect(url_for('assessment_admin.editar_versao', versao_id=dominio.versao_id))
+
+@assessment_admin_bp.route('/assessments/importar-csv')
+@login_required
+@admin_required
+def importar_csv():
+    """Página de importação CSV para assessments versionados"""
+    tipos = AssessmentTipo.query.filter_by(ativo=True).all()
+    return render_template('admin/assessments/importar_csv.html', tipos=tipos)
+
+@assessment_admin_bp.route('/assessments/importar-csv', methods=['POST'])
+@login_required
+@admin_required
+def processar_importacao_csv():
+    """Processa importação CSV criando nova versão draft"""
+    from werkzeug.utils import secure_filename
+    import csv
+    import io
+    import os
+    from decimal import Decimal
+    
+    tipo_id = request.form.get('tipo_assessment_id')
+    nova_versao_num = request.form.get('nova_versao')
+    arquivo = request.files.get('arquivo_csv')
+    
+    if not tipo_id or not nova_versao_num or not arquivo:
+        flash('Todos os campos são obrigatórios', 'error')
+        return redirect(url_for('assessment_admin.importar_csv'))
+    
+    tipo = AssessmentTipo.query.get_or_404(tipo_id)
+    
+    # Verificar se versão já existe
+    versao_existe = AssessmentVersao.query.filter_by(
+        tipo_id=tipo_id,
+        versao=nova_versao_num
+    ).first()
+    
+    if versao_existe:
+        flash('Esta versão já existe para este tipo', 'error')
+        return redirect(url_for('assessment_admin.importar_csv'))
+    
+    try:
+        # Ler arquivo CSV
+        stream = io.StringIO(arquivo.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.reader(stream)
+        
+        # Criar nova versão
+        nova_versao = AssessmentVersao(
+            tipo_id=tipo_id,
+            versao=nova_versao_num,
+            status='draft',
+            criado_por=current_user.id,
+            notas_versao=f'Versão importada via CSV em {datetime.now().strftime("%d/%m/%Y")}'
+        )
+        db.session.add(nova_versao)
+        db.session.flush()
+        
+        dominios_criados = {}
+        perguntas_criadas = 0
+        
+        # Processar cada linha do CSV
+        next(csv_input)  # Pular cabeçalho
+        for row in csv_input:
+            if len(row) < 3:
+                continue
+                
+            dominio_nome = row[0].strip()
+            pergunta_texto = row[1].strip()
+            pergunta_descricao = row[2].strip() if len(row) > 2 else ''
+            
+            if not dominio_nome or not pergunta_texto:
+                continue
+            
+            # Criar domínio se não existir
+            if dominio_nome not in dominios_criados:
+                dominio = AssessmentDominio(
+                    versao_id=nova_versao.id,
+                    nome=dominio_nome,
+                    ordem=len(dominios_criados) + 1
+                )
+                db.session.add(dominio)
+                db.session.flush()
+                dominios_criados[dominio_nome] = dominio
+            
+            # Criar pergunta
+            dominio = dominios_criados[dominio_nome]
+            ultima_ordem = db.session.query(db.func.max(Pergunta.ordem)).filter_by(
+                dominio_versao_id=dominio.id
+            ).scalar() or 0
+            
+            pergunta = Pergunta(
+                dominio_versao_id=dominio.id,
+                texto=pergunta_texto,
+                descricao=pergunta_descricao,
+                ordem=ultima_ordem + 1
+            )
+            db.session.add(pergunta)
+            perguntas_criadas += 1
+        
+        db.session.commit()
+        
+        flash(f'Importação concluída! Criados {len(dominios_criados)} domínios e {perguntas_criadas} perguntas na versão {nova_versao_num}', 'success')
+        return redirect(url_for('assessment_admin.editar_versao', versao_id=nova_versao.id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro na importação: {str(e)}', 'error')
+        return redirect(url_for('assessment_admin.importar_csv'))

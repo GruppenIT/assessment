@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Importar CSV - Assessments{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-file-csv me-2"></i>Importar Assessment via CSV
+            </h1>
+            <p class="text-muted mb-0">
+                Importe domínios e perguntas criando uma nova versão draft
+            </p>
+        </div>
+        <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+
+    <!-- Instruções -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5 class="alert-heading">
+                    <i class="fas fa-info-circle me-2"></i>Como usar a importação
+                </h5>
+                <p class="mb-2">
+                    A importação criará uma nova versão em <strong>draft</strong> do tipo de assessment selecionado.
+                    O arquivo CSV deve ter a seguinte estrutura:
+                </p>
+                <div class="bg-light p-3 rounded mb-3">
+                    <code>
+                        Domínio,Pergunta,Descrição (opcional)<br>
+                        Governança,A organização possui política de segurança?,Verificar se existe documentação formal<br>
+                        Governança,Há comitê de segurança estabelecido?,Avaliar estrutura organizacional<br>
+                        Controles Técnicos,Firewall está configurado?,Verificar configuração e regras
+                    </code>
+                </div>
+                <ul class="mb-0">
+                    <li>Primeira linha deve conter os cabeçalhos</li>
+                    <li>Domínios serão criados automaticamente conforme aparecem no arquivo</li>
+                    <li>Perguntas serão organizadas por ordem de aparição</li>
+                    <li>Descrição é opcional (terceira coluna)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Configurações da Importação
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('assessment_admin.processar_importacao_csv') }}">
+                        <!-- Tipo de Assessment -->
+                        <div class="mb-3">
+                            <label for="tipo_assessment_id" class="form-label">
+                                <i class="fas fa-folder me-1"></i>Tipo de Assessment *
+                            </label>
+                            <select class="form-select" id="tipo_assessment_id" name="tipo_assessment_id" required>
+                                <option value="">Selecione um tipo...</option>
+                                {% for tipo in tipos %}
+                                <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Escolha o tipo onde a nova versão será criada
+                            </div>
+                        </div>
+
+                        <!-- Número da Nova Versão -->
+                        <div class="mb-3">
+                            <label for="nova_versao" class="form-label">
+                                <i class="fas fa-code-branch me-1"></i>Número da Nova Versão *
+                            </label>
+                            <input type="text" class="form-control" id="nova_versao" name="nova_versao" 
+                                   placeholder="Ex: 1.1, 2.0, 2.1..." required>
+                            <div class="form-text">
+                                Use versionamento semântico (ex: 1.0, 1.1, 2.0)
+                            </div>
+                        </div>
+
+                        <!-- Arquivo CSV -->
+                        <div class="mb-4">
+                            <label for="arquivo_csv" class="form-label">
+                                <i class="fas fa-file-csv me-1"></i>Arquivo CSV *
+                            </label>
+                            <input type="file" class="form-control" id="arquivo_csv" name="arquivo_csv" 
+                                   accept=".csv" required>
+                            <div class="form-text">
+                                Arquivo CSV com domínios e perguntas (máximo 5MB)
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('assessment_admin.listar_tipos') }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-1"></i>Importar CSV
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Exemplo de arquivo -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-download me-2"></i>Arquivo de Exemplo
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Baixe um arquivo de exemplo para usar como base:</p>
+                    <button type="button" class="btn btn-outline-primary" onclick="downloadExemplo()">
+                        <i class="fas fa-download me-1"></i>Baixar Exemplo CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadExemplo() {
+    const csvContent = `Domínio,Pergunta,Descrição
+Governança,A organização possui política de segurança da informação documentada e aprovada?,Verificar se existe documentação formal da política de segurança
+Governança,Há um comitê ou responsável pela segurança da informação?,Avaliar estrutura organizacional para gestão de segurança
+Governança,A política de segurança é revisada periodicamente?,Verificar periodicidade e processo de revisão
+Controles Técnicos,Firewall está adequadamente configurado e monitorado?,Verificar configuração e regras do firewall
+Controles Técnicos,Sistema de antivírus está atualizado em todas as estações?,Avaliar cobertura e atualização do antivírus
+Controles Técnicos,Há controles de acesso baseados em perfis de usuário?,Verificar implementação de controles de acesso
+Gestão de Riscos,A organização realiza análise de riscos periodicamente?,Avaliar processo de gestão de riscos
+Gestão de Riscos,Há plano de continuidade de negócios documentado?,Verificar existência e qualidade do plano
+Gestão de Riscos,Incidentes de segurança são registrados e tratados?,Avaliar processo de gestão de incidentes`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'exemplo_assessment.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}
