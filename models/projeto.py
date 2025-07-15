@@ -108,15 +108,22 @@ class ProjetoRespondente(db.Model):
 
 
 class ProjetoAssessment(db.Model):
-    """Modelo para associação entre projeto e tipos de assessment"""
+    """Modelo para associação entre projeto e versões de assessment"""
     __tablename__ = 'projeto_assessments'
     
     id = db.Column(db.Integer, primary_key=True)
     projeto_id = db.Column(db.Integer, db.ForeignKey('projetos.id'), nullable=False)
-    tipo_assessment_id = db.Column(db.Integer, db.ForeignKey('tipos_assessment.id'), nullable=False)
+    # Manter compatibilidade com tipos antigos
+    tipo_assessment_id = db.Column(db.Integer, db.ForeignKey('tipos_assessment.id'), nullable=True)
+    # Nova referência para versões
+    versao_assessment_id = db.Column(db.Integer, db.ForeignKey('assessment_versoes.id'), nullable=True)
     data_associacao = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relacionamentos
     tipo_assessment = relationship('TipoAssessment', backref='projetos')
+    # versao_assessment definido em assessment_version.py
     
-    __table_args__ = (db.UniqueConstraint('projeto_id', 'tipo_assessment_id'),)
+    __table_args__ = (
+        db.UniqueConstraint('projeto_id', 'tipo_assessment_id'),
+        db.UniqueConstraint('projeto_id', 'versao_assessment_id'),
+    )

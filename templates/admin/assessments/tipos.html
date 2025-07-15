@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Assessments{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-clipboard-list me-2"></i>Gestão de Assessments
+            </h1>
+            <p class="text-muted mb-0">Gerencie tipos de assessment com versionamento</p>
+        </div>
+        <a href="{{ url_for('assessment_admin.novo_tipo') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Novo Tipo
+        </a>
+    </div>
+
+    <!-- Lista de Tipos -->
+    <div class="row">
+        {% for tipo in tipos %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-folder me-2"></i>{{ tipo.nome }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if tipo.descricao %}
+                        <p class="card-text text-muted small">{{ tipo.descricao }}</p>
+                    {% endif %}
+                    
+                    {% set versao_ativa = tipo.get_versao_ativa() %}
+                    {% set versao_draft = tipo.get_versao_draft() %}
+                    
+                    <div class="mb-3">
+                        {% if versao_ativa %}
+                            <span class="badge bg-success me-2">
+                                <i class="fas fa-check me-1"></i>v{{ versao_ativa.versao }} Ativa
+                            </span>
+                        {% endif %}
+                        
+                        {% if versao_draft %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-edit me-1"></i>v{{ versao_draft.versao }} Draft
+                            </span>
+                        {% endif %}
+                        
+                        {% if not versao_ativa and not versao_draft %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Sem versões
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-muted small mb-3">
+                        <i class="fas fa-calendar me-1"></i>
+                        Criado em {{ tipo.data_criacao.strftime('%d/%m/%Y') }}
+                    </div>
+                    
+                    {% if versao_ativa %}
+                    <div class="text-muted small">
+                        <i class="fas fa-question-circle me-1"></i>
+                        {{ versao_ativa.get_total_perguntas() }} perguntas
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('assessment_admin.ver_tipo', tipo_id=tipo.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>Ver
+                        </a>
+                        {% if versao_draft %}
+                        <a href="{{ url_for('assessment_admin.editar_versao', versao_id=versao_draft.id) }}" 
+                           class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not tipos %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">Nenhum tipo de assessment criado</h4>
+                <p class="text-muted">Comece criando seu primeiro tipo de assessment</p>
+                <a href="{{ url_for('assessment_admin.novo_tipo') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Criar Primeiro Tipo
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

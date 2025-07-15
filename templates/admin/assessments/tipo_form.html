@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if tipo else 'Novo' }} Tipo de Assessment{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-{{ 'edit' if tipo else 'plus' }} me-2"></i>
+                {{ 'Editar' if tipo else 'Novo' }} Tipo de Assessment
+            </h1>
+            <p class="text-muted mb-0">
+                {{ 'Edite as informações do tipo de assessment' if tipo else 'Crie um novo tipo de assessment' }}
+            </p>
+        </div>
+        <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informações do Tipo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('assessment_admin.novo_tipo') }}">
+                        <!-- Nome -->
+                        <div class="mb-3">
+                            <label for="nome" class="form-label">
+                                <i class="fas fa-tag me-1"></i>Nome do Tipo *
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nome" 
+                                   name="nome" 
+                                   value="{{ tipo.nome if tipo else '' }}" 
+                                   placeholder="Ex: Cibersegurança, LGPD, Compliance..."
+                                   required>
+                            <div class="form-text">
+                                Nome que identificará este tipo de assessment
+                            </div>
+                        </div>
+
+                        <!-- Descrição -->
+                        <div class="mb-4">
+                            <label for="descricao" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Descrição
+                            </label>
+                            <textarea class="form-control" 
+                                      id="descricao" 
+                                      name="descricao" 
+                                      rows="4" 
+                                      placeholder="Descreva o objetivo e escopo deste tipo de assessment...">{{ tipo.descricao if tipo else '' }}</textarea>
+                            <div class="form-text">
+                                Descrição detalhada opcional do tipo de assessment
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('assessment_admin.listar_tipos') }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                {{ 'Atualizar' if tipo else 'Criar' }} Tipo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if not tipo %}
+            <!-- Informações sobre o processo -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle text-info me-2"></i>Próximos Passos
+                    </h6>
+                    <ol class="mb-0">
+                        <li>Após criar o tipo, você será direcionado para o editor de versão</li>
+                        <li>A primeira versão (1.0) será criada automaticamente em modo draft</li>
+                        <li>Configure domínios e perguntas na versão</li>
+                        <li>Publique a versão para disponibilizar em novos projetos</li>
+                    </ol>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

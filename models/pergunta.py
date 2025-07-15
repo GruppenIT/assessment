@@ -7,7 +7,10 @@ class Pergunta(db.Model):
     __tablename__ = 'perguntas'
     
     id = db.Column(db.Integer, primary_key=True)
-    dominio_id = db.Column(db.Integer, db.ForeignKey('dominios.id'), nullable=False, comment='Domínio da pergunta')
+    # Manter compatibilidade com domínios antigos
+    dominio_id = db.Column(db.Integer, db.ForeignKey('dominios.id'), nullable=True, comment='Domínio da pergunta (legado)')
+    # Nova referência para domínios versionados
+    dominio_versao_id = db.Column(db.Integer, db.ForeignKey('assessment_dominios.id'), nullable=True, comment='Domínio versionado')
     texto = db.Column(db.Text, nullable=False, comment='Texto da pergunta')
     descricao = db.Column(db.Text, comment='Descrição detalhada da pergunta')
     ordem = db.Column(db.Integer, default=1, comment='Ordem dentro do domínio')

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tipo.nome }} - Versões{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-folder me-2"></i>{{ tipo.nome }}
+            </h1>
+            <p class="text-muted mb-0">{{ tipo.descricao or 'Gerencie as versões deste tipo de assessment' }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('assessment_admin.listar_tipos') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+            {% set versao_draft = tipo.get_versao_draft() %}
+            {% if not versao_draft %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novaVersaoModal">
+                <i class="fas fa-plus me-1"></i>Nova Versão
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Versões -->
+    <div class="row">
+        {% for versao in versoes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center
+                    {% if versao.status == 'publicada' %}bg-success text-white
+                    {% elif versao.status == 'draft' %}bg-warning text-dark
+                    {% else %}bg-secondary text-white{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="fas fa-code-branch me-2"></i>v{{ versao.versao }}
+                    </h5>
+                    <span class="badge 
+                        {% if versao.status == 'publicada' %}bg-light text-success
+                        {% elif versao.status == 'draft' %}bg-dark
+                        {% else %}bg-light text-secondary{% endif %}">
+                        {% if versao.status == 'publicada' %}Ativa
+                        {% elif versao.status == 'draft' %}Draft
+                        {% else %}Arquivada{% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    {% if versao.notas_versao %}
+                        <p class="card-text small text-muted mb-3">{{ versao.notas_versao }}</p>
+                    {% endif %}
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="h5 mb-0 text-primary">{{ versao.dominios|length }}</div>
+                            <small class="text-muted">Domínios</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 mb-0 text-primary">{{ versao.get_total_perguntas() }}</div>
+                            <small class="text-muted">Perguntas</small>
+                        </div>
+                    </div>
+                    
+                    <div class="text-muted small">
+                        <div class="mb-1">
+                            <i class="fas fa-calendar me-1"></i>
+                            Criada em {{ versao.data_criacao.strftime('%d/%m/%Y') }}
+                        </div>
+                        {% if versao.data_publicacao %}
+                        <div class="mb-1">
+                            <i class="fas fa-rocket me-1"></i>
+                            Publicada em {{ versao.data_publicacao.strftime('%d/%m/%Y') }}
+                        </div>
+                        {% endif %}
+                        {% if versao.data_arquivamento %}
+                        <div>
+                            <i class="fas fa-archive me-1"></i>
+                            Arquivada em {{ versao.data_arquivamento.strftime('%d/%m/%Y') }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('assessment_admin.editar_versao', versao_id=versao.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-{{ 'edit' if versao.status == 'draft' else 'eye' }} me-1"></i>
+                            {{ 'Editar' if versao.status == 'draft' else 'Ver' }}
+                        </a>
+                        
+                        {% if versao.status == 'draft' %}
+                        <form method="POST" action="{{ url_for('assessment_admin.publicar_versao', versao_id=versao.id) }}" 
+                              class="d-inline" onsubmit="return confirm('Tem certeza? Isso arquivará a versão ativa atual.')">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-rocket me-1"></i>Publicar
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if versao.status == 'publicada' %}
+                        <button type="button" class="btn btn-warning btn-sm" 
+                                data-bs-toggle="modal" data-bs-target="#novaVersaoModal" 
+                                data-versao-base="{{ versao.id }}">
+                            <i class="fas fa-copy me-1"></i>Clonar
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not versoes %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-code-branch fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">Nenhuma versão criada</h4>
+                <p class="text-muted">Isso não deveria acontecer. Uma versão inicial deveria ter sido criada automaticamente.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Nova Versão -->
+<div class="modal fade" id="novaVersaoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Nova Versão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('assessment_admin.nova_versao', versao_id=versoes[0].id if versoes else 0) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="versao" class="form-label">Número da Versão *</label>
+                        <input type="text" class="form-control" id="versao" name="versao" 
+                               placeholder="Ex: 1.1, 2.0, 2.1..." required>
+                        <div class="form-text">
+                            Use versionamento semântico (ex: 1.0, 1.1, 2.0)
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notas_versao" class="form-label">Notas da Versão</label>
+                        <textarea class="form-control" id="notas_versao" name="notas_versao" rows="3"
+                                  placeholder="Descreva as principais mudanças desta versão..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Criar Versão
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

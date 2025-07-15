@@ -111,6 +111,16 @@ def create_app():
         logging.error(f"Erro ao importar blueprint de projetos: {e}")
     except Exception as e:
         logging.error(f"Erro ao registrar blueprint de projetos: {e}")
+    
+    # Registrar blueprint de assessments versionados
+    try:
+        from routes.assessment_admin import assessment_admin_bp
+        app.register_blueprint(assessment_admin_bp, url_prefix='/admin')
+        logging.info("Blueprint de assessments registrado com sucesso")
+    except ImportError as e:
+        logging.error(f"Erro ao importar blueprint de assessments: {e}")
+    except Exception as e:
+        logging.error(f"Erro ao registrar blueprint de assessments: {e}")
         
     # Rota de projetos temporária sem autenticação
     @app.route('/admin/projetos_temp')
@@ -152,7 +162,7 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version
         db.create_all()
         
         # Criar usuário admin padrão se não existir

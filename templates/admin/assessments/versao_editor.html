@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Editor - {{ versao.tipo.nome }} v{{ versao.versao }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-edit me-2"></i>{{ versao.tipo.nome }} v{{ versao.versao }}
+                <span class="badge ms-2 
+                    {% if versao.status == 'draft' %}bg-warning text-dark
+                    {% elif versao.status == 'publicada' %}bg-success
+                    {% else %}bg-secondary{% endif %}">
+                    {{ versao.status|title }}
+                </span>
+            </h1>
+            <p class="text-muted mb-0">{{ versao.notas_versao or 'Editor de domínios e perguntas' }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('assessment_admin.ver_tipo', tipo_id=versao.tipo_id) }}" 
+               class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+            {% if versao.status == 'draft' %}
+            <form method="POST" action="{{ url_for('assessment_admin.publicar_versao', versao_id=versao.id) }}" 
+                  class="d-inline" onsubmit="return confirm('Tem certeza? Isso arquivará a versão ativa atual e publicará esta versão.')">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-rocket me-1"></i>Publicar Versão
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="h3 text-primary mb-1">{{ dominios|length }}</div>
+                    <div class="text-muted">Domínios</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="h3 text-primary mb-1">{{ versao.get_total_perguntas() }}</div>
+                    <div class="text-muted">Perguntas</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="h3 text-info mb-1">{{ versao.data_criacao.strftime('%d/%m') }}</div>
+                    <div class="text-muted">Criada em</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="h3 text-success mb-1">
+                        {% if versao.data_publicacao %}{{ versao.data_publicacao.strftime('%d/%m') }}
+                        {% else %}-{% endif %}
+                    </div>
+                    <div class="text-muted">Publicada em</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aviso se não for draft -->
+    {% if versao.status != 'draft' %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Esta versão está em modo somente leitura. Para fazer alterações, crie uma nova versão.
+    </div>
+    {% endif %}
+
+    <!-- Botão Novo Domínio -->
+    {% if versao.status == 'draft' %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4><i class="fas fa-folder me-2"></i>Domínios</h4>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoDominioModal">
+            <i class="fas fa-plus me-1"></i>Novo Domínio
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Lista de Domínios -->
+    <div class="row">
+        {% for dominio in dominios %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">
+                                <span class="badge bg-light text-primary me-2">{{ dominio.ordem }}</span>
+                                {{ dominio.nome }}
+                            </h5>
+                            {% if dominio.descricao %}
+                                <small class="text-white-50">{{ dominio.descricao }}</small>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-primary">
+                                {{ dominio.get_perguntas_ativas()|length }} perguntas
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Perguntas do Domínio -->
+                    {% for pergunta in dominio.get_perguntas_ativas() %}
+                    <div class="border rounded p-3 mb-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <span class="badge bg-secondary me-2">{{ pergunta.ordem }}</span>
+                                    {{ pergunta.texto }}
+                                </h6>
+                                {% if pergunta.descricao %}
+                                    <p class="text-muted small mb-0">{{ pergunta.descricao }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Botão Nova Pergunta -->
+                    {% if versao.status == 'draft' %}
+                    <div class="text-center">
+                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                data-bs-toggle="modal" data-bs-target="#novaPerguntaModal"
+                                data-dominio-id="{{ dominio.id }}" data-dominio-nome="{{ dominio.nome }}">
+                            <i class="fas fa-plus me-1"></i>Nova Pergunta
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not dominios %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">Nenhum domínio criado</h4>
+                <p class="text-muted">Comece adicionando domínios para organizar suas perguntas</p>
+                {% if versao.status == 'draft' %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoDominioModal">
+                    <i class="fas fa-plus me-1"></i>Criar Primeiro Domínio
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Novo Domínio -->
+<div class="modal fade" id="novoDominioModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-folder-plus me-2"></i>Novo Domínio
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('assessment_admin.novo_dominio', versao_id=versao.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome do Domínio *</label>
+                        <input type="text" class="form-control" id="nome" name="nome" 
+                               placeholder="Ex: Governança, Controles Técnicos..." required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição</label>
+                        <textarea class="form-control" id="descricao" name="descricao" rows="3"
+                                  placeholder="Descrição opcional do domínio..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Criar Domínio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Pergunta -->
+<div class="modal fade" id="novaPerguntaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-question-circle me-2"></i>Nova Pergunta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="" id="formNovaPergunta">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Domínio:</strong> <span id="modalDominioNome"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="texto" class="form-label">Texto da Pergunta *</label>
+                        <textarea class="form-control" id="texto" name="texto" rows="3" 
+                                  placeholder="Digite a pergunta que será avaliada..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="descricao_pergunta" class="form-label">Descrição Detalhada</label>
+                        <textarea class="form-control" id="descricao_pergunta" name="descricao" rows="4"
+                                  placeholder="Forneça contexto adicional, critérios de avaliação ou exemplos..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Criar Pergunta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Configurar modal de nova pergunta
+document.addEventListener('DOMContentLoaded', function() {
+    const novaPerguntaModal = document.getElementById('novaPerguntaModal');
+    const form = document.getElementById('formNovaPergunta');
+    const modalDominioNome = document.getElementById('modalDominioNome');
+    
+    novaPerguntaModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const dominioId = button.getAttribute('data-dominio-id');
+        const dominioNome = button.getAttribute('data-dominio-nome');
+        
+        modalDominioNome.textContent = dominioNome;
+        form.action = `/admin/assessments/pergunta/${dominioId}/nova`;
+    });
+});
+</script>
+{% endblock %}
