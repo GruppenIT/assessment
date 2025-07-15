@@ -304,21 +304,47 @@ def detalhar(projeto_id):
         if not tipo:
             continue
         
-        total_perguntas = Pergunta.query.join(Dominio).filter(
-            Dominio.tipo_assessment_id == tipo.id,
-            Dominio.ativo == True,
-            Pergunta.ativo == True
-        ).count()
-        
-        # Contar perguntas únicas respondidas (colaborativo)
-        perguntas_respondidas = db.session.query(Pergunta.id).join(
-            Resposta, Pergunta.id == Resposta.pergunta_id
-        ).join(Dominio).filter(
-            Resposta.projeto_id == projeto.id,
-            Dominio.tipo_assessment_id == tipo.id,
-            Dominio.ativo == True,
-            Pergunta.ativo == True
-        ).distinct().count()
+        if projeto_assessment.versao_assessment_id:
+            # Novo sistema de versionamento
+            from models.assessment_version import AssessmentDominio
+            
+            versao = projeto_assessment.versao_assessment
+            total_perguntas = db.session.query(Pergunta).join(
+                AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+            ).filter(
+                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            
+            # Contar perguntas únicas respondidas (colaborativo)
+            perguntas_respondidas = db.session.query(Pergunta.id).join(
+                Resposta, Pergunta.id == Resposta.pergunta_id
+            ).join(
+                AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.ativo == True,
+                Pergunta.ativo == True
+            ).distinct().count()
+        else:
+            # Sistema antigo
+            total_perguntas = Pergunta.query.join(Dominio).filter(
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            
+            # Contar perguntas únicas respondidas (colaborativo)
+            perguntas_respondidas = db.session.query(Pergunta.id).join(
+                Resposta, Pergunta.id == Resposta.pergunta_id
+            ).join(Dominio).filter(
+                Resposta.projeto_id == projeto.id,
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).distinct().count()
         
         progresso_tipo = round((perguntas_respondidas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
         
