@@ -32,17 +32,18 @@
                 </p>
                 <div class="bg-light p-3 rounded mb-3">
                     <code>
-                        Domínio,Pergunta,Descrição (opcional)<br>
-                        Governança,A organização possui política de segurança?,Verificar se existe documentação formal<br>
-                        Governança,Há comitê de segurança estabelecido?,Avaliar estrutura organizacional<br>
-                        Controles Técnicos,Firewall está configurado?,Verificar configuração e regras
+                        Dominio;DescriçãoDominio;OrdemDominio;Pergunta;DescriçãoPergunta;OrdemPergunta<br>
+                        Governança;Gestão e controles;1;A organização possui política de segurança?;Verificar se existe documentação formal;1<br>
+                        Governança;Gestão e controles;1;Há comitê de segurança estabelecido?;Avaliar estrutura organizacional;2<br>
+                        Controles Técnicos;Controles de infraestrutura;2;Firewall está configurado?;Verificar configuração e regras;1
                     </code>
                 </div>
                 <ul class="mb-0">
-                    <li>Primeira linha deve conter os cabeçalhos</li>
+                    <li>Use separador ponto e vírgula (;) entre as colunas</li>
+                    <li>Primeira linha deve conter os cabeçalhos exatos</li>
                     <li>Domínios serão criados automaticamente conforme aparecem no arquivo</li>
-                    <li>Perguntas serão organizadas por ordem de aparição</li>
-                    <li>Descrição é opcional (terceira coluna)</li>
+                    <li>Ordens controlam a sequência de exibição (domínios e perguntas)</li>
+                    <li>Descrições são opcionais mas recomendadas</li>
                 </ul>
             </div>
         </div>
@@ -95,7 +96,7 @@
                             <input type="file" class="form-control" id="arquivo_csv" name="arquivo_csv" 
                                    accept=".csv" required>
                             <div class="form-text">
-                                Arquivo CSV com domínios e perguntas (máximo 5MB)
+                                Arquivo CSV com separador ponto e vírgula (;) - máximo 5MB
                             </div>
                         </div>
 

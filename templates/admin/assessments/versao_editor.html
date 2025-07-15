@@ -286,17 +286,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         <input type="file" class="form-control" id="arquivo_csv" name="arquivo_csv" 
                                accept=".csv" required>
                         <div class="form-text">
-                            O arquivo deve estar no formato CSV com colunas: dominio, pergunta, descricao
+                            O arquivo deve estar no formato CSV com separador ponto e vírgula (;)
                         </div>
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Formato Esperado:</label>
                         <div class="bg-light p-3 rounded small font-monospace">
-                            dominio,pergunta,descricao<br>
-                            "Governança","Existe política de segurança?","Avalie se há política documentada"<br>
-                            "Governança","Política é atualizada?","Verifique frequência de atualização"<br>
-                            "Controles Técnicos","Há firewall configurado?","Avalie configuração do firewall"
+                            Dominio;DescriçãoDominio;OrdemDominio;Pergunta;DescriçãoPergunta;OrdemPergunta<br>
+                            Governança;Gestão e controles;1;Existe política de segurança?;Avalie se há política documentada;1<br>
+                            Governança;Gestão e controles;1;Política é atualizada?;Verifique frequência de atualização;2<br>
+                            Controles Técnicos;Controles de infraestrutura;2;Há firewall configurado?;Avalie configuração do firewall;1
                         </div>
                     </div>
                 </div>

@@ -365,29 +365,36 @@ def importar_csv_versao(versao_id):
         import csv
         import io
         
-        # Ler arquivo CSV
+        # Ler arquivo CSV com separador ponto e vírgula
         stream = io.StringIO(arquivo.stream.read().decode("UTF8"), newline=None)
-        csv_input = csv.DictReader(stream)
+        csv_input = csv.DictReader(stream, delimiter=';')
         
         dominios_criados = {}
         perguntas_criadas = 0
         
         for row in csv_input:
-            dominio_nome = row.get('dominio', '').strip()
-            pergunta_texto = row.get('pergunta', '').strip()
-            pergunta_descricao = row.get('descricao', '').strip()
+            dominio_nome = row.get('Dominio', '').strip()
+            dominio_descricao = row.get('DescriçãoDominio', '').strip()
+            dominio_ordem = row.get('OrdemDominio', '').strip()
+            pergunta_texto = row.get('Pergunta', '').strip()
+            pergunta_descricao = row.get('DescriçãoPergunta', '').strip()
+            pergunta_ordem = row.get('OrdemPergunta', '').strip()
             
             if not dominio_nome or not pergunta_texto:
                 continue
                 
             # Criar ou encontrar domínio
             if dominio_nome not in dominios_criados:
-                ordem_dominio = len(dominios_criados) + 1
+                try:
+                    ordem_dom = int(dominio_ordem) if dominio_ordem else len(dominios_criados) + 1
+                except ValueError:
+                    ordem_dom = len(dominios_criados) + 1
+                    
                 dominio = AssessmentDominio(
                     versao_id=versao_id,
                     nome=dominio_nome,
-                    descricao='',
-                    ordem=ordem_dominio
+                    descricao=dominio_descricao,
+                    ordem=ordem_dom
                 )
                 db.session.add(dominio)
                 db.session.flush()
@@ -396,12 +403,16 @@ def importar_csv_versao(versao_id):
                 dominio = dominios_criados[dominio_nome]
             
             # Criar pergunta
-            ordem_pergunta = len(dominio.get_perguntas_ativas()) + 1
+            try:
+                ordem_perg = int(pergunta_ordem) if pergunta_ordem else len(dominio.get_perguntas_ativas()) + 1
+            except ValueError:
+                ordem_perg = len(dominio.get_perguntas_ativas()) + 1
+                
             pergunta = Pergunta(
                 dominio_versao_id=dominio.id,
                 texto=pergunta_texto,
                 descricao=pergunta_descricao,
-                ordem=ordem_pergunta
+                ordem=ordem_perg
             )
             db.session.add(pergunta)
             perguntas_criadas += 1
@@ -447,9 +458,9 @@ def processar_importacao_csv():
         return redirect(url_for('assessment_admin.importar_csv'))
     
     try:
-        # Ler arquivo CSV
+        # Ler arquivo CSV com separador ponto e vírgula
         stream = io.StringIO(arquivo.stream.read().decode("UTF8"), newline=None)
-        csv_input = csv.reader(stream)
+        csv_input = csv.DictReader(stream, delimiter=';')
         
         # Criar nova versão
         nova_versao = AssessmentVersao(
@@ -466,24 +477,29 @@ def processar_importacao_csv():
         perguntas_criadas = 0
         
         # Processar cada linha do CSV
-        next(csv_input)  # Pular cabeçalho
         for row in csv_input:
-            if len(row) < 3:
-                continue
-                
-            dominio_nome = row[0].strip()
-            pergunta_texto = row[1].strip()
-            pergunta_descricao = row[2].strip() if len(row) > 2 else ''
+            dominio_nome = row.get('Dominio', '').strip()
+            dominio_descricao = row.get('DescriçãoDominio', '').strip()
+            dominio_ordem = row.get('OrdemDominio', '').strip()
+            pergunta_texto = row.get('Pergunta', '').strip()
+            pergunta_descricao = row.get('DescriçãoPergunta', '').strip()
+            pergunta_ordem = row.get('OrdemPergunta', '').strip()
             
             if not dominio_nome or not pergunta_texto:
                 continue
             
             # Criar domínio se não existir
             if dominio_nome not in dominios_criados:
+                try:
+                    ordem_dom = int(dominio_ordem) if dominio_ordem else len(dominios_criados) + 1
+                except ValueError:
+                    ordem_dom = len(dominios_criados) + 1
+                    
                 dominio = AssessmentDominio(
                     versao_id=nova_versao.id,
                     nome=dominio_nome,
-                    ordem=len(dominios_criados) + 1
+                    descricao=dominio_descricao,
+                    ordem=ordem_dom
                 )
                 db.session.add(dominio)
                 db.session.flush()
@@ -491,15 +507,16 @@ def processar_importacao_csv():
             
             # Criar pergunta
             dominio = dominios_criados[dominio_nome]
-            ultima_ordem = db.session.query(db.func.max(Pergunta.ordem)).filter_by(
-                dominio_versao_id=dominio.id
-            ).scalar() or 0
+            try:
+                ordem_perg = int(pergunta_ordem) if pergunta_ordem else 1
+            except ValueError:
+                ordem_perg = 1
             
             pergunta = Pergunta(
                 dominio_versao_id=dominio.id,
                 texto=pergunta_texto,
                 descricao=pergunta_descricao,
-                ordem=ultima_ordem + 1
+                ordem=ordem_perg
             )
             db.session.add(pergunta)
             perguntas_criadas += 1
