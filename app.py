@@ -95,6 +95,13 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(respondente_bp, url_prefix='/respondente')
     
+    # Registrar admin_old com nome único para evitar conflito
+    try:
+        from routes.admin_old import admin_bp as admin_old_bp
+        app.register_blueprint(admin_old_bp, url_prefix='/admin', name='admin_old')
+    except Exception as e:
+        logging.error(f"Erro ao registrar blueprint admin_old: {e}")
+    
     # Registrar blueprint de relatório separadamente
     try:
         from routes.relatorio import relatorio_bp
