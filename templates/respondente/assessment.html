@@ -289,14 +289,30 @@
 }
 
 .domain-nav-btn.active {
-    background-color: #0d6efd !important;
-    color: white !important;
-    border-color: #0d6efd !important;
     transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,123,255,0.4) !important;
 }
 
 .domain-nav-btn:hover {
     transform: translateY(-2px);
+}
+
+/* Manter cores de progresso mesmo durante hover */
+.domain-nav-btn.btn-success:hover {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+}
+
+.domain-nav-btn.btn-warning:hover {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.domain-nav-btn.btn-outline-primary:hover {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
 }
 
 .bg-light-success {
@@ -499,12 +515,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Update navigation button color
                     const navBtn = document.querySelector(`[data-domain-id="${domainId}"].domain-nav-btn`);
                     if (navBtn) {
+                        // Reset all color classes first
+                        navBtn.classList.remove('btn-outline-primary', 'btn-success', 'btn-warning');
+                        
                         if (domainRespondidas.length === domainPerguntas.length && domainPerguntas.length > 0) {
-                            navBtn.classList.remove('btn-outline-primary');
+                            // Complete - green
                             navBtn.classList.add('btn-success');
                         } else if (domainRespondidas.length > 0) {
-                            navBtn.classList.remove('btn-outline-primary', 'btn-success');
+                            // Partial - yellow
                             navBtn.classList.add('btn-warning');
+                        } else {
+                            // Not started - outline
+                            navBtn.classList.add('btn-outline-primary');
                         }
                     }
                 }
@@ -526,11 +548,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Enable finalization button if 100% complete
         const btnFinalizar = document.getElementById('btn-finalizar');
-        if (percentual === 100) {
+        if (btnFinalizar && percentual === 100) {
             btnFinalizar.disabled = false;
             btnFinalizar.classList.remove('btn-success');
             btnFinalizar.classList.add('btn-primary');
         }
+        
+        console.log('Progress updated:', {
+            totalPerguntas,
+            perguntasRespondidas,
+            percentual
+        });
     }
     
     // Finalization button event listener
@@ -613,8 +641,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Initialize progress
+    // Initialize progress display on page load
     updateProgress();
+    
+    // Also call updateProgress with a slight delay to ensure DOM is fully loaded
+    setTimeout(updateProgress, 100);
 });
 </script>
 {% endblock %}
