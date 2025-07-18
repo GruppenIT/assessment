@@ -23,6 +23,194 @@ from models.resposta import Resposta
 from app import db
 from sqlalchemy import func
 
+def gerar_relatorio_markdown(projeto):
+    """
+    Gera um relatório em formato Markdown com a mesma estrutura das estatísticas
+    """
+    # Criar arquivo temporário
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.md', mode='w', encoding='utf-8')
+    temp_filename = temp_file.name
+    
+    # Buscar dados das estatísticas (replicando a lógica da view)
+    estatisticas_data = []
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        versao = None
+        
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+        
+        # Processar domínios
+        for dominio in dominios_query.order_by('ordem'):
+            # Buscar perguntas do domínio
+            if versao:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_versao_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            else:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            
+            respostas_dominio = []
+            for pergunta in perguntas_dominio:
+                # Buscar resposta mais recente desta pergunta no projeto
+                resposta = Resposta.query.filter_by(
+                    projeto_id=projeto.id,
+                    pergunta_id=pergunta.id
+                ).order_by(Resposta.data_resposta.desc()).first()
+                
+                if resposta:
+                    respostas_dominio.append({
+                        'pergunta': pergunta,
+                        'resposta_final': resposta
+                    })
+            
+            if respostas_dominio:
+                estatisticas_data.append({
+                    'dominio': dominio,
+                    'tipo': tipo,
+                    'respostas': respostas_dominio
+                })
+    
+    # Gerar conteúdo Markdown
+    markdown_content = f"""# 📊 RELATÓRIO DE ESTATÍSTICAS
+
+## Informações do Projeto
+
+**📁 Projeto:** {projeto.nome}  
+**🏢 Cliente:** {projeto.cliente.nome}  
+**📅 Data de Geração:** {datetime.now().strftime('%d/%m/%Y às %H:%M')}  
+**🎯 Status:** Finalizado  
+
+---
+
+# 📝 MEMORIAL DE RESPOSTAS E COMENTÁRIOS
+
+"""
+    
+    for dominio_data in estatisticas_data:
+        # Título do domínio
+        markdown_content += f"\n## 🔒 {dominio_data['dominio'].nome}\n\n"
+        
+        for resposta_data in dominio_data['respostas']:
+            pergunta = resposta_data['pergunta']
+            resposta = resposta_data['resposta_final']
+            
+            # Determinar nível de maturidade e emoji
+            nota = resposta.nota
+            if nota == 0:
+                nivel = "Inexistente"
+                emoji_nivel = "🔴"
+            elif nota == 1:
+                nivel = "Inicial"
+                emoji_nivel = "⚪"
+            elif nota == 2:
+                nivel = "Básico"
+                emoji_nivel = "🟡"
+            elif nota == 3:
+                nivel = "Intermediário"
+                emoji_nivel = "🔵"
+            elif nota == 4:
+                nivel = "Avançado"
+                emoji_nivel = "🟢"
+            else:  # nota == 5
+                nivel = "Otimizado"
+                emoji_nivel = "🟢"
+            
+            # Container para cada resposta
+            markdown_content += f"""
+### 📋 Pergunta #{pergunta.ordem}
+
+> **❓ PERGUNTA**  
+> **{pergunta.texto}**
+
+"""
+            
+            if pergunta.descricao:
+                markdown_content += f"> *{pergunta.descricao}*\n\n"
+            
+            # Seção de Resposta
+            respondente_nome = resposta.respondente.nome if resposta.respondente else 'Sistema'
+            data_resposta = resposta.data_resposta.strftime('%d/%m/%Y às %H:%M')
+            
+            markdown_content += f"""
+> **📊 RESPOSTA**  
+> **Pontuação:** {emoji_nivel} **{nota}/5 - {nivel}**  
+> **👤 Respondente:** {respondente_nome}  
+> **🕒 Data:** {data_resposta}  
+
+"""
+            
+            if resposta.comentario:
+                markdown_content += f"""
+> **💬 Comentário do Respondente:**  
+> *"{resposta.comentario}"*
+
+"""
+            
+            # Seção de Feedback Técnico
+            if pergunta.referencia or pergunta.recomendacao:
+                markdown_content += f"\n> **🎓 FEEDBACK TÉCNICO**\n\n"
+                
+                if pergunta.referencia:
+                    markdown_content += f"""
+> **📚 Referência Teórica:**  
+> {pergunta.referencia}
+
+"""
+                
+                if pergunta.recomendacao:
+                    markdown_content += f"""
+> **💡 Recomendação:**  
+> {pergunta.recomendacao}
+
+"""
+            
+            markdown_content += "\n---\n"
+    
+    # Adicionar legenda de níveis
+    markdown_content += f"""
+
+## 📈 LEGENDA - NÍVEIS DE MATURIDADE
+
+| Faixa | Nível | Emoji | Descrição |
+|-------|-------|-------|-----------|
+| 0.0 | Inexistente | 🔴 | Nenhum controle implementado |
+| 1.0 | Inicial | ⚪ | Práticas informais e não documentadas |
+| 2.0 | Básico | 🟡 | Controles definidos, aplicação inconsistente |
+| 3.0 | Intermediário | 🔵 | Controles padronizados e repetíveis |
+| 4.0 | Avançado | 🟢 | Controles monitorados com métricas |
+| 5.0 | Otimizado | 🟢 | Controles integrados e melhorados continuamente |
+
+---
+
+**📄 Relatório gerado automaticamente pelo Sistema de Avaliações de Maturidade**  
+**⏰ {datetime.now().strftime('%d/%m/%Y às %H:%M')}**
+
+"""
+    
+    # Escrever no arquivo
+    temp_file.write(markdown_content)
+    temp_file.close()
+    
+    return temp_filename
+
 def gerar_relatorio_estatisticas_visual(projeto):
     """
     Gera um relatório PDF com a mesma identidade visual das estatísticas da web

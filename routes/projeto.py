@@ -705,6 +705,35 @@ def exportar_estatisticas_pdf(projeto_id):
         flash(f'Erro ao gerar o PDF: {str(e)}', 'danger')
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
 
+@projeto_bp.route('/<int:projeto_id>/estatisticas/markdown')
+@login_required
+@admin_required
+def exportar_estatisticas_markdown(projeto_id):
+    """Exporta as estatísticas do projeto para Markdown"""
+    from utils.pdf_utils import gerar_relatorio_markdown
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('As estatísticas só podem ser exportadas quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+    
+    try:
+        # Gerar o relatório em Markdown
+        filename = gerar_relatorio_markdown(projeto)
+        
+        from flask import send_file
+        return send_file(
+            filename,
+            as_attachment=True,
+            download_name=f"relatorio_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+            mimetype='text/markdown'
+        )
+    except Exception as e:
+        flash(f'Erro ao gerar o relatório Markdown: {str(e)}', 'danger')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+
 @projeto_bp.route('/<int:projeto_id>/respondentes')
 @login_required
 @admin_required
