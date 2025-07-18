@@ -255,9 +255,10 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - **ASSESSMENT TYPE EDITING**: Added comprehensive type management functionality
     * Dedicated editing interface for assessment type name and description
     * Form validation with duplicate name checking
-    * Integration with existing type listing with "Tipo" button
+    * Intuitive edit button in card header (replaced confusing gear icon)
     * Statistical overview showing versions, domains, and questions count
     * Creation date and status display in editing interface
+    * Fixed endpoint routing issues for seamless navigation
 
 ## User Preferences
 

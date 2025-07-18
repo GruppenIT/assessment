@@ -23,9 +23,18 @@
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-folder me-2"></i>{{ tipo.nome }}
-                    </h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-folder me-2"></i>{{ tipo.nome }}
+                        </h5>
+                        <a href="{{ url_for('assessment_admin.editar_tipo_assessment', tipo_id=tipo.id) }}" 
+                           class="btn btn-light btn-sm opacity-75" 
+                           title="Editar nome e descrição do tipo"
+                           onmouseover="this.classList.remove('opacity-75')"
+                           onmouseout="this.classList.add('opacity-75')">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     {% if tipo.descricao %}
@@ -79,10 +88,7 @@
                             <i class="fas fa-edit me-1"></i>Editar
                         </a>
                         {% endif %}
-                        <a href="{{ url_for('assessment_admin.editar_tipo_assessment', tipo_id=tipo.id) }}" 
-                           class="btn btn-outline-secondary btn-sm">
-                            <i class="fas fa-cog me-1"></i>Tipo
-                        </a>
+
                     </div>
                 </div>
             </div>
