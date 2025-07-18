@@ -246,6 +246,12 @@ This is a Flask-based web application for multi-type maturity assessments. The s
     * Added referencia (TEXT), recomendacao (TEXT), light (BOOLEAN) columns
     * Maintained backward compatibility with existing data
     * All sequences reset for clean testing environment
+  - **DRAG-AND-DROP REORDERING**: Implemented intuitive question reordering
+    * SortableJS integration for drag-and-drop functionality
+    * Visual feedback with animations and hover effects
+    * AJAX-based order updates with real-time badge refresh
+    * Restricted to draft versions only with proper validation
+    * Removed manual order editing in favor of drag-and-drop interface
 
 ## User Preferences
 

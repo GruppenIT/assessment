@@ -245,6 +245,43 @@ def editar_pergunta(pergunta_id):
     flash('Pergunta atualizada com sucesso!', 'success')
     return redirect(url_for('assessment_admin.editar_versao', versao_id=dominio.versao_id))
 
+@assessment_admin_bp.route('/tipos-assessment/reordenar-perguntas', methods=['POST'])
+@login_required
+@admin_required
+def reordenar_perguntas():
+    """Reordena perguntas via drag and drop"""
+    try:
+        data = request.get_json()
+        dominio_id = data.get('dominio_id')
+        ordens = data.get('ordens', [])
+        
+        dominio = AssessmentDominio.query.get_or_404(dominio_id)
+        
+        # Verificar se versão está em draft
+        if dominio.versao.status != 'draft':
+            return {'success': False, 'message': 'Apenas versões em draft podem ser editadas'}
+        
+        # Atualizar ordem das perguntas
+        for item in ordens:
+            pergunta_id = item['id']
+            nova_ordem = item['ordem']
+            
+            pergunta = Pergunta.query.filter_by(
+                id=pergunta_id,
+                dominio_versao_id=dominio_id
+            ).first()
+            
+            if pergunta:
+                pergunta.ordem = nova_ordem
+        
+        db.session.commit()
+        
+        return {'success': True, 'message': 'Ordem atualizada com sucesso'}
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'message': f'Erro ao atualizar ordem: {str(e)}'}
+
 @assessment_admin_bp.route('/tipos-assessment/importar-csv')
 @login_required
 @admin_required

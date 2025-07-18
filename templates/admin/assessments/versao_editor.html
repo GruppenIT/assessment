@@ -123,45 +123,55 @@
                 </div>
                 <div class="card-body">
                     <!-- Perguntas do Domínio -->
-                    {% for pergunta in dominio.get_perguntas_ativas() %}
-                    <div class="border rounded p-3 mb-3 bg-light">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">
-                                    <span class="badge bg-secondary me-2">{{ pergunta.ordem }}</span>
-                                    {{ pergunta.texto }}
-                                    {% if pergunta.light %}
-                                        <span class="badge bg-warning text-dark ms-2">Light</span>
+                    <div class="perguntas-sortable" data-dominio-id="{{ dominio.id }}" {% if versao.status != 'draft' %}data-disabled="true"{% endif %}>
+                        {% for pergunta in dominio.get_perguntas_ativas() %}
+                        <div class="pergunta-item border rounded p-3 mb-3 bg-light" 
+                             data-pergunta-id="{{ pergunta.id }}" 
+                             data-ordem="{{ pergunta.ordem }}"
+                             {% if versao.status == 'draft' %}style="cursor: grab;"{% endif %}>
+                            <div class="d-flex justify-content-between align-items-start">
+                                {% if versao.status == 'draft' %}
+                                <div class="drag-handle me-2 text-muted" style="cursor: grab;">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <span class="badge bg-secondary me-2">{{ pergunta.ordem }}</span>
+                                        {{ pergunta.texto }}
+                                        {% if pergunta.light %}
+                                            <span class="badge bg-warning text-dark ms-2">Light</span>
+                                        {% endif %}
+                                    </h6>
+                                    {% if pergunta.descricao %}
+                                        <p class="text-muted small mb-1">{{ pergunta.descricao }}</p>
                                     {% endif %}
-                                </h6>
-                                {% if pergunta.descricao %}
-                                    <p class="text-muted small mb-1">{{ pergunta.descricao }}</p>
-                                {% endif %}
-                                {% if pergunta.referencia %}
-                                    <p class="text-info small mb-1"><strong>Referência:</strong> {{ pergunta.referencia }}</p>
-                                {% endif %}
-                                {% if pergunta.recomendacao %}
-                                    <p class="text-success small mb-0"><strong>Recomendação:</strong> {{ pergunta.recomendacao }}</p>
+                                    {% if pergunta.referencia %}
+                                        <p class="text-info small mb-1"><strong>Referência:</strong> {{ pergunta.referencia }}</p>
+                                    {% endif %}
+                                    {% if pergunta.recomendacao %}
+                                        <p class="text-success small mb-0"><strong>Recomendação:</strong> {{ pergunta.recomendacao }}</p>
+                                    {% endif %}
+                                </div>
+                                {% if versao.status == 'draft' %}
+                                <div class="ms-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                                            data-bs-toggle="modal" data-bs-target="#editarPerguntaModal"
+                                            data-pergunta-id="{{ pergunta.id }}"
+                                            data-pergunta-texto="{{ pergunta.texto }}"
+                                            data-pergunta-descricao="{{ pergunta.descricao or '' }}"
+                                            data-pergunta-referencia="{{ pergunta.referencia or '' }}"
+                                            data-pergunta-recomendacao="{{ pergunta.recomendacao or '' }}"
+                                            data-pergunta-light="{{ 'true' if pergunta.light else 'false' }}"
+                                            data-pergunta-ordem="{{ pergunta.ordem }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
                                 {% endif %}
                             </div>
-                            {% if versao.status == 'draft' %}
-                            <div class="ms-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm" 
-                                        data-bs-toggle="modal" data-bs-target="#editarPerguntaModal"
-                                        data-pergunta-id="{{ pergunta.id }}"
-                                        data-pergunta-texto="{{ pergunta.texto }}"
-                                        data-pergunta-descricao="{{ pergunta.descricao or '' }}"
-                                        data-pergunta-referencia="{{ pergunta.referencia or '' }}"
-                                        data-pergunta-recomendacao="{{ pergunta.recomendacao or '' }}"
-                                        data-pergunta-light="{{ 'true' if pergunta.light else 'false' }}"
-                                        data-pergunta-ordem="{{ pergunta.ordem }}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </div>
-                            {% endif %}
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                     
                     <!-- Botão Nova Pergunta -->
                     {% if versao.status == 'draft' %}
@@ -334,6 +344,92 @@ document.addEventListener('DOMContentLoaded', function() {
         // Configurar ação do formulário
         formEditar.action = `/admin/tipos-assessment/pergunta/${perguntaId}/editar`;
     });
+    
+    // Configurar drag and drop para reordenar perguntas
+    const sortableContainers = document.querySelectorAll('.perguntas-sortable:not([data-disabled])');
+    
+    sortableContainers.forEach(container => {
+        new Sortable(container, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            handle: '.drag-handle',
+            onEnd: function(evt) {
+                if (evt.oldIndex !== evt.newIndex) {
+                    updatePerguntaOrder(container);
+                }
+            }
+        });
+    });
+    
+    function updatePerguntaOrder(container) {
+        const dominioId = container.getAttribute('data-dominio-id');
+        const perguntas = container.querySelectorAll('.pergunta-item');
+        const ordens = [];
+        
+        perguntas.forEach((pergunta, index) => {
+            const perguntaId = pergunta.getAttribute('data-pergunta-id');
+            const novaOrdem = index + 1;
+            ordens.push({id: perguntaId, ordem: novaOrdem});
+            
+            // Atualizar badge de ordem visualmente
+            const badge = pergunta.querySelector('.badge.bg-secondary');
+            if (badge) {
+                badge.textContent = novaOrdem;
+            }
+        });
+        
+        // Enviar atualização para servidor
+        fetch('/admin/tipos-assessment/reordenar-perguntas', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                dominio_id: dominioId,
+                ordens: ordens
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Ordem das perguntas atualizada!', 'success');
+            } else {
+                showToast('Erro ao atualizar ordem das perguntas', 'error');
+                location.reload(); // Recarregar em caso de erro
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            showToast('Erro ao atualizar ordem das perguntas', 'error');
+            location.reload();
+        });
+    }
+    
+    function getCSRFToken() {
+        // Tentar obter de um input hidden no formulário ou usar uma alternativa
+        const hiddenInput = document.querySelector('input[name="csrf_token"]');
+        return hiddenInput ? hiddenInput.value : '';
+    }
+    
+    function showToast(message, type) {
+        // Criar toast notification simples
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>
+            ${message}
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
 });
 </script>
 
@@ -390,8 +486,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="ordem_edit" class="form-label">Ordem</label>
-                                <input type="number" class="form-control" id="ordem_edit" name="ordem" min="1" required>
-                                <div class="form-text">Posição da pergunta no domínio</div>
+                                <input type="number" class="form-control" id="ordem_edit" name="ordem" min="1" required readonly>
+                                <div class="form-text">Use arrastar e soltar para reordenar perguntas</div>
                             </div>
                         </div>
                     </div>
@@ -454,4 +550,30 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+
+<!-- SortableJS para drag and drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.sortable-drag {
+    transform: rotate(5deg);
+}
+
+.pergunta-item:hover .drag-handle {
+    color: #007bff !important;
+}
+
+.drag-handle {
+    transition: color 0.2s ease;
+}
+</style>
+
 {% endblock %}
