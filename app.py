@@ -72,6 +72,7 @@ def create_app():
     def inject_globals():
         from models.logo import Logo
         from models.configuracao import Configuracao
+        from utils.timezone_utils import get_timezone_display_name, now_local
         
         logo = Logo.query.filter_by(ativo=True).first()
         cores_sistema = Configuracao.get_cores_sistema()
@@ -81,8 +82,26 @@ def create_app():
             'nome_sistema': app.config["NOME_SISTEMA"],
             'logo_path': logo.caminho_arquivo if logo else None,
             'cores_sistema': cores_sistema,
-            'escala_pontuacao': escala_pontuacao
+            'escala_pontuacao': escala_pontuacao,
+            'timezone_display': get_timezone_display_name(),
+            'now_local': now_local()
         }
+    
+    # Filtros de template para timezone
+    @app.template_filter('datetime_local')
+    def datetime_local_filter(utc_datetime, formato='%d/%m/%Y %H:%M'):
+        from utils.timezone_utils import format_datetime_local
+        return format_datetime_local(utc_datetime, formato)
+    
+    @app.template_filter('date_local')
+    def date_local_filter(utc_datetime, formato='%d/%m/%Y'):
+        from utils.timezone_utils import format_date_local
+        return format_date_local(utc_datetime, formato)
+    
+    @app.template_filter('time_local')
+    def time_local_filter(utc_datetime, formato='%H:%M'):
+        from utils.timezone_utils import format_time_local
+        return format_time_local(utc_datetime, formato)
     
     # Registrar blueprints (importação direta para evitar circular imports)
     from routes.auth import auth_bp
@@ -128,6 +147,16 @@ def create_app():
         logging.error(f"Erro ao importar blueprint de assessments: {e}")
     except Exception as e:
         logging.error(f"Erro ao registrar blueprint de assessments: {e}")
+    
+    # Registrar blueprint de parâmetros do sistema
+    try:
+        from routes.parametros import parametros_bp
+        app.register_blueprint(parametros_bp)
+        logging.info("Blueprint de parâmetros registrado com sucesso")
+    except ImportError as e:
+        logging.error(f"Erro ao importar blueprint de parâmetros: {e}")
+    except Exception as e:
+        logging.error(f"Erro ao registrar blueprint de parâmetros: {e}")
         
     # Rota de projetos temporária sem autenticação
     @app.route('/admin/projetos_temp')
@@ -170,7 +199,7 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema
         db.create_all()
         
         # Criar usuário admin padrão se não existir

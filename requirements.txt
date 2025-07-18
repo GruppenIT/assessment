@@ -27,3 +27,5 @@ numpy
 sqlalchemy
 werkzeug
 pytz
+openai
+cryptography
