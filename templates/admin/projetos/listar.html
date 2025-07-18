@@ -200,10 +200,12 @@
                                             </td>
                                             <td>{{ projeto.data_criacao.strftime('%d/%m/%Y') }}</td>
                                             <td>
-                                                {% if projeto.ativo %}
-                                                    <span class="badge bg-success">Ativo</span>
+                                                {% if projeto_data.progresso >= 100 %}
+                                                    <span class="badge bg-success">Concluído</span>
+                                                {% elif projeto_data.progresso > 0 %}
+                                                    <span class="badge bg-warning">Em Andamento</span>
                                                 {% else %}
-                                                    <span class="badge bg-secondary">Inativo</span>
+                                                    <span class="badge bg-secondary">Não Iniciado</span>
                                                 {% endif %}
                                             </td>
                                             <td>
