@@ -103,6 +103,14 @@ def create_app():
         from utils.timezone_utils import format_time_local
         return format_time_local(utc_datetime, formato)
     
+    @app.template_filter('nl2br')
+    def nl2br_filter(text):
+        """Converte quebras de linha em tags HTML <br>"""
+        if not text:
+            return ''
+        from markupsafe import Markup
+        return Markup(text.replace('\n', '<br>\n'))
+    
     # Registrar blueprints (importação direta para evitar circular imports)
     from routes.auth import auth_bp
     from routes.cliente import cliente_bp
@@ -199,7 +207,7 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema, relatorio_ia
         db.create_all()
         
         # Criar usuário admin padrão se não existir

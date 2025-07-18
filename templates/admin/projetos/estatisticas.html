@@ -200,6 +200,159 @@
     </div>
     {% endfor %}
 
+    <!-- Relatório Inteligente (IA) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="d-flex justify-content-between align-items-center text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-robot me-2"></i>Relatório Inteligente (ChatGPT)
+                        </h5>
+                        <div>
+                            {% if relatorio_ia %}
+                                {% if relatorio_ia.status == 'gerado' %}
+                                    <span class="badge bg-success me-2">
+                                        <i class="fas fa-check me-1"></i>Gerado
+                                    </span>
+                                {% elif relatorio_ia.status == 'erro' %}
+                                    <span class="badge bg-danger me-2">
+                                        <i class="fas fa-times me-1"></i>Erro
+                                    </span>
+                                {% endif %}
+                                <small class="text-white-50">{{ relatorio_ia.data_geracao|datetime_local }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if relatorio_ia and relatorio_ia.status == 'gerado' %}
+                        <!-- Navegação por abas -->
+                        <ul class="nav nav-pills mb-4" id="relatorio-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="introducao-tab" data-bs-toggle="pill" data-bs-target="#introducao" type="button" role="tab">
+                                    <i class="fas fa-play me-1"></i>Introdução
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="analises-tab" data-bs-toggle="pill" data-bs-target="#analises" type="button" role="tab">
+                                    <i class="fas fa-search me-1"></i>Análises por Domínio
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="consideracoes-tab" data-bs-toggle="pill" data-bs-target="#consideracoes" type="button" role="tab">
+                                    <i class="fas fa-lightbulb me-1"></i>Considerações Finais
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <!-- Conteúdo das abas -->
+                        <div class="tab-content" id="relatorio-tabs-content">
+                            <!-- Introdução -->
+                            <div class="tab-pane fade show active" id="introducao" role="tabpanel">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>Introdução do Projeto
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="formatted-text">
+                                            {{ relatorio_ia.introducao|nl2br }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Análises por Domínio -->
+                            <div class="tab-pane fade" id="analises" role="tabpanel">
+                                {% for analise in relatorio_ia.get_analises_dominios() %}
+                                <div class="card border-success mb-3">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-layer-group me-2"></i>{{ analise.dominio }}
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="formatted-text">
+                                            {{ analise.analise|nl2br }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Considerações Finais -->
+                            <div class="tab-pane fade" id="consideracoes" role="tabpanel">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-flag-checkered me-2"></i>Considerações Finais e Recomendações
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="formatted-text">
+                                            {{ relatorio_ia.consideracoes_finais|nl2br }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Informações do Assistant -->
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-robot me-1"></i>
+                                        Gerado por: <strong>{{ relatorio_ia.assistant_name }}</strong>
+                                    </small>
+                                </div>
+                                <div>
+                                    <form method="POST" action="{{ url_for('projeto.gerar_relatorio_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-primary btn-sm" onclick="return confirm('Deseja gerar um novo relatório? O anterior será substituído.');">
+                                            <i class="fas fa-sync me-1"></i>Gerar Novo Relatório
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% elif relatorio_ia and relatorio_ia.status == 'erro' %}
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Erro na Geração do Relatório
+                            </h6>
+                            <p class="mb-3">{{ relatorio_ia.introducao }}</p>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Tentativa em: {{ relatorio_ia.data_geracao|datetime_local }}</small>
+                                <form method="POST" action="{{ url_for('projeto.gerar_relatorio_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-redo me-1"></i>Tentar Novamente
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-robot text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mb-3">Relatório Inteligente não gerado</h5>
+                            <p class="text-muted mb-4">
+                                Gere um relatório inteligente com análises detalhadas usando ChatGPT.<br>
+                                O relatório incluirá introdução, análises por domínio e considerações finais.
+                            </p>
+                            <form method="POST" action="{{ url_for('projeto.gerar_relatorio_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-magic me-2"></i>Gerar Relatório Inteligente
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Legenda de Níveis de Maturidade -->
     <div class="row">
         <div class="col-12">
