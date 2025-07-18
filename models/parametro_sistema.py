@@ -25,13 +25,26 @@ class ParametroSistema(db.Model):
     @staticmethod
     def get_chave_criptografia():
         """Gera ou recupera a chave de criptografia"""
+        # Usar uma chave fixa baseada no SECRET_KEY do Flask para manter consistência
+        import hashlib
+        import os
+        from flask import current_app
+        
+        # Tentar usar a chave da variável de ambiente primeiro
         chave_env = os.environ.get('CRYPTO_KEY')
         if chave_env:
             return chave_env.encode()
         
-        # Gerar nova chave se não existir
-        chave = Fernet.generate_key()
-        return chave
+        # Usar o SECRET_KEY do Flask como base para gerar uma chave consistente
+        secret_key = current_app.config.get('SECRET_KEY', 'default-secret-key')
+        # Gerar uma chave Fernet válida a partir do SECRET_KEY
+        hash_obj = hashlib.sha256(secret_key.encode())
+        key_material = hash_obj.digest()
+        
+        # Converter para base64 (formato necessário para Fernet)
+        import base64
+        fernet_key = base64.urlsafe_b64encode(key_material)
+        return fernet_key
     
     @staticmethod
     def get_valor(chave, valor_padrao=None):

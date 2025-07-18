@@ -34,7 +34,8 @@ class OpenAIAssistant:
     
     def is_configured(self):
         """Verifica se o cliente está configurado"""
-        return self.client is not None
+        config = ParametroSistema.get_openai_config()
+        return self.client is not None and config.get('api_key_configured', False)
     
     def gerar_introducao_projeto(self, projeto_data):
         """Gera texto de introdução do projeto"""
