@@ -38,8 +38,8 @@
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    {% if item.cliente.logo %}
-                                                        <img src="{{ url_for('uploaded_file', filename=item.cliente.logo) }}" 
+                                                    {% if item.cliente.logo_path %}
+                                                        <img src="{{ url_for('uploaded_file', filename=item.cliente.logo_path) }}" 
                                                              alt="Logo" class="rounded me-2" width="32" height="32">
                                                     {% else %}
                                                         <div class="bg-primary rounded d-flex align-items-center justify-content-center me-2" 

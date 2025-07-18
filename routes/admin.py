@@ -355,7 +355,7 @@ def editar_cliente(cliente_id):
                 from utils.upload_utils import save_uploaded_file
                 filename = save_uploaded_file(form.logo.data, 'logos')
                 if filename:
-                    cliente.logo = filename
+                    cliente.logo_path = filename
             
             db.session.commit()
             flash(f'Cliente "{cliente.nome}" atualizado com sucesso!', 'success')
