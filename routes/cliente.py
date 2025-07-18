@@ -54,6 +54,10 @@ def criar():
 @cliente_required
 def dashboard():
     """Dashboard do cliente"""
+    # Buscar dados do cliente do respondente logado
+    from models.cliente import Cliente
+    cliente = Cliente.query.get(current_user.cliente_id)
+    
     # Estatísticas do assessment
     total_perguntas = Pergunta.query.filter_by(ativo=True).count()
     respostas_dadas = Resposta.query.filter_by(usuario_id=current_user.id).count()
@@ -82,6 +86,7 @@ def dashboard():
         })
     
     return render_template('cliente/dashboard.html',
+                         cliente=cliente,
                          total_perguntas=total_perguntas,
                          respostas_dadas=respostas_dadas,
                          progresso=progresso,
