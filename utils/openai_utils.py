@@ -206,11 +206,15 @@ def coletar_dados_projeto(projeto):
     
     # Tipos de assessment
     for projeto_assessment in projeto.assessments:
-        if projeto_assessment.versao_assessment:
-            projeto_data['tipos_assessment'].append({
-                'nome': projeto_assessment.versao_assessment.tipo.nome,
-                'descricao': projeto_assessment.versao_assessment.tipo.descricao
-            })
+        if projeto_assessment.versao_assessment_id:
+            # Usar o relacionamento correto através do ID
+            from models.assessment_version import AssessmentVersao
+            versao = AssessmentVersao.query.get(projeto_assessment.versao_assessment_id)
+            if versao:
+                projeto_data['tipos_assessment'].append({
+                    'nome': versao.tipo.nome,
+                    'descricao': versao.tipo.descricao
+                })
         elif projeto_assessment.tipo_assessment:
             projeto_data['tipos_assessment'].append({
                 'nome': projeto_assessment.tipo_assessment.nome,

@@ -15,6 +15,18 @@ def listar():
     projetos = Projeto.query.filter_by(ativo=True).all()
     return render_template('admin/projetos/listar.html', projetos=projetos)
 
+@projeto_bp.route('/criar')
+@login_required
+@admin_required
+def criar():
+    """Página para criar novo projeto (placeholder por enquanto)"""
+    try:
+        flash('Funcionalidade de criação de projetos em desenvolvimento.', 'info')
+        return redirect(url_for('projeto.listar'))
+    except Exception as e:
+        flash(f'Erro: {str(e)}', 'danger')
+        return redirect(url_for('projeto.listar'))
+
 @projeto_bp.route('/<int:projeto_id>')
 @login_required
 @admin_required
