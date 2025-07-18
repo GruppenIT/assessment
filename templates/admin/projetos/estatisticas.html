@@ -293,7 +293,14 @@
                                                 <div class="text-end">
                                                     {% set nota = resposta_data.resposta_final.nota %}
                                                     <span class="badge {% if nota >= 4 %}bg-success{% elif nota >= 3 %}bg-info{% elif nota >= 2 %}bg-warning{% elif nota >= 1 %}bg-secondary{% else %}bg-danger{% endif %} fs-6">
-                                                        Nota: {{ nota }}/5
+                                                        {{ nota }} - 
+                                                        {% if nota == 0 %}Inexistente
+                                                        {% elif nota == 1 %}Inicial: processos informais, não documentados
+                                                        {% elif nota == 2 %}Básico: processos definidos, mas inconsistentes
+                                                        {% elif nota == 3 %}Intermediário: processos implementados e repetíveis
+                                                        {% elif nota == 4 %}Avançado: processos monitorados e revisados
+                                                        {% elif nota == 5 %}Otimizado: processos integrados à estratégia e melhorados continuamente
+                                                        {% endif %}
                                                     </span>
                                                 </div>
                                             </div>
@@ -302,24 +309,56 @@
                                                 <p class="text-muted small mb-3">{{ resposta_data.pergunta.descricao }}</p>
                                             {% endif %}
                                             
-                                            <!-- Resposta Final -->
+                                            <!-- Informações da Pergunta -->
+                                            <div class="row mb-3">
+                                                {% if resposta_data.pergunta.referencia %}
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="d-flex align-items-start">
+                                                        <i class="fas fa-book text-info me-2 mt-1"></i>
+                                                        <div>
+                                                            <strong class="text-info">Referência:</strong>
+                                                            <p class="mb-0 small">{{ resposta_data.pergunta.referencia }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                {% if resposta_data.pergunta.recomendacao %}
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="d-flex align-items-start">
+                                                        <i class="fas fa-lightbulb text-warning me-2 mt-1"></i>
+                                                        <div>
+                                                            <strong class="text-warning">Recomendação:</strong>
+                                                            <p class="mb-0 small">{{ resposta_data.pergunta.recomendacao }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Informações da Resposta -->
+                                            <div class="mb-3">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="fas fa-user text-success me-2"></i>
+                                                    <strong class="text-success">Respondente:</strong>
+                                                    <span class="ms-2">{{ resposta_data.resposta_final.respondente.nome if resposta_data.resposta_final.respondente else 'Sistema' }}</span>
+                                                    <i class="fas fa-clock text-muted ms-3 me-1"></i>
+                                                    <span class="text-muted">{{ resposta_data.resposta_final.data_resposta.strftime('%d/%m/%Y às %H:%M') }}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Comentário do Respondente -->
+                                            {% if resposta_data.resposta_final.comentario %}
                                             <div class="mb-3">
                                                 <div class="d-flex align-items-center mb-2">
                                                     <i class="fas fa-comment text-primary me-2"></i>
-                                                    <strong>Resposta Final:</strong>
+                                                    <strong>Comentário do respondente:</strong>
                                                 </div>
                                                 <div class="bg-light p-3 rounded">
-                                                    {% if resposta_data.resposta_final.comentario %}
-                                                        <p class="mb-2">{{ resposta_data.resposta_final.comentario }}</p>
-                                                    {% else %}
-                                                        <p class="text-muted mb-2"><em>Nenhum comentário fornecido</em></p>
-                                                    {% endif %}
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-user me-1"></i>{{ resposta_data.resposta_final.respondente.nome if resposta_data.resposta_final.respondente else 'Sistema' }}
-                                                        <i class="fas fa-clock ms-3 me-1"></i>{{ resposta_data.resposta_final.data_resposta.strftime('%d/%m/%Y às %H:%M') }}
-                                                    </small>
+                                                    <p class="mb-0">{{ resposta_data.resposta_final.comentario }}</p>
                                                 </div>
                                             </div>
+                                            {% endif %}
                                             
                                             <!-- Histórico de Respostas (se houver mais de uma) -->
                                             {% if resposta_data.historico|length > 1 %}
@@ -332,17 +371,30 @@
                                                     <div class="border-start border-2 border-secondary ps-3 mb-2">
                                                         <div class="d-flex justify-content-between align-items-start">
                                                             <div class="flex-grow-1">
+                                                                <div class="mb-2">
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-user me-1"></i>{{ historico.respondente }}
+                                                                        <i class="fas fa-clock ms-2 me-1"></i>{{ historico.data.strftime('%d/%m/%Y às %H:%M') }}
+                                                                    </small>
+                                                                </div>
                                                                 {% if historico.comentario %}
-                                                                    <p class="mb-1 small">{{ historico.comentario }}</p>
-                                                                {% else %}
-                                                                    <p class="mb-1 small text-muted"><em>Sem comentário</em></p>
+                                                                    <div class="bg-light p-2 rounded small">
+                                                                        <strong>Comentário:</strong> {{ historico.comentario }}
+                                                                    </div>
                                                                 {% endif %}
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-user me-1"></i>{{ historico.respondente }}
-                                                                    <i class="fas fa-clock ms-2 me-1"></i>{{ historico.data.strftime('%d/%m/%Y às %H:%M') }}
-                                                                </small>
                                                             </div>
-                                                            <span class="badge bg-secondary ms-2">{{ historico.nota }}/5</span>
+                                                            <div class="text-end ms-2">
+                                                                <span class="badge bg-secondary small">
+                                                                    {{ historico.nota }} - 
+                                                                    {% if historico.nota == 0 %}Inexistente
+                                                                    {% elif historico.nota == 1 %}Inicial
+                                                                    {% elif historico.nota == 2 %}Básico
+                                                                    {% elif historico.nota == 3 %}Intermediário
+                                                                    {% elif historico.nota == 4 %}Avançado
+                                                                    {% elif historico.nota == 5 %}Otimizado
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     {% endfor %}
