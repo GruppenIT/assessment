@@ -286,110 +286,107 @@
                             <div class="row">
                                 {% for resposta_data in dominio_data.respostas %}
                                 <div class="col-12 mb-4">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <!-- SEÇÃO 1: PERGUNTA -->
-                                            <div class="mb-4 pb-3 border-bottom" style="background: linear-gradient(90deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border-left: 4px solid #0d6efd; border-radius: 8px; padding: 15px;">
-                                                <div class="d-flex align-items-start mb-2">
-                                                    <i class="fas fa-question-circle text-primary me-2 mt-1"></i>
-                                                    <div class="flex-grow-1">
-                                                        <h6 class="text-primary mb-1 fw-bold">PERGUNTA</h6>
-                                                        <p class="mb-0 fs-6">{{ resposta_data.pergunta.texto }}</p>
-                                                    </div>
-                                                </div>
-                                                {% if resposta_data.pergunta.descricao %}
-                                                <div class="ms-4">
-                                                    <small class="text-muted">{{ resposta_data.pergunta.descricao }}</small>
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            <!-- SEÇÃO 2: RESPOSTA -->
-                                            <div class="mb-4 pb-3 border-bottom" style="background: linear-gradient(90deg, rgba(25, 135, 84, 0.1) 0%, rgba(25, 135, 84, 0.05) 100%); border-left: 4px solid #198754; border-radius: 8px; padding: 15px;">
-                                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                                    <div class="d-flex align-items-center">
-                                                        <i class="fas fa-chart-line text-success me-2"></i>
-                                                        <h6 class="text-success mb-0 fw-bold">RESPOSTA</h6>
-                                                    </div>
-                                                    {% set nota = resposta_data.resposta_final.nota %}
-                                                    <span class="badge {% if nota >= 4 %}bg-success{% elif nota >= 3 %}bg-info{% elif nota >= 2 %}bg-warning{% elif nota >= 1 %}bg-secondary{% else %}bg-danger{% endif %} fs-6 px-3 py-2">
-                                                        {{ nota }} - 
-                                                        {% if nota == 0 %}Inexistente
-                                                        {% elif nota == 1 %}Inicial
-                                                        {% elif nota == 2 %}Básico
-                                                        {% elif nota == 3 %}Intermediário
-                                                        {% elif nota == 4 %}Avançado
-                                                        {% elif nota == 5 %}Otimizado
-                                                        {% endif %}
-                                                    </span>
-                                                </div>
+                                    <div class="card border-2" style="border-color: #e9ecef !important;">
+                                        <div class="card-body p-0">
+                                            <!-- Container único para as três seções -->
+                                            <div class="position-relative" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 10px; overflow: hidden;">
                                                 
-                                                <div class="row mb-2">
-                                                    <div class="col-md-6">
-                                                        <small class="text-muted">
-                                                            <i class="fas fa-user me-1"></i>
-                                                            <strong>Respondente:</strong> {{ resposta_data.resposta_final.respondente.nome if resposta_data.resposta_final.respondente else 'Sistema' }}
-                                                        </small>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <small class="text-muted">
-                                                            <i class="fas fa-clock me-1"></i>
-                                                            <strong>Data:</strong> {{ resposta_data.resposta_final.data_resposta.strftime('%d/%m/%Y às %H:%M') }}
-                                                        </small>
+                                                <!-- SEÇÃO 1: PERGUNTA -->
+                                                <div class="p-4 border-bottom" style="background: linear-gradient(90deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 110, 253, 0.03) 100%); border-left: 5px solid #0d6efd;">
+                                                    <div class="d-flex align-items-start mb-2">
+                                                        <div class="badge bg-primary text-white me-3 px-3 py-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                                            <i class="fas fa-question-circle me-1"></i>PERGUNTA
+                                                        </div>
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-2 text-dark fw-semibold">{{ resposta_data.pergunta.texto }}</h6>
+                                                            {% if resposta_data.pergunta.descricao %}
+                                                            <p class="mb-0 text-muted small">{{ resposta_data.pergunta.descricao }}</p>
+                                                            {% endif %}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 
-                                                {% if resposta_data.resposta_final.comentario %}
-                                                <div class="mt-2">
-                                                    <div class="bg-light p-3 rounded">
-                                                        <small class="text-muted fw-bold d-block mb-1">
-                                                            <i class="fas fa-comment me-1"></i>Comentário:
-                                                        </small>
-                                                        <p class="mb-0 small">{{ resposta_data.resposta_final.comentario }}</p>
+                                                <!-- SEÇÃO 2: RESPOSTA -->
+                                                <div class="p-4 border-bottom" style="background: linear-gradient(90deg, rgba(25, 135, 84, 0.08) 0%, rgba(25, 135, 84, 0.03) 100%); border-left: 5px solid #198754;">
+                                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                                        <div class="badge bg-success text-white px-3 py-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                                            <i class="fas fa-chart-line me-1"></i>RESPOSTA
+                                                        </div>
+                                                        {% set nota = resposta_data.resposta_final.nota %}
+                                                        <span class="badge {% if nota >= 4 %}bg-success{% elif nota >= 3 %}bg-info{% elif nota >= 2 %}bg-warning{% elif nota >= 1 %}bg-secondary{% else %}bg-danger{% endif %} fs-6 px-3 py-2">
+                                                            {{ nota }} - 
+                                                            {% if nota == 0 %}Inexistente
+                                                            {% elif nota == 1 %}Inicial
+                                                            {% elif nota == 2 %}Básico
+                                                            {% elif nota == 3 %}Intermediário
+                                                            {% elif nota == 4 %}Avançado
+                                                            {% elif nota == 5 %}Otimizado
+                                                            {% endif %}
+                                                        </span>
                                                     </div>
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            <!-- SEÇÃO 3: FEEDBACK TÉCNICO -->
-                                            {% if resposta_data.pergunta.referencia or resposta_data.pergunta.recomendacao %}
-                                            <div class="mb-3" style="background: linear-gradient(90deg, rgba(13, 202, 240, 0.1) 0%, rgba(13, 202, 240, 0.05) 100%); border-left: 4px solid #0dcaf0; border-radius: 8px; padding: 15px;">
-                                                <div class="d-flex align-items-center mb-3">
-                                                    <i class="fas fa-graduation-cap text-info me-2"></i>
-                                                    <h6 class="text-info mb-0 fw-bold">FEEDBACK TÉCNICO</h6>
+                                                    
+                                                    <div class="row mb-2">
+                                                        <div class="col-md-6">
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-user me-1"></i>
+                                                                <strong>Respondente:</strong> {{ resposta_data.resposta_final.respondente.nome if resposta_data.resposta_final.respondente else 'Sistema' }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-clock me-1"></i>
+                                                                <strong>Data:</strong> {{ resposta_data.resposta_final.data_resposta.strftime('%d/%m/%Y às %H:%M') }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {% if resposta_data.resposta_final.comentario %}
+                                                    <div class="mt-3">
+                                                        <div class="bg-white p-3 rounded border" style="border-color: #198754 !important;">
+                                                            <small class="text-success fw-bold d-block mb-2">
+                                                                <i class="fas fa-comment me-1"></i>Comentário do respondente:
+                                                            </small>
+                                                            <p class="mb-0 text-dark">{{ resposta_data.resposta_final.comentario }}</p>
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
                                                 </div>
                                                 
-                                                <div class="row">
-                                                    {% if resposta_data.pergunta.referencia %}
-                                                    <div class="col-md-6 mb-3">
-                                                        <div class="card bg-light border-0">
-                                                            <div class="card-body p-3">
+                                                <!-- SEÇÃO 3: FEEDBACK TÉCNICO -->
+                                                {% if resposta_data.pergunta.referencia or resposta_data.pergunta.recomendacao %}
+                                                <div class="p-4" style="background: linear-gradient(90deg, rgba(13, 202, 240, 0.08) 0%, rgba(13, 202, 240, 0.03) 100%); border-left: 5px solid #0dcaf0;">
+                                                    <div class="badge bg-info text-white mb-3 px-3 py-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                                        <i class="fas fa-graduation-cap me-1"></i>FEEDBACK TÉCNICO
+                                                    </div>
+                                                    
+                                                    <div class="row">
+                                                        {% if resposta_data.pergunta.referencia %}
+                                                        <div class="col-md-6 mb-3">
+                                                            <div class="bg-white p-3 rounded border" style="border-color: #0dcaf0 !important;">
                                                                 <div class="d-flex align-items-center mb-2">
                                                                     <i class="fas fa-book text-info me-2"></i>
                                                                     <small class="fw-bold text-info">REFERÊNCIA TEÓRICA</small>
                                                                 </div>
-                                                                <p class="mb-0 small">{{ resposta_data.pergunta.referencia }}</p>
+                                                                <p class="mb-0 small text-dark">{{ resposta_data.pergunta.referencia }}</p>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    {% endif %}
-                                                    
-                                                    {% if resposta_data.pergunta.recomendacao %}
-                                                    <div class="col-md-6 mb-3">
-                                                        <div class="card bg-light border-0">
-                                                            <div class="card-body p-3">
+                                                        {% endif %}
+                                                        
+                                                        {% if resposta_data.pergunta.recomendacao %}
+                                                        <div class="col-md-6 mb-3">
+                                                            <div class="bg-white p-3 rounded border" style="border-color: #ffc107 !important;">
                                                                 <div class="d-flex align-items-center mb-2">
                                                                     <i class="fas fa-lightbulb text-warning me-2"></i>
                                                                     <small class="fw-bold text-warning">RECOMENDAÇÃO</small>
                                                                 </div>
-                                                                <p class="mb-0 small">{{ resposta_data.pergunta.recomendacao }}</p>
+                                                                <p class="mb-0 small text-dark">{{ resposta_data.pergunta.recomendacao }}</p>
                                                             </div>
                                                         </div>
+                                                        {% endif %}
                                                     </div>
-                                                    {% endif %}
                                                 </div>
+                                                {% endif %}
                                             </div>
-                                            {% endif %}
                                             
                                             <!-- Histórico de Respostas (se houver mais de uma) -->
                                             {% if resposta_data.historico|length > 1 %}
