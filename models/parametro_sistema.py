@@ -91,9 +91,13 @@ class ParametroSistema(db.Model):
     @staticmethod
     def get_openai_config():
         """Recupera configurações do OpenAI"""
+        api_key = ParametroSistema.get_valor('openai_api_key', '')
+        assistant_name = ParametroSistema.get_valor('openai_assistant_name', '')
+        
         return {
-            'api_key': ParametroSistema.get_valor('openai_api_key', ''),
-            'assistant_name': ParametroSistema.get_valor('openai_assistant_name', '')
+            'api_key': api_key,
+            'assistant_name': assistant_name,
+            'api_key_configured': bool(api_key and api_key.strip())
         }
     
     @staticmethod

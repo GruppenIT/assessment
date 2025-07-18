@@ -95,7 +95,7 @@
                                 <i class="fas fa-shield-alt me-1"></i>
                                 Chave será criptografada e ofuscada após salvar
                             </div>
-                            {% if openai_config['api_key'] %}
+                            {% if openai_config.get('api_key_configured', False) %}
                             <div class="mt-2">
                                 <small class="text-success">
                                     <i class="fas fa-check me-1"></i>
@@ -150,7 +150,7 @@
                             <div class="bg-light p-3 rounded">
                                 <h6 class="text-muted mb-1">API OpenAI</h6>
                                 <p class="mb-0 fw-bold">
-                                    {% if openai_config['api_key'] %}
+                                    {% if openai_config.get('api_key_configured', False) %}
                                         <span class="text-success">
                                             <i class="fas fa-check me-1"></i>Configurada
                                         </span>
