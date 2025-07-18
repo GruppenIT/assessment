@@ -16,6 +16,21 @@ class OpenAIAssistant:
         self.client = None
         self.assistant_name = None
         self._initialize_client()
+        
+    def _make_request_with_retry(self, request_func, max_retries=3, timeout=60):
+        """Executa requisição com retry e timeout"""
+        import time
+        
+        for attempt in range(max_retries):
+            try:
+                return request_func()
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise e
+                logging.warning(f"Tentativa {attempt + 1} falhou: {e}. Tentando novamente...")
+                time.sleep(2 ** attempt)  # Backoff exponencial
+        
+        return None
     
     def _initialize_client(self):
         """Inicializa o cliente OpenAI"""
@@ -58,15 +73,19 @@ class OpenAIAssistant:
             Responda apenas com o texto gerado, sem explicações adicionais.
             """
             
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": f"Você é o {self.assistant_name}. Gere textos técnicos para relatórios de assessment de maturidade organizacional."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=1000,
-                temperature=0.7
-            )
+            def make_request():
+                return self.client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": f"Você é o {self.assistant_name}. Gere textos técnicos para relatórios de assessment de maturidade organizacional."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.7,
+                    timeout=30
+                )
+            
+            response = self._make_request_with_retry(make_request)
             
             return response.choices[0].message.content.strip()
             
@@ -96,15 +115,19 @@ class OpenAIAssistant:
             Responda apenas com o texto gerado, sem explicações adicionais.
             """
             
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessment com visão técnica e crítica."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=800,
-                temperature=0.7
-            )
+            def make_request():
+                return self.client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessment com visão técnica e crítica."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=800,
+                    temperature=0.7,
+                    timeout=30
+                )
+            
+            response = self._make_request_with_retry(make_request)
             
             return response.choices[0].message.content.strip()
             
@@ -134,15 +157,19 @@ class OpenAIAssistant:
             Responda apenas com o texto gerado, sem explicações adicionais.
             """
             
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": f"Você é o {self.assistant_name}. Gere considerações finais técnicas para relatórios de assessment."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=1200,
-                temperature=0.7
-            )
+            def make_request():
+                return self.client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": f"Você é o {self.assistant_name}. Gere considerações finais técnicas para relatórios de assessment."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=1200,
+                    temperature=0.7,
+                    timeout=30
+                )
+            
+            response = self._make_request_with_retry(make_request)
             
             return response.choices[0].message.content.strip()
             

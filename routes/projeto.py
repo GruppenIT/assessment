@@ -62,20 +62,33 @@ def gerar_relatorio_ia(projeto_id):
         from utils.openai_utils import gerar_relatorio_ia
         from models.relatorio_ia import RelatorioIA
         
-        # Gerar relatório
+        # Mensagem de processamento
+        flash('Gerando relatório inteligente... Aguarde alguns minutos.', 'info')
+        
+        # Gerar relatório com timeout robusto
         dados_relatorio = gerar_relatorio_ia(projeto)
         
         # Salvar no banco
         relatorio = RelatorioIA.criar_relatorio(projeto_id, dados_relatorio)
         
         if dados_relatorio.get('erro'):
-            flash(f'Erro ao gerar relatório: {dados_relatorio["erro"]}', 'danger')
+            if 'timeout' in dados_relatorio['erro'].lower():
+                flash('Timeout na API OpenAI. Tente novamente em alguns minutos.', 'warning')
+            else:
+                flash(f'Erro ao gerar relatório: {dados_relatorio["erro"]}', 'danger')
         else:
             flash('Relatório inteligente gerado com sucesso!', 'success')
         
     except Exception as e:
+        import logging
         logging.error(f"Erro ao gerar relatório IA: {e}")
-        flash(f'Erro ao gerar relatório: {str(e)}', 'danger')
+        
+        if 'timeout' in str(e).lower():
+            flash('Timeout na conexão com OpenAI. Tente novamente em alguns minutos.', 'warning')
+        elif 'api' in str(e).lower():
+            flash('Erro na API OpenAI. Verifique a configuração da chave API.', 'danger')
+        else:
+            flash(f'Erro inesperado: {str(e)}', 'danger')
     
     return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
 
