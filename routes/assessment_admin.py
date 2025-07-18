@@ -204,6 +204,47 @@ def nova_pergunta(dominio_id):
     flash('Pergunta adicionada com sucesso!', 'success')
     return redirect(url_for('assessment_admin.editar_versao', versao_id=dominio.versao_id))
 
+@assessment_admin_bp.route('/tipos-assessment/pergunta/<int:pergunta_id>/editar', methods=['POST'])
+@login_required
+@admin_required
+def editar_pergunta(pergunta_id):
+    """Edita uma pergunta existente"""
+    pergunta = Pergunta.query.get_or_404(pergunta_id)
+    dominio = pergunta.dominio_versao
+    
+    if dominio.versao.status != 'draft':
+        flash('Apenas versões em draft podem ser editadas', 'error')
+        return redirect(url_for('assessment_admin.editar_versao', versao_id=dominio.versao_id))
+    
+    texto = request.form.get('texto')
+    descricao = request.form.get('descricao', '')
+    referencia = request.form.get('referencia', '')
+    recomendacao = request.form.get('recomendacao', '')
+    light = request.form.get('light') == '1'
+    ordem = request.form.get('ordem')
+    
+    if not texto:
+        flash('Texto da pergunta é obrigatório', 'error')
+        return redirect(url_for('assessment_admin.editar_versao', versao_id=dominio.versao_id))
+    
+    try:
+        ordem_int = int(ordem) if ordem else pergunta.ordem
+    except ValueError:
+        ordem_int = pergunta.ordem
+    
+    # Atualizar pergunta
+    pergunta.texto = texto
+    pergunta.descricao = descricao if descricao else None
+    pergunta.referencia = referencia if referencia else None
+    pergunta.recomendacao = recomendacao if recomendacao else None
+    pergunta.light = light
+    pergunta.ordem = ordem_int
+    
+    db.session.commit()
+    
+    flash('Pergunta atualizada com sucesso!', 'success')
+    return redirect(url_for('assessment_admin.editar_versao', versao_id=dominio.versao_id))
+
 @assessment_admin_bp.route('/tipos-assessment/importar-csv')
 @login_required
 @admin_required

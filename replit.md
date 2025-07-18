@@ -226,6 +226,26 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - **SYSTEM INTEGRATION**: Seamless integration between assessment versioning and project management
   - Fixed foreign key constraints allowing both old and new system coexistence
   - Validated successful project creation with assessment type "Cibersegurança (NIST / ISO27001 / CIS)"
+- July 18, 2025. Question Management Enhancement:
+  - **QUESTION ENHANCEMENT**: Added three new fields to assessment questions:
+    * Referência: theoretical/compliance references (ISO 27001, NIST CSF, CIS, etc.)
+    * Recomendação: improvement recommendations for controls
+    * Light: boolean flag for light questionnaires (approximately 25% of questions)
+  - **FULL SYSTEM UPDATE**: Updated entire architecture to support new fields
+    * Models: Extended Pergunta model with new columns
+    * Forms: Updated PerguntaForm with new fields and BooleanField import
+    * Templates: Enhanced question display to show references and recommendations
+    * CSV Import: Updated import functionality to handle new columns
+    * Cloning: Enhanced version cloning to preserve new fields
+  - **QUESTION EDITING**: Added comprehensive question editing functionality
+    * Modal-based editing interface for draft versions
+    * Full support for editing all question fields including new ones
+    * Order management and validation
+    * Seamless integration with existing version control system
+  - **DATABASE MIGRATION**: Successfully migrated PostgreSQL schema
+    * Added referencia (TEXT), recomendacao (TEXT), light (BOOLEAN) columns
+    * Maintained backward compatibility with existing data
+    * All sequences reset for clean testing environment
 
 ## User Preferences
 
