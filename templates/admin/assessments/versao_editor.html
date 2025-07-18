@@ -130,9 +130,18 @@
                                 <h6 class="mb-1">
                                     <span class="badge bg-secondary me-2">{{ pergunta.ordem }}</span>
                                     {{ pergunta.texto }}
+                                    {% if pergunta.light %}
+                                        <span class="badge bg-warning text-dark ms-2">Light</span>
+                                    {% endif %}
                                 </h6>
                                 {% if pergunta.descricao %}
-                                    <p class="text-muted small mb-0">{{ pergunta.descricao }}</p>
+                                    <p class="text-muted small mb-1">{{ pergunta.descricao }}</p>
+                                {% endif %}
+                                {% if pergunta.referencia %}
+                                    <p class="text-info small mb-1"><strong>Referência:</strong> {{ pergunta.referencia }}</p>
+                                {% endif %}
+                                {% if pergunta.recomendacao %}
+                                    <p class="text-success small mb-0"><strong>Recomendação:</strong> {{ pergunta.recomendacao }}</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -233,6 +242,30 @@
                         <textarea class="form-control" id="descricao_pergunta" name="descricao" rows="4"
                                   placeholder="Forneça contexto adicional, critérios de avaliação ou exemplos..."></textarea>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label for="referencia" class="form-label">Referência</label>
+                        <textarea class="form-control" id="referencia" name="referencia" rows="2"
+                                  placeholder="Ex: ISO 27001:2022 A.6.1.2, NIST CSF GV.PR-1, CIS 12.4"></textarea>
+                        <div class="form-text">Referência teórica/conformidade (separe múltiplas referências por vírgula)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="recomendacao" class="form-label">Recomendação</label>
+                        <textarea class="form-control" id="recomendacao" name="recomendacao" rows="4"
+                                  placeholder="Digite a recomendação para correção/melhoria do controle..."></textarea>
+                        <div class="form-text">Recomendação para correção ou melhoria do controle aplicado</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="light" name="light" value="1">
+                            <label class="form-check-label" for="light">
+                                <strong>Pergunta Light</strong>
+                            </label>
+                        </div>
+                        <div class="form-text">Marque para incluir esta pergunta no questionário light (aproximadamente 25% das perguntas)</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -293,10 +326,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="mb-3">
                         <label class="form-label">Formato Esperado:</label>
                         <div class="bg-light p-3 rounded small font-monospace">
-                            Dominio;DescriçãoDominio;OrdemDominio;Pergunta;DescriçãoPergunta;OrdemPergunta<br>
-                            Governança;Gestão e controles;1;Existe política de segurança?;Avalie se há política documentada;1<br>
-                            Governança;Gestão e controles;1;Política é atualizada?;Verifique frequência de atualização;2<br>
-                            Controles Técnicos;Controles de infraestrutura;2;Há firewall configurado?;Avalie configuração do firewall;1
+                            Dominio;DescriçãoDominio;OrdemDominio;Pergunta;DescriçãoPergunta;Referência;Recomendação;Light;OrdemPergunta<br>
+                            Governança;Gestão e controles;1;Existe política de segurança?;Avalie se há política documentada;ISO 27001:2022 A.5.1;Implementar política formal;1;1<br>
+                            Governança;Gestão e controles;1;Política é atualizada?;Verifique frequência de atualização;ISO 27001:2022 A.5.1;Revisar anualmente;0;2<br>
+                            Controles Técnicos;Controles de infraestrutura;2;Há firewall configurado?;Avalie configuração do firewall;NIST CSF PR.AC-3;Configurar regras restritivas;1;1
                         </div>
                     </div>
                 </div>

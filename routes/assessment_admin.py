@@ -176,6 +176,9 @@ def nova_pergunta(dominio_id):
     
     texto = request.form.get('texto')
     descricao = request.form.get('descricao', '')
+    referencia = request.form.get('referencia', '')
+    recomendacao = request.form.get('recomendacao', '')
+    light = request.form.get('light') == '1'
     
     if not texto:
         flash('Texto da pergunta é obrigatório', 'error')
@@ -189,7 +192,10 @@ def nova_pergunta(dominio_id):
     pergunta = Pergunta(
         dominio_versao_id=dominio_id,
         texto=texto,
-        descricao=descricao,
+        descricao=descricao if descricao else None,
+        referencia=referencia if referencia else None,
+        recomendacao=recomendacao if recomendacao else None,
+        light=light,
         ordem=ultima_ordem + 1
     )
     db.session.add(pergunta)
@@ -288,6 +294,9 @@ def clonar_tipo(tipo_id):
                 dominio_versao_id=novo_dominio.id,
                 texto=pergunta_original.texto,
                 descricao=pergunta_original.descricao,
+                referencia=pergunta_original.referencia,
+                recomendacao=pergunta_original.recomendacao,
+                light=pergunta_original.light,
                 ordem=pergunta_original.ordem
             )
             db.session.add(nova_pergunta)
@@ -378,6 +387,9 @@ def importar_csv_versao(versao_id):
             dominio_ordem = row.get('OrdemDominio', '').strip()
             pergunta_texto = row.get('Pergunta', '').strip()
             pergunta_descricao = row.get('DescriçãoPergunta', '').strip()
+            pergunta_referencia = row.get('Referência', '').strip()
+            pergunta_recomendacao = row.get('Recomendação', '').strip()
+            pergunta_light = row.get('Light', '').strip().lower() in ['1', 'sim', 'true', 's']
             pergunta_ordem = row.get('OrdemPergunta', '').strip()
             
             if not dominio_nome or not pergunta_texto:
@@ -412,6 +424,9 @@ def importar_csv_versao(versao_id):
                 dominio_versao_id=dominio.id,
                 texto=pergunta_texto,
                 descricao=pergunta_descricao,
+                referencia=pergunta_referencia if pergunta_referencia else None,
+                recomendacao=pergunta_recomendacao if pergunta_recomendacao else None,
+                light=pergunta_light,
                 ordem=ordem_perg
             )
             db.session.add(pergunta)
@@ -483,6 +498,9 @@ def processar_importacao_csv():
             dominio_ordem = row.get('OrdemDominio', '').strip()
             pergunta_texto = row.get('Pergunta', '').strip()
             pergunta_descricao = row.get('DescriçãoPergunta', '').strip()
+            pergunta_referencia = row.get('Referência', '').strip()
+            pergunta_recomendacao = row.get('Recomendação', '').strip()
+            pergunta_light = row.get('Light', '').strip().lower() in ['1', 'sim', 'true', 's']
             pergunta_ordem = row.get('OrdemPergunta', '').strip()
             
             if not dominio_nome or not pergunta_texto:
@@ -516,6 +534,9 @@ def processar_importacao_csv():
                 dominio_versao_id=dominio.id,
                 texto=pergunta_texto,
                 descricao=pergunta_descricao,
+                referencia=pergunta_referencia if pergunta_referencia else None,
+                recomendacao=pergunta_recomendacao if pergunta_recomendacao else None,
+                light=pergunta_light,
                 ordem=ordem_perg
             )
             db.session.add(pergunta)

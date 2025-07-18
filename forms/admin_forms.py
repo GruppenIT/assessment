@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
-from wtforms import StringField, TextAreaField, IntegerField, SelectField, SubmitField
+from wtforms import StringField, TextAreaField, IntegerField, SelectField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 class DominioForm(FlaskForm):
@@ -48,6 +48,20 @@ class PerguntaForm(FlaskForm):
         Optional(),
         Length(max=1000, message='Descrição deve ter no máximo 1000 caracteres')
     ], render_kw={'placeholder': 'Digite uma descrição detalhada (opcional)', 'rows': 4})
+    
+    referencia = TextAreaField('Referência', validators=[
+        Optional(),
+        Length(max=500, message='Referência deve ter no máximo 500 caracteres')
+    ], render_kw={'placeholder': 'Ex: ISO 27001:2022 A.6.1.2, NIST CSF GV.PR-1, CIS 12.4', 'rows': 2})
+    
+    recomendacao = TextAreaField('Recomendação', validators=[
+        Optional(),
+        Length(max=2000, message='Recomendação deve ter no máximo 2000 caracteres')
+    ], render_kw={'placeholder': 'Digite a recomendação para correção/melhoria do controle (opcional)', 'rows': 4})
+    
+    light = BooleanField('Pergunta Light', 
+                        render_kw={'class': 'form-check-input'},
+                        description='Marque se esta pergunta faz parte do questionário light (aproximadamente 25% das perguntas)')
     
     ordem = IntegerField('Ordem', validators=[
         DataRequired(message='Ordem é obrigatória'),

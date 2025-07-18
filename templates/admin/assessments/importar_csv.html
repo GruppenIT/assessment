@@ -32,10 +32,10 @@
                 </p>
                 <div class="bg-light p-3 rounded mb-3">
                     <code>
-                        Dominio;DescriçãoDominio;OrdemDominio;Pergunta;DescriçãoPergunta;OrdemPergunta<br>
-                        Governança;Gestão e controles;1;A organização possui política de segurança?;Verificar se existe documentação formal;1<br>
-                        Governança;Gestão e controles;1;Há comitê de segurança estabelecido?;Avaliar estrutura organizacional;2<br>
-                        Controles Técnicos;Controles de infraestrutura;2;Firewall está configurado?;Verificar configuração e regras;1
+                        Dominio;DescriçãoDominio;OrdemDominio;Pergunta;DescriçãoPergunta;Referência;Recomendação;Light;OrdemPergunta<br>
+                        Governança;Gestão e controles;1;A organização possui política de segurança?;Verificar se existe documentação formal;ISO 27001:2022 A.5.1;Implementar política formal de segurança;1;1<br>
+                        Governança;Gestão e controles;1;Há comitê de segurança estabelecido?;Avaliar estrutura organizacional;NIST CSF GV-1;Estabelecer comitê executivo;0;2<br>
+                        Controles Técnicos;Controles de infraestrutura;2;Firewall está configurado?;Verificar configuração e regras;CIS 12.1;Configurar regras restritivas;1;1
                     </code>
                 </div>
                 <ul class="mb-0">
@@ -43,7 +43,10 @@
                     <li>Primeira linha deve conter os cabeçalhos exatos</li>
                     <li>Domínios serão criados automaticamente conforme aparecem no arquivo</li>
                     <li>Ordens controlam a sequência de exibição (domínios e perguntas)</li>
-                    <li>Descrições são opcionais mas recomendadas</li>
+                    <li><strong>Referência:</strong> referências teóricas/conformidade (ISO, NIST, CIS, etc.) - opcional</li>
+                    <li><strong>Recomendação:</strong> orientações para correção/melhoria - opcional</li>
+                    <li><strong>Light:</strong> use 1 para incluir em questionários light, 0 caso contrário</li>
+                    <li>Aproximadamente 25% das perguntas devem ser marcadas como Light</li>
                 </ul>
             </div>
         </div>
