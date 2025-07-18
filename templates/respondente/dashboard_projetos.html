@@ -121,7 +121,7 @@
                                 <div class="row">
                                     {% for tipo in tipos_assessment %}
                                         {% set progresso = progressos.get(tipo.id, {'percentual': 0, 'respondidas': 0, 'total': 0}) %}
-                                        {% set assessment_finalizado = projeto.assessments|selectattr('tipo.id', 'equalto', tipo.id)|selectattr('finalizado', 'equalto', true)|list|length > 0 %}
+                                        {% set assessment_finalizado = projeto.assessments|selectattr('versao_assessment.tipo.id', 'equalto', tipo.id)|selectattr('finalizado', 'equalto', true)|list|length > 0 %}
                                         <div class="col-md-6 col-lg-4 mb-3">
                                             <div class="card h-100 assessment-card" onclick="location.href='{{ url_for('respondente.assessment', projeto_id=projeto.id, tipo_assessment_id=tipo.id) }}'">
                                                 <div class="card-body">

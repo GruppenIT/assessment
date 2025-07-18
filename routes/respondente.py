@@ -211,9 +211,7 @@ def assessment(projeto_id, tipo_assessment_id):
     # Obter domínios baseado no sistema usado
     if projeto_assessment.versao_assessment_id:
         # Novo sistema de versionamento - domínios da versão
-        from models.assessment_version import AssessmentVersao
-        versao = AssessmentVersao.query.get(projeto_assessment.versao_assessment_id)
-        dominios = versao.get_dominios_ativos() if versao else []
+        dominios = projeto_assessment.versao_assessment.get_dominios_ativos()
     else:
         # Sistema antigo - domínios do tipo
         dominios = tipo_assessment.get_dominios_ativos()
