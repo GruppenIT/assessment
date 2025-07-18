@@ -95,8 +95,7 @@
                     <div class="domain-nav d-flex flex-wrap gap-2">
                         {% for dominio in dominios %}
                             <button class="btn btn-outline-primary domain-nav-btn" 
-                                    data-domain-id="{{ dominio.id }}"
-                                    onclick="scrollToDomain({{ dominio.id }})">
+                                    data-domain-id="{{ dominio.id }}">
                                 {{ dominio.nome }}
                                 <span class="badge bg-primary ms-2 domain-progress" id="progress-{{ dominio.id }}">
                                     0/{{ dominio.get_perguntas_ativas()|length }}
@@ -605,7 +604,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Scroll to domain function
     window.scrollToDomain = function(domainId) {
+        console.log('scrollToDomain called with domainId:', domainId);
+        
         const element = document.getElementById(`domain-${domainId}`);
+        console.log('Found element:', element);
+        
         if (element) {
             // Scroll suave até o elemento
             element.scrollIntoView({ 
@@ -613,6 +616,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 block: 'start',
                 inline: 'nearest'
             });
+            
+            console.log('Scrolled to element');
             
             // Destacar visualmente o domínio por alguns segundos
             element.style.transition = 'all 0.3s ease';
@@ -633,13 +638,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const navBtn = document.querySelector(`.domain-nav-btn[data-domain-id="${domainId}"]`);
             if (navBtn) {
                 navBtn.classList.add('active');
+                console.log('Added active class to nav button');
                 // Remover active após alguns segundos
                 setTimeout(() => {
                     navBtn.classList.remove('active');
                 }, 3000);
             }
+        } else {
+            console.error('Element not found with id:', `domain-${domainId}`);
         }
     }
+    
+    // Add event listeners to domain navigation buttons
+    document.querySelectorAll('.domain-nav-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const domainId = this.dataset.domainId;
+            console.log('Domain button clicked:', domainId);
+            if (domainId) {
+                scrollToDomain(domainId);
+            }
+        });
+    });
     
     // Initialize progress display on page load
     updateProgress();
