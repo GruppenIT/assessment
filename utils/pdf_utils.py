@@ -8,16 +8,311 @@ from datetime import datetime
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.colors import Color, HexColor
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.lib.units import inch, mm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
+from reportlab.platypus.frames import Frame
+from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
+from reportlab.graphics.shapes import Drawing, Rect, String
+from reportlab.graphics import renderPDF
 from models.assessment_version import AssessmentDominio
 from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.resposta import Resposta
 from app import db
 from sqlalchemy import func
+
+def gerar_relatorio_estatisticas_visual(projeto):
+    """
+    Gera um relatório PDF com a mesma identidade visual das estatísticas da web
+    """
+    # Criar arquivo temporário
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+    temp_filename = temp_file.name
+    temp_file.close()
+    
+    # Criar documento
+    doc = SimpleDocTemplate(
+        temp_filename,
+        pagesize=A4,
+        rightMargin=50, leftMargin=50,
+        topMargin=50, bottomMargin=50
+    )
+    
+    # Cores principais (replicando as cores do CSS)
+    COR_AZUL = HexColor('#0d6efd')
+    COR_VERDE = HexColor('#198754')
+    COR_CIANO = HexColor('#0dcaf0')
+    COR_AMARELO = HexColor('#ffc107')
+    COR_FUNDO_AZUL = HexColor('#f0f7ff')
+    COR_FUNDO_VERDE = HexColor('#f0f8f5')
+    COR_FUNDO_CIANO = HexColor('#f0fdff')
+    
+    # Estilos personalizados
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        spaceAfter=30,
+        textColor=HexColor('#2c3e50'),
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    )
+    
+    badge_style = ParagraphStyle(
+        'BadgeStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.white,
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold',
+        leftIndent=10,
+        rightIndent=10,
+        spaceBefore=5,
+        spaceAfter=5
+    )
+    
+    pergunta_style = ParagraphStyle(
+        'PerguntaStyle',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.black,
+        alignment=TA_LEFT,
+        fontName='Helvetica-Bold',
+        leftIndent=15,
+        rightIndent=15,
+        spaceBefore=5,
+        spaceAfter=5
+    )
+    
+    descricao_style = ParagraphStyle(
+        'DescricaoStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=HexColor('#6c757d'),
+        alignment=TA_LEFT,
+        leftIndent=15,
+        rightIndent=15,
+        spaceBefore=2,
+        spaceAfter=8
+    )
+    
+    info_style = ParagraphStyle(
+        'InfoStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=HexColor('#6c757d'),
+        alignment=TA_LEFT,
+        leftIndent=15,
+        rightIndent=15,
+        spaceBefore=3,
+        spaceAfter=3
+    )
+    
+    comentario_style = ParagraphStyle(
+        'ComentarioStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.black,
+        alignment=TA_LEFT,
+        leftIndent=20,
+        rightIndent=20,
+        spaceBefore=5,
+        spaceAfter=5
+    )
+    
+    tecnico_style = ParagraphStyle(
+        'TecnicoStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.black,
+        alignment=TA_LEFT,
+        leftIndent=20,
+        rightIndent=20,
+        spaceBefore=3,
+        spaceAfter=8
+    )
+    
+    # Função auxiliar para criar caixas coloridas
+    def criar_secao_colorida(elementos, cor_badge, cor_fundo, largura=None):
+        if largura is None:
+            largura = 500
+        
+        # Tabela para simular fundo colorido
+        data = [[elem] for elem in elementos]
+        table = Table(data, colWidths=[largura])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), cor_fundo),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOX', (0, 0), (-1, -1), 3, cor_badge),
+        ]))
+        return table
+    
+    # Elementos do documento
+    story = []
+    
+    # Cabeçalho
+    story.append(Paragraph("RELATÓRIO DE ESTATÍSTICAS", title_style))
+    story.append(Paragraph(f"<b>Projeto:</b> {projeto.nome}", pergunta_style))
+    story.append(Paragraph(f"<b>Cliente:</b> {projeto.cliente.nome}", info_style))
+    story.append(Paragraph(f"<b>Data de Geração:</b> {datetime.now().strftime('%d/%m/%Y às %H:%M')}", info_style))
+    story.append(Spacer(1, 30))
+    
+    # Buscar dados das estatísticas (replicando a lógica da view)
+    estatisticas_data = []
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        versao = None
+        
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+        
+        # Processar domínios
+        for dominio in dominios_query.order_by('ordem'):
+            # Buscar perguntas do domínio
+            if versao:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_versao_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            else:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            
+            respostas_dominio = []
+            for pergunta in perguntas_dominio:
+                # Buscar resposta mais recente desta pergunta no projeto
+                resposta = Resposta.query.filter_by(
+                    projeto_id=projeto.id,
+                    pergunta_id=pergunta.id
+                ).order_by(Resposta.data_resposta.desc()).first()
+                
+                if resposta:
+                    respostas_dominio.append({
+                        'pergunta': pergunta,
+                        'resposta_final': resposta
+                    })
+            
+            if respostas_dominio:
+                estatisticas_data.append({
+                    'dominio': dominio,
+                    'tipo': tipo,
+                    'respostas': respostas_dominio
+                })
+    
+    # Gerar memorial de respostas com estrutura visual idêntica
+    story.append(Paragraph("MEMORIAL DE RESPOSTAS E COMENTÁRIOS", title_style))
+    story.append(Spacer(1, 20))
+    
+    for dominio_data in estatisticas_data:
+        # Título do domínio
+        story.append(Paragraph(f"<b>{dominio_data['dominio'].nome}</b>", pergunta_style))
+        story.append(Spacer(1, 10))
+        
+        for resposta_data in dominio_data['respostas']:
+            pergunta = resposta_data['pergunta']
+            resposta = resposta_data['resposta_final']
+            
+            # Container para cada resposta (simulando o card)
+            elementos_resposta = []
+            
+            # SEÇÃO 1: PERGUNTA (azul)
+            elementos_pergunta = []
+            elementos_pergunta.append(Paragraph("🔵 PERGUNTA", badge_style))
+            elementos_pergunta.append(Paragraph(pergunta.texto, pergunta_style))
+            if pergunta.descricao:
+                elementos_pergunta.append(Paragraph(pergunta.descricao, descricao_style))
+            
+            secao_pergunta = criar_secao_colorida(elementos_pergunta, COR_AZUL, COR_FUNDO_AZUL)
+            story.append(secao_pergunta)
+            story.append(Spacer(1, 2))
+            
+            # SEÇÃO 2: RESPOSTA (verde)
+            elementos_resposta = []
+            
+            # Determinar nível de maturidade
+            nota = resposta.nota
+            if nota == 0:
+                nivel = "Inexistente"
+                cor_badge_nota = colors.red
+            elif nota == 1:
+                nivel = "Inicial"
+                cor_badge_nota = colors.grey
+            elif nota == 2:
+                nivel = "Básico"
+                cor_badge_nota = colors.orange
+            elif nota == 3:
+                nivel = "Intermediário"
+                cor_badge_nota = colors.blue
+            elif nota == 4:
+                nivel = "Avançado"
+                cor_badge_nota = colors.green
+            else:  # nota == 5
+                nivel = "Otimizado"
+                cor_badge_nota = colors.darkgreen
+            
+            elementos_resposta.append(Paragraph(f"🟢 RESPOSTA - <b>{nota} - {nivel}</b>", badge_style))
+            
+            respondente_nome = resposta.respondente.nome if resposta.respondente else 'Sistema'
+            data_resposta = resposta.data_resposta.strftime('%d/%m/%Y às %H:%M')
+            elementos_resposta.append(Paragraph(f"<b>👤 Respondente:</b> {respondente_nome}", info_style))
+            elementos_resposta.append(Paragraph(f"<b>🕒 Data:</b> {data_resposta}", info_style))
+            
+            if resposta.comentario:
+                elementos_resposta.append(Spacer(1, 5))
+                elementos_resposta.append(Paragraph("<b>💬 Comentário do respondente:</b>", info_style))
+                elementos_resposta.append(Paragraph(resposta.comentario, comentario_style))
+            
+            secao_resposta = criar_secao_colorida(elementos_resposta, COR_VERDE, COR_FUNDO_VERDE)
+            story.append(secao_resposta)
+            story.append(Spacer(1, 2))
+            
+            # SEÇÃO 3: FEEDBACK TÉCNICO (ciano) - apenas se houver referência ou recomendação
+            if pergunta.referencia or pergunta.recomendacao:
+                elementos_feedback = []
+                elementos_feedback.append(Paragraph("🔵 FEEDBACK TÉCNICO", badge_style))
+                
+                if pergunta.referencia:
+                    elementos_feedback.append(Paragraph("<b>📚 REFERÊNCIA TEÓRICA:</b>", info_style))
+                    elementos_feedback.append(Paragraph(pergunta.referencia, tecnico_style))
+                
+                if pergunta.recomendacao:
+                    if pergunta.referencia:
+                        elementos_feedback.append(Spacer(1, 5))
+                    elementos_feedback.append(Paragraph("<b>💡 RECOMENDAÇÃO:</b>", info_style))
+                    elementos_feedback.append(Paragraph(pergunta.recomendacao, tecnico_style))
+                
+                secao_feedback = criar_secao_colorida(elementos_feedback, COR_CIANO, COR_FUNDO_CIANO)
+                story.append(secao_feedback)
+            
+            story.append(Spacer(1, 20))
+    
+    # Construir documento
+    doc.build(story)
+    
+    return temp_filename
 
 def gerar_relatorio_estatisticas(projeto):
     """

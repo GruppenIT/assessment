@@ -17,6 +17,7 @@ from werkzeug.security import generate_password_hash
 from sqlalchemy import func, case, and_
 import logging
 import json
+from datetime import datetime
 
 projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
 
@@ -679,8 +680,8 @@ def estatisticas(projeto_id):
 @login_required
 @admin_required
 def exportar_estatisticas_pdf(projeto_id):
-    """Exporta as estatísticas do projeto para PDF"""
-    from utils.pdf_utils import gerar_relatorio_estatisticas
+    """Exporta as estatísticas do projeto para PDF com identidade visual das estatísticas"""
+    from utils.pdf_utils import gerar_relatorio_estatisticas_visual
     
     projeto = Projeto.query.get_or_404(projeto_id)
     
@@ -690,14 +691,14 @@ def exportar_estatisticas_pdf(projeto_id):
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
     
     try:
-        # Gerar o PDF
-        filename = gerar_relatorio_estatisticas(projeto)
+        # Gerar o PDF com a nova identidade visual
+        filename = gerar_relatorio_estatisticas_visual(projeto)
         
         from flask import send_file
         return send_file(
             filename,
             as_attachment=True,
-            download_name=f"estatisticas_{projeto.nome.replace(' ', '_')}.pdf",
+            download_name=f"estatisticas_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
             mimetype='application/pdf'
         )
     except Exception as e:
