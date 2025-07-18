@@ -285,6 +285,18 @@
 
 .domain-nav-btn {
     margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.domain-nav-btn.active {
+    background-color: #0d6efd !important;
+    color: white !important;
+    border-color: #0d6efd !important;
+    transform: scale(1.05);
+}
+
+.domain-nav-btn:hover {
+    transform: translateY(-2px);
 }
 
 .bg-light-success {
@@ -567,7 +579,37 @@ document.addEventListener('DOMContentLoaded', function() {
     window.scrollToDomain = function(domainId) {
         const element = document.getElementById(`domain-${domainId}`);
         if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Scroll suave até o elemento
+            element.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start',
+                inline: 'nearest'
+            });
+            
+            // Destacar visualmente o domínio por alguns segundos
+            element.style.transition = 'all 0.3s ease';
+            element.style.transform = 'scale(1.02)';
+            element.style.boxShadow = '0 8px 25px rgba(0,123,255,0.3)';
+            
+            // Remover o destaque após 2 segundos
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+                element.style.boxShadow = '';
+            }, 2000);
+            
+            // Atualizar botões de navegação para mostrar qual está ativo
+            document.querySelectorAll('.domain-nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const navBtn = document.querySelector(`.domain-nav-btn[data-domain-id="${domainId}"]`);
+            if (navBtn) {
+                navBtn.classList.add('active');
+                // Remover active após alguns segundos
+                setTimeout(() => {
+                    navBtn.classList.remove('active');
+                }, 3000);
+            }
         }
     }
     
