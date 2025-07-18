@@ -186,6 +186,12 @@ def coletar_dados_projeto(projeto):
     from models.assessment_version import AssessmentVersao
     from sqlalchemy import func, desc
     
+    def format_date_local(date_obj):
+        """Formata data para display local"""
+        if date_obj:
+            return date_obj.strftime('%d/%m/%Y')
+        return None
+    
     # Dados básicos do projeto
     projeto_data = {
         'nome_projeto': projeto.nome,
@@ -212,114 +218,127 @@ def coletar_dados_projeto(projeto):
             })
     
     # Respondentes
-    respondentes = projeto.get_respondentes_ativos()
-    for respondente in respondentes:
-        projeto_data['respondentes'].append({
-            'nome': respondente.nome,
-            'email': respondente.email,
-            'login': respondente.login
-        })
+    try:
+        respondentes = projeto.get_respondentes_ativos()
+        for respondente in respondentes:
+            projeto_data['respondentes'].append({
+                'nome': respondente.nome,
+                'email': respondente.email,
+                'login': respondente.login
+            })
+    except Exception as e:
+        logging.warning(f"Erro ao carregar respondentes: {e}")
+        projeto_data['respondentes'] = []
     
     # Análise por domínio
-    for projeto_assessment in projeto.assessments:
-        if projeto_assessment.versao_assessment:
-            # Novo sistema de versionamento
-            from models.assessment_version import AssessmentDominio
-            dominios = AssessmentDominio.query.filter_by(
-                versao_id=projeto_assessment.versao_assessment.id,
-                ativo=True
-            ).all()
-            
-            for dominio in dominios:
-                # Estatísticas do domínio
-                respostas_dominio = Resposta.query.join(Pergunta).filter(
-                    Pergunta.dominio_versao_id == dominio.id,
-                    Resposta.projeto_id == projeto.id
+    try:
+        for projeto_assessment in projeto.assessments:
+            if projeto_assessment.versao_assessment_id:
+                # Novo sistema de versionamento
+                from models.assessment_version import AssessmentDominio
+                dominios = AssessmentDominio.query.filter_by(
+                    versao_id=projeto_assessment.versao_assessment_id,
+                    ativo=True
                 ).all()
                 
-                if respostas_dominio:
-                    pontuacoes = [r.nota for r in respostas_dominio if r.nota is not None]
-                    comentarios = [r.comentario for r in respostas_dominio if r.comentario and r.comentario.strip()]
+                for dominio in dominios:
+                    # Estatísticas do domínio
+                    respostas_dominio = Resposta.query.join(Pergunta).filter(
+                        Pergunta.dominio_versao_id == dominio.id,
+                        Resposta.projeto_id == projeto.id
+                    ).all()
                     
-                    dominio_data = {
-                        'nome': dominio.nome,
-                        'descricao': dominio.descricao,
-                        'total_perguntas': len(respostas_dominio),
-                        'pontuacao_media': sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0,
-                        'pontuacao_maxima': max(pontuacoes) if pontuacoes else 0,
-                        'pontuacao_minima': min(pontuacoes) if pontuacoes else 0,
-                        'total_comentarios': len(comentarios),
-                        'comentarios_destaque': comentarios[:5],  # Primeiros 5 comentários
-                        'perguntas_criticas': []
-                    }
-                    
-                    # Perguntas com pontuação baixa (críticas)
-                    for resposta in respostas_dominio:
-                        if resposta.nota is not None and resposta.nota <= 2:
-                            dominio_data['perguntas_criticas'].append({
-                                'pergunta': resposta.pergunta.texto,
-                                'pontuacao': resposta.nota,
-                                'comentario': resposta.comentario or ''
-                            })
-                    
-                    projeto_data['dominios'].append(dominio_data)
+                    if respostas_dominio:
+                        pontuacoes = [r.nota for r in respostas_dominio if r.nota is not None]
+                        comentarios = [r.comentario for r in respostas_dominio if r.comentario and r.comentario.strip()]
+                        
+                        dominio_data = {
+                            'nome': dominio.nome,
+                            'descricao': dominio.descricao,
+                            'total_perguntas': len(respostas_dominio),
+                            'pontuacao_media': sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0,
+                            'pontuacao_maxima': max(pontuacoes) if pontuacoes else 0,
+                            'pontuacao_minima': min(pontuacoes) if pontuacoes else 0,
+                            'total_comentarios': len(comentarios),
+                            'comentarios_destaque': comentarios[:5],  # Primeiros 5 comentários
+                            'perguntas_criticas': []
+                        }
+                        
+                        # Perguntas com pontuação baixa (críticas)
+                        for resposta in respostas_dominio:
+                            if resposta.nota is not None and resposta.nota <= 2:
+                                dominio_data['perguntas_criticas'].append({
+                                    'pergunta': resposta.pergunta.texto,
+                                    'pontuacao': resposta.nota,
+                                    'comentario': resposta.comentario or ''
+                                })
+                        
+                        projeto_data['dominios'].append(dominio_data)
         
-        elif projeto_assessment.tipo_assessment:
-            # Sistema antigo
-            dominios = Dominio.query.filter_by(
-                tipo_assessment_id=projeto_assessment.tipo_assessment.id,
-                ativo=True
-            ).all()
-            
-            for dominio in dominios:
-                # Estatísticas do domínio
-                respostas_dominio = Resposta.query.join(Pergunta).filter(
-                    Pergunta.dominio_id == dominio.id,
-                    Resposta.projeto_id == projeto.id
+            elif projeto_assessment.tipo_assessment_id:
+                # Sistema antigo  
+                dominios = Dominio.query.filter_by(
+                    tipo_assessment_id=projeto_assessment.tipo_assessment_id,
+                    ativo=True
                 ).all()
                 
-                if respostas_dominio:
-                    pontuacoes = [r.nota for r in respostas_dominio if r.nota is not None]
-                    comentarios = [r.comentario for r in respostas_dominio if r.comentario and r.comentario.strip()]
+                for dominio in dominios:
+                    # Estatísticas do domínio
+                    respostas_dominio = Resposta.query.join(Pergunta).filter(
+                        Pergunta.dominio_id == dominio.id,
+                        Resposta.projeto_id == projeto.id
+                    ).all()
                     
-                    dominio_data = {
-                        'nome': dominio.nome,
-                        'descricao': dominio.descricao,
-                        'total_perguntas': len(respostas_dominio),
-                        'pontuacao_media': sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0,
-                        'pontuacao_maxima': max(pontuacoes) if pontuacoes else 0,
-                        'pontuacao_minima': min(pontuacoes) if pontuacoes else 0,
-                        'total_comentarios': len(comentarios),
-                        'comentarios_destaque': comentarios[:5],  # Primeiros 5 comentários
-                        'perguntas_criticas': []
-                    }
-                    
-                    # Perguntas com pontuação baixa (críticas)
-                    for resposta in respostas_dominio:
-                        if resposta.nota is not None and resposta.nota <= 2:
-                            dominio_data['perguntas_criticas'].append({
-                                'pergunta': resposta.pergunta.texto,
-                                'pontuacao': resposta.nota,
-                                'comentario': resposta.comentario or ''
-                            })
-                    
-                    projeto_data['dominios'].append(dominio_data)
+                    if respostas_dominio:
+                        pontuacoes = [r.nota for r in respostas_dominio if r.nota is not None]
+                        comentarios = [r.comentario for r in respostas_dominio if r.comentario and r.comentario.strip()]
+                        
+                        dominio_data = {
+                            'nome': dominio.nome,
+                            'descricao': dominio.descricao,
+                            'total_perguntas': len(respostas_dominio),
+                            'pontuacao_media': sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0,
+                            'pontuacao_maxima': max(pontuacoes) if pontuacoes else 0,
+                            'pontuacao_minima': min(pontuacoes) if pontuacoes else 0,
+                            'total_comentarios': len(comentarios),
+                            'comentarios_destaque': comentarios[:5],
+                            'perguntas_criticas': []
+                        }
+                        
+                        # Perguntas com pontuação baixa (críticas)
+                        for resposta in respostas_dominio:
+                            if resposta.nota is not None and resposta.nota <= 2:
+                                dominio_data['perguntas_criticas'].append({
+                                    'pergunta': resposta.pergunta.texto,
+                                    'pontuacao': resposta.nota,
+                                    'comentario': resposta.comentario or ''
+                                })
+                        
+                        projeto_data['dominios'].append(dominio_data)
+    
+    except Exception as e:
+        logging.error(f"Erro ao coletar dados do domínio: {e}")
+        # Continuar sem dados de domínio se houver erro
     
     # Estatísticas gerais
-    total_respostas = Resposta.query.filter_by(projeto_id=projeto.id).count()
-    respostas_com_pontuacao = Resposta.query.filter(
-        Resposta.projeto_id == projeto.id,
-        Resposta.nota.isnot(None)
-    ).all()
-    
-    if respostas_com_pontuacao:
-        pontuacoes_gerais = [r.nota for r in respostas_com_pontuacao]
-        projeto_data['estatisticas_gerais'] = {
-            'total_respostas': total_respostas,
-            'pontuacao_media_geral': sum(pontuacoes_gerais) / len(pontuacoes_gerais),
-            'total_dominios': len(projeto_data['dominios']),
-            'total_respondentes': len(projeto_data['respondentes'])
-        }
+    try:
+        total_respostas = Resposta.query.filter_by(projeto_id=projeto.id).count()
+        respostas_com_pontuacao = Resposta.query.filter(
+            Resposta.projeto_id == projeto.id,
+            Resposta.nota.isnot(None)
+        ).all()
+        
+        if respostas_com_pontuacao:
+            pontuacoes_gerais = [r.nota for r in respostas_com_pontuacao]
+            projeto_data['estatisticas_gerais'] = {
+                'total_respostas': total_respostas,
+                'pontuacao_media_geral': sum(pontuacoes_gerais) / len(pontuacoes_gerais),
+                'total_dominios': len(projeto_data['dominios']),
+                'total_respondentes': len(projeto_data['respondentes'])
+            }
+    except Exception as e:
+        logging.error(f"Erro ao calcular estatísticas gerais: {e}")
+        projeto_data['estatisticas_gerais'] = {}
     
     return projeto_data
 
