@@ -49,6 +49,10 @@ def login():
         
         if respondente and check_password_hash(respondente.senha_hash, senha):
             # Login como respondente
+            from datetime import datetime
+            respondente.ultimo_acesso = datetime.now()
+            db.session.commit()
+            
             login_user(respondente, remember=form.lembrar.data)
             session['user_type'] = 'respondente'
             flash('Login realizado com sucesso!', 'success')

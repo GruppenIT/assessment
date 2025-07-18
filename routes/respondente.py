@@ -45,6 +45,11 @@ def dashboard():
     if not isinstance(current_user, Respondente):
         return redirect(url_for('auth.login'))
     
+    # Atualizar último acesso
+    from datetime import datetime
+    current_user.ultimo_acesso = datetime.now()
+    db.session.commit()
+    
     try:
         # Obter projetos do respondente
         from models.projeto import ProjetoRespondente, ProjetoAssessment
@@ -153,6 +158,11 @@ def assessment(projeto_id, tipo_assessment_id):
     """Assessment de um tipo específico dentro de um projeto"""
     if not isinstance(current_user, Respondente):
         return redirect(url_for('auth.login'))
+    
+    # Atualizar último acesso
+    from datetime import datetime
+    current_user.ultimo_acesso = datetime.now()
+    db.session.commit()
     
     # Verificar se o respondente tem acesso a este projeto
     from models.projeto import ProjetoRespondente, ProjetoAssessment
