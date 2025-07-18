@@ -342,7 +342,7 @@ def coletar_dados_projeto(projeto):
     
     return projeto_data
 
-def gerar_relatorio_ia(projeto):
+def gerar_relatorio_ia(projeto, callback_progress=None):
     """Gera relatório completo usando IA"""
     assistant = OpenAIAssistant()
     
@@ -351,16 +351,28 @@ def gerar_relatorio_ia(projeto):
             'erro': 'Integração com ChatGPT não configurada. Configure a API Key e o nome do Assistant em Parâmetros do Sistema.'
         }
     
+    def update_progress(step, message):
+        if callback_progress:
+            callback_progress(step, message)
+    
     try:
         # Coletar dados do projeto
+        update_progress(30, "Coletando dados do projeto...")
         projeto_data = coletar_dados_projeto(projeto)
         
         # Gerar introdução
+        update_progress(40, "Gerando introdução do relatório com IA...")
         introducao = assistant.gerar_introducao_projeto(projeto_data)
         
         # Gerar análise de cada domínio
+        update_progress(50, "Analisando domínios do assessment...")
         analises_dominios = []
-        for dominio_data in projeto_data['dominios']:
+        total_dominios = len(projeto_data.get('dominios', []))
+        
+        for i, dominio_data in enumerate(projeto_data['dominios']):
+            progress = 50 + (i * 20 // max(total_dominios, 1))
+            update_progress(progress, f"Analisando domínio: {dominio_data['nome']}")
+            
             analise = assistant.gerar_analise_dominio(dominio_data)
             if analise:
                 analises_dominios.append({
@@ -369,8 +381,10 @@ def gerar_relatorio_ia(projeto):
                 })
         
         # Gerar considerações finais
+        update_progress(70, "Gerando considerações finais...")
         consideracoes_finais = assistant.gerar_consideracoes_finais(projeto_data)
         
+        update_progress(75, "Relatório IA gerado com sucesso!")
         return {
             'introducao': introducao,
             'analises_dominios': analises_dominios,

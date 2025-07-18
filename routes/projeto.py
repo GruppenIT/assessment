@@ -55,42 +55,100 @@ def estatisticas(projeto_id):
 
 @projeto_bp.route('/<int:projeto_id>/gerar-relatorio-ia', methods=['POST'])
 def gerar_relatorio_ia(projeto_id):
-    """Gera relatório inteligente usando ChatGPT"""
+    """Inicia a geração do relatório inteligente usando ChatGPT"""
     projeto = Projeto.query.get_or_404(projeto_id)
     
-    try:
-        from utils.openai_utils import gerar_relatorio_ia
-        from models.relatorio_ia import RelatorioIA
-        
-        # Mensagem de processamento
-        flash('Gerando relatório inteligente... Aguarde alguns minutos.', 'info')
-        
-        # Gerar relatório com timeout robusto
-        dados_relatorio = gerar_relatorio_ia(projeto)
-        
-        # Salvar no banco
-        relatorio = RelatorioIA.criar_relatorio(projeto_id, dados_relatorio)
-        
-        if dados_relatorio.get('erro'):
-            if 'timeout' in dados_relatorio['erro'].lower():
-                flash('Timeout na API OpenAI. Tente novamente em alguns minutos.', 'warning')
-            else:
-                flash(f'Erro ao gerar relatório: {dados_relatorio["erro"]}', 'danger')
-        else:
-            flash('Relatório inteligente gerado com sucesso!', 'success')
-        
-    except Exception as e:
-        import logging
-        logging.error(f"Erro ao gerar relatório IA: {e}")
-        
-        if 'timeout' in str(e).lower():
-            flash('Timeout na conexão com OpenAI. Tente novamente em alguns minutos.', 'warning')
-        elif 'api' in str(e).lower():
-            flash('Erro na API OpenAI. Verifique a configuração da chave API.', 'danger')
-        else:
-            flash(f'Erro inesperado: {str(e)}', 'danger')
+    from flask import session
+    import threading
+    import uuid
     
-    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+    # Gerar ID único para o processo
+    task_id = str(uuid.uuid4())
+    _task_storage[task_id] = {
+        'status': 'iniciado',
+        'progresso': 0,
+        'mensagem': 'Inicializando geração do relatório...',
+        'projeto_id': projeto_id
+    }
+    
+    # Iniciar processo em thread separada
+    thread = threading.Thread(target=_gerar_relatorio_background, args=(projeto_id, task_id))
+    thread.daemon = True
+    thread.start()
+    
+    return redirect(url_for('projeto.progresso_relatorio_ia', projeto_id=projeto_id, task_id=task_id))
+
+# Armazenamento global para tasks (em produção, use Redis ou banco de dados)
+_task_storage = {}
+
+def _gerar_relatorio_background(projeto_id, task_id):
+    """Gera relatório em background com atualizações de progresso"""
+    from app import app
+    
+    with app.app_context():
+        try:
+            from utils.openai_utils import gerar_relatorio_ia
+            from models.relatorio_ia import RelatorioIA
+            from models.projeto import Projeto
+            
+            projeto = Projeto.query.get(projeto_id)
+            
+            # Atualizar progresso
+            _task_storage[task_id] = {
+                'status': 'processando',
+                'progresso': 20,
+                'mensagem': 'Coletando dados do projeto...',
+                'projeto_id': projeto_id
+            }
+            
+            # Função de callback para atualizações de progresso
+            def update_progress(step, message):
+                _task_storage[task_id]['progresso'] = step
+                _task_storage[task_id]['mensagem'] = message
+            
+            # Gerar relatório
+            dados_relatorio = gerar_relatorio_ia(projeto, callback_progress=update_progress)
+            
+            _task_storage[task_id]['progresso'] = 80
+            _task_storage[task_id]['mensagem'] = 'Salvando relatório no banco de dados...'
+            
+            # Salvar no banco
+            relatorio = RelatorioIA.criar_relatorio(projeto_id, dados_relatorio)
+            
+            if dados_relatorio.get('erro'):
+                _task_storage[task_id]['status'] = 'erro'
+                _task_storage[task_id]['mensagem'] = f'Erro: {dados_relatorio["erro"]}'
+            else:
+                _task_storage[task_id]['status'] = 'concluido'
+                _task_storage[task_id]['progresso'] = 100
+                _task_storage[task_id]['mensagem'] = 'Relatório gerado com sucesso!'
+                _task_storage[task_id]['relatorio_id'] = relatorio.id
+                
+        except Exception as e:
+            _task_storage[task_id]['status'] = 'erro'
+            _task_storage[task_id]['mensagem'] = f'Erro inesperado: {str(e)}'
+
+@projeto_bp.route('/<int:projeto_id>/relatorio-ia/progresso/<task_id>')
+def progresso_relatorio_ia(projeto_id, task_id):
+    """Exibe página de progresso do relatório IA"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    return render_template('admin/projetos/progresso_relatorio_ia.html',
+                         projeto=projeto,
+                         task_id=task_id)
+
+@projeto_bp.route('/<int:projeto_id>/relatorio-ia/status/<task_id>')
+def status_relatorio_ia(projeto_id, task_id):
+    """Retorna status atual do relatório IA (AJAX)"""
+    from flask import jsonify
+    
+    task_data = _task_storage.get(task_id, {})
+    
+    return jsonify({
+        'status': task_data.get('status', 'desconhecido'),
+        'progresso': task_data.get('progresso', 0),
+        'mensagem': task_data.get('mensagem', 'Processando...'),
+        'relatorio_id': task_data.get('relatorio_id')
+    })
 
 @projeto_bp.route('/<int:projeto_id>/relatorio-ia/<int:relatorio_id>')
 def visualizar_relatorio_ia(projeto_id, relatorio_id):
