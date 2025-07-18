@@ -222,8 +222,8 @@
                                                        class="btn btn-outline-info" title="Gerenciar respondentes">
                                                         <i class="fas fa-users"></i>
                                                     </a>
-                                                    <a href="/relatorio/projeto/{{ projeto.id }}" 
-                                                       class="btn btn-outline-success" title="Relatório">
+                                                    <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" 
+                                                       class="btn btn-outline-success" title="Estatísticas e Gráficos">
                                                         <i class="fas fa-chart-bar"></i>
                                                     </a>
                                                     
