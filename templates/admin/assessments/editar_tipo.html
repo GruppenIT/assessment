@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Tipo de Assessment - {{ nome_sistema }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-edit me-2"></i>Editar Tipo de Assessment
+            </h1>
+            <p class="text-muted mb-0">Modificar nome e descrição do tipo de assessment</p>
+        </div>
+        <div>
+            <a href="{{ url_for('assessment_admin.listar_tipos_assessment') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Formulário de Edição -->
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Informações do Tipo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="nome" class="form-label">Nome do Tipo *</label>
+                            <input type="text" class="form-control" id="nome" name="nome" 
+                                   value="{{ tipo.nome }}" required
+                                   placeholder="Ex: Cibersegurança, LGPD, ISO 27001">
+                            <div class="form-text">Nome único que identifica este tipo de assessment</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="descricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="descricao" name="descricao" rows="4"
+                                      placeholder="Descreva o objetivo e escopo deste tipo de assessment...">{{ tipo.descricao or '' }}</textarea>
+                            <div class="form-text">Explicação detalhada sobre o que este assessment avalia</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('assessment_admin.listar_tipos_assessment') }}" 
+                               class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Salvar Alterações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Informações Adicionais -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informações do Sistema
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h5 class="text-primary mb-1">{{ tipo.versoes|length }}</h5>
+                                <small class="text-muted">Versões</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h5 class="text-info mb-1">
+                                    {% set versao_publicada = tipo.versoes|selectattr('status', 'equalto', 'published')|first %}
+                                    {{ versao_publicada.dominios|length if versao_publicada else 0 }}
+                                </h5>
+                                <small class="text-muted">Domínios</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h5 class="text-success mb-1">
+                                    {% if versao_publicada %}
+                                        {% set total_perguntas = 0 %}
+                                        {% for dominio in versao_publicada.dominios %}
+                                            {% set total_perguntas = total_perguntas + dominio.get_perguntas_ativas()|length %}
+                                        {% endfor %}
+                                        {{ total_perguntas }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </h5>
+                                <small class="text-muted">Perguntas</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Criado em:</strong><br>
+                            <small class="text-muted">{{ tipo.data_criacao.strftime('%d/%m/%Y às %H:%M') if tipo.data_criacao else 'N/A' }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong><br>
+                            {% if tipo.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

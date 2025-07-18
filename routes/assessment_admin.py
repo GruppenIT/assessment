@@ -282,6 +282,42 @@ def reordenar_perguntas():
         db.session.rollback()
         return {'success': False, 'message': f'Erro ao atualizar ordem: {str(e)}'}
 
+@assessment_admin_bp.route('/tipos-assessment/<int:tipo_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar_tipo_assessment(tipo_id):
+    """Edita nome e descrição de um tipo de assessment"""
+    tipo = AssessmentTipo.query.get_or_404(tipo_id)
+    
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        
+        if not nome:
+            flash('Nome é obrigatório', 'error')
+            return redirect(url_for('assessment_admin.editar_tipo_assessment', tipo_id=tipo_id))
+        
+        # Verificar se nome já existe (exceto o próprio tipo)
+        nome_existente = AssessmentTipo.query.filter(
+            AssessmentTipo.nome == nome,
+            AssessmentTipo.id != tipo_id
+        ).first()
+        
+        if nome_existente:
+            flash('Já existe um tipo de assessment com este nome', 'error')
+            return redirect(url_for('assessment_admin.editar_tipo_assessment', tipo_id=tipo_id))
+        
+        # Atualizar tipo
+        tipo.nome = nome
+        tipo.descricao = descricao if descricao else None
+        
+        db.session.commit()
+        
+        flash('Tipo de assessment atualizado com sucesso!', 'success')
+        return redirect(url_for('assessment_admin.listar_tipos'))
+    
+    return render_template('admin/assessments/editar_tipo.html', tipo=tipo)
+
 @assessment_admin_bp.route('/tipos-assessment/importar-csv')
 @login_required
 @admin_required

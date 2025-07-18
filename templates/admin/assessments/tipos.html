@@ -79,6 +79,10 @@
                             <i class="fas fa-edit me-1"></i>Editar
                         </a>
                         {% endif %}
+                        <a href="{{ url_for('assessment_admin.editar_tipo_assessment', tipo_id=tipo.id) }}" 
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-cog me-1"></i>Tipo
+                        </a>
                     </div>
                 </div>
             </div>

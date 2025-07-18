@@ -252,6 +252,12 @@ This is a Flask-based web application for multi-type maturity assessments. The s
     * AJAX-based order updates with real-time badge refresh
     * Restricted to draft versions only with proper validation
     * Removed manual order editing in favor of drag-and-drop interface
+  - **ASSESSMENT TYPE EDITING**: Added comprehensive type management functionality
+    * Dedicated editing interface for assessment type name and description
+    * Form validation with duplicate name checking
+    * Integration with existing type listing with "Tipo" button
+    * Statistical overview showing versions, domains, and questions count
+    * Creation date and status display in editing interface
 
 ## User Preferences
 
