@@ -960,31 +960,37 @@ def gerar_introducao_ia(projeto_id):
 @admin_required
 def gerar_analise_dominios_ia(projeto_id):
     """Gera análise dos domínios do projeto usando IA"""
-    from utils.openai_utils import gerar_analise_dominios_ia
+    from utils.openai_utils import gerar_analise_dominios_ia as gerar_analise_util
     import json
     
     projeto = Projeto.query.get_or_404(projeto_id)
     
+    logging.info(f"Requisição para gerar análise IA do projeto {projeto_id}")
+    
     # Verificar se projeto está totalmente finalizado
     if not projeto.is_totalmente_finalizado():
+        logging.warning(f"Projeto {projeto_id} não está totalmente finalizado")
         flash('A análise dos domínios só pode ser gerada quando todos os assessments estão finalizados.', 'warning')
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
     
     try:
         # Gerar análise dos domínios
-        resultado = gerar_analise_dominios_ia(projeto)
+        logging.info(f"Iniciando geração de análise IA para projeto {projeto_id}")
+        resultado = gerar_analise_util(projeto)
         
         if resultado.get('erro'):
-            flash(f'Erro ao gerar análise dos domínios: {resultado["erro"]}', 'danger')
+            logging.error(f"Erro na análise IA: {resultado['erro']}")
+            flash(f'{resultado["erro"]}', 'warning')
         else:
             # Salvar análises no projeto como JSON
+            logging.info(f"Salvando análise de {resultado['dominios_processados']} domínios")
             projeto.analise_dominios_ia = json.dumps(resultado['analises'], ensure_ascii=False)
             db.session.commit()
             flash(f'Análise de {resultado["dominios_processados"]} domínios gerada com sucesso!', 'success')
         
     except Exception as e:
-        logging.error(f"Erro ao gerar análise dos domínios IA: {e}")
-        flash(f'Erro ao gerar análise dos domínios: {str(e)}', 'danger')
+        logging.error(f"Erro crítico ao gerar análise dos domínios IA: {e}", exc_info=True)
+        flash('Erro de conectividade ou timeout. Tente novamente em alguns segundos.', 'warning')
     
     return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
 

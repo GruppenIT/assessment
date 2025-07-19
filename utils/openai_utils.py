@@ -83,9 +83,12 @@ class OpenAIAssistant:
     def gerar_analise_dominio(self, dominio_data):
         """Gera análise de um domínio específico usando IA"""
         if not self.is_configured():
+            logging.error("Assistente OpenAI não configurado para gerar análise")
             return None
         
         try:
+            logging.info(f"Gerando análise para domínio: {dominio_data.get('dominio', {}).get('nome', 'Unknown')}")
+            
             # Preparar prompt específico para análise de domínio
             prompt = f"""
             Como analista especializado em assessments de maturidade organizacional, analise o domínio abaixo:
@@ -106,6 +109,8 @@ class OpenAIAssistant:
             Use linguagem técnica, objetiva e profissional, como um consultor especializado.
             """
             
+            logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
+            
             response = self.client.chat.completions.create(
                 model="gpt-4o",  # newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
                 messages=[
@@ -113,13 +118,16 @@ class OpenAIAssistant:
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=1000,
-                temperature=0.7
+                temperature=0.7,
+                timeout=30  # Timeout reduzido para 30 segundos
             )
             
-            return response.choices[0].message.content.strip()
+            analise = response.choices[0].message.content.strip()
+            logging.info(f"Análise gerada com sucesso (tamanho: {len(analise)} caracteres)")
+            return analise
             
         except Exception as e:
-            logging.error(f"Erro ao gerar análise do domínio: {e}")
+            logging.error(f"Erro ao gerar análise do domínio: {e}", exc_info=True)
             return None
 
 def coletar_dados_projeto_para_ia(projeto):
@@ -293,15 +301,20 @@ def coletar_dados_dominio_para_ia(projeto, dominio):
 def gerar_analise_dominios_ia(projeto):
     """Função principal para gerar análise dos domínios com IA"""
     try:
+        logging.info(f"Iniciando geração de análise dos domínios para projeto {projeto.id}")
+        
         # Verificar se projeto está finalizado
         if not projeto.is_totalmente_finalizado():
+            logging.warning(f"Projeto {projeto.id} não está totalmente finalizado")
             return {
                 'erro': 'O projeto deve estar totalmente finalizado para gerar a análise dos domínios.'
             }
         
         # Inicializar assistente
+        logging.info("Inicializando assistente OpenAI")
         assistant = OpenAIAssistant()
         if not assistant.is_configured():
+            logging.error("Assistente OpenAI não está configurado")
             return {
                 'erro': 'Integração com ChatGPT não configurada. Configure a API Key e o nome do Assistant em Parâmetros do Sistema.'
             }
@@ -346,19 +359,29 @@ def gerar_analise_dominios_ia(projeto):
                 total_dominios += 1
                 
                 # Coletar dados do domínio
+                logging.info(f"Coletando dados para domínio: {dominio.nome}")
                 dados_dominio = coletar_dados_dominio_para_ia(projeto, dominio)
                 if not dados_dominio:
+                    logging.warning(f"Não foi possível coletar dados para domínio: {dominio.nome}")
                     continue
                 
                 # Gerar análise do domínio
-                analise = assistant.gerar_analise_dominio(dados_dominio)
-                if analise:
-                    dominios_analises[tipo_nome][dominio.nome] = {
-                        'analise': analise,
-                        'estatisticas': dados_dominio['estatisticas'],
-                        'gerado_em': datetime.now().isoformat()
-                    }
-                    dominios_processados += 1
+                logging.info(f"Gerando análise IA para domínio: {dominio.nome}")
+                try:
+                    analise = assistant.gerar_analise_dominio(dados_dominio)
+                    if analise:
+                        dominios_analises[tipo_nome][dominio.nome] = {
+                            'analise': analise,
+                            'estatisticas': dados_dominio['estatisticas'],
+                            'gerado_em': datetime.now().isoformat()
+                        }
+                        dominios_processados += 1
+                        logging.info(f"Análise gerada com sucesso para domínio: {dominio.nome}")
+                    else:
+                        logging.warning(f"Análise vazia para domínio: {dominio.nome}")
+                except Exception as e:
+                    logging.error(f"Erro ao gerar análise para domínio {dominio.nome}: {e}")
+                    continue
         
         if not dominios_analises:
             return {
