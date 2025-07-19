@@ -8,6 +8,7 @@ from datetime import datetime
 from openai import OpenAI
 from models.parametro_sistema import ParametroSistema
 from utils.timezone_utils import format_date_local, format_datetime_local
+from app import db
 
 class OpenAIAssistant:
     """Classe para gerenciar a integração com OpenAI Assistant"""
