@@ -17,6 +17,8 @@ class Projeto(db.Model):
     analise_dominios_ia = db.Column(db.Text)  # Análise dos domínios gerada por IA (JSON)
     consideracoes_finais_ia = db.Column(db.Text)  # Considerações finais geradas por IA (JSON)
     data_finalizacao = db.Column(db.DateTime)  # Data de finalização do assessment
+    nome_avaliador = db.Column(db.String(255))  # Nome do avaliador responsável
+    email_avaliador = db.Column(db.String(255))  # Email do avaliador responsável
     
     # Relacionamentos
     cliente = relationship('Cliente', backref='projetos')

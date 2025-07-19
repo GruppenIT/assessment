@@ -619,63 +619,58 @@ def estatisticas(projeto_id):
                          memorial_respostas=memorial_respostas,
                          relatorio_ia=relatorio_ia)
 
-@projeto_bp.route('/<int:projeto_id>/estatisticas/pdf')
+@projeto_bp.route('/<int:projeto_id>/relatorio-pdf')
 @login_required
 @admin_required
-def exportar_estatisticas_pdf(projeto_id):
-    """Exporta as estatísticas do projeto para PDF com identidade visual das estatísticas"""
-    from utils.pdf_utils import gerar_relatorio_estatisticas_visual
+def gerar_relatorio_pdf(projeto_id):
+    """Gera relatório PDF completo e formal do projeto"""
+    from utils.pdf_relatorio import gerar_relatorio_pdf_completo
     
     projeto = Projeto.query.get_or_404(projeto_id)
     
-    # Verificar se projeto está totalmente finalizado
-    if not projeto.is_totalmente_finalizado():
-        flash('As estatísticas só podem ser exportadas quando todos os assessments estão finalizados.', 'warning')
+    # Verificar se projeto tem dados suficientes
+    if not projeto.assessments:
+        flash('O projeto deve ter pelo menos um assessment para gerar o relatório.', 'warning')
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
     
     try:
-        # Gerar o PDF com a nova identidade visual
-        filename = gerar_relatorio_estatisticas_visual(projeto)
+        # Gerar o PDF completo
+        filename = gerar_relatorio_pdf_completo(projeto)
         
         from flask import send_file
         return send_file(
             filename,
             as_attachment=True,
-            download_name=f"estatisticas_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            download_name=f"relatorio_assessment_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
             mimetype='application/pdf'
         )
     except Exception as e:
-        flash(f'Erro ao gerar o PDF: {str(e)}', 'danger')
+        flash(f'Erro ao gerar o relatório PDF: {str(e)}', 'danger')
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
 
-@projeto_bp.route('/<int:projeto_id>/estatisticas/markdown')
+@projeto_bp.route('/<int:projeto_id>/editar-avaliador', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def exportar_estatisticas_markdown(projeto_id):
-    """Exporta as estatísticas do projeto para Markdown"""
-    from utils.pdf_utils import gerar_relatorio_markdown
-    
+def editar_avaliador(projeto_id):
+    """Edita dados do avaliador responsável pelo projeto"""
     projeto = Projeto.query.get_or_404(projeto_id)
     
-    # Verificar se projeto está totalmente finalizado
-    if not projeto.is_totalmente_finalizado():
-        flash('As estatísticas só podem ser exportadas quando todos os assessments estão finalizados.', 'warning')
-        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+    from forms.projeto_forms import AvaliadorForm
+    form = AvaliadorForm(obj=projeto)
     
-    try:
-        # Gerar o relatório em Markdown
-        filename = gerar_relatorio_markdown(projeto)
+    if form.validate_on_submit():
+        projeto.nome_avaliador = form.nome_avaliador.data
+        projeto.email_avaliador = form.email_avaliador.data
         
-        from flask import send_file
-        return send_file(
-            filename,
-            as_attachment=True,
-            download_name=f"relatorio_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
-            mimetype='text/markdown'
-        )
-    except Exception as e:
-        flash(f'Erro ao gerar o relatório Markdown: {str(e)}', 'danger')
-        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+        try:
+            db.session.commit()
+            flash('Dados do avaliador atualizados com sucesso!', 'success')
+            return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao salvar dados do avaliador: {str(e)}', 'danger')
+    
+    return render_template('admin/projetos/editar_avaliador.html', projeto=projeto, form=form)
 
 @projeto_bp.route('/<int:projeto_id>/respondentes')
 @login_required

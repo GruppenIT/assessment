@@ -1,0 +1,141 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dados do Avaliador - {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('admin.dashboard') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projeto.listar') }}">
+                    <i class="fas fa-project-diagram"></i> Projetos
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}">
+                    {{ projeto.nome }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Dados do Avaliador</li>
+        </ol>
+    </nav>
+
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="fas fa-user-tie me-2 text-primary"></i>Dados do Avaliador
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Configure os dados do avaliador responsável pelo projeto: {{ projeto.nome }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar às Estatísticas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Editar Dados do Avaliador
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Nome do Avaliador -->
+                        <div class="mb-3">
+                            {{ form.nome_avaliador.label(class="form-label") }}
+                            {{ form.nome_avaliador(class="form-control" + (" is-invalid" if form.nome_avaliador.errors else "")) }}
+                            {% if form.nome_avaliador.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.nome_avaliador.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Nome completo do consultor responsável pela avaliação
+                            </div>
+                        </div>
+                        
+                        <!-- Email do Avaliador -->
+                        <div class="mb-4">
+                            {{ form.email_avaliador.label(class="form-label") }}
+                            {{ form.email_avaliador(class="form-control" + (" is-invalid" if form.email_avaliador.errors else "")) }}
+                            {% if form.email_avaliador.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.email_avaliador.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-envelope me-1"></i>
+                                Email profissional que aparecerá na assinatura do relatório
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ação -->
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informações Adicionais -->
+        <div class="col-lg-4 col-xl-6">
+            <div class="card border-info">
+                <div class="card-header bg-light text-info">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informações Importantes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info border-0">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-file-signature me-2"></i>Uso dos Dados
+                        </h6>
+                        <p class="mb-2">
+                            Os dados do avaliador serão utilizados:
+                        </p>
+                        <ul class="mb-0">
+                            <li>Na assinatura digital do relatório PDF</li>
+                            <li>Como referência de contato profissional</li>
+                            <li>Para identificação do responsável técnico</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning border-0">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-shield-alt me-2"></i>Privacidade
+                        </h6>
+                        <p class="mb-0">
+                            Certifique-se de usar apenas dados profissionais que podem ser compartilhados com o cliente final do relatório.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

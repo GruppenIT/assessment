@@ -105,3 +105,18 @@ class AdicionarRespondenteForm(FlaskForm):
                 choices = [('', 'Nenhum respondente disponível')]
             
             self.respondente_id.choices = choices
+
+
+class AvaliadorForm(FlaskForm):
+    """Formulário para editar dados do avaliador responsável pelo projeto"""
+    nome_avaliador = StringField('Nome do Avaliador', validators=[
+        DataRequired(message='Nome do avaliador é obrigatório'),
+        Length(min=2, max=255, message='Nome deve ter entre 2 e 255 caracteres')
+    ], render_kw={'placeholder': 'Digite o nome completo do avaliador'})
+    
+    email_avaliador = StringField('Email do Avaliador', validators=[
+        DataRequired(message='Email do avaliador é obrigatório'),
+        Length(max=255, message='Email deve ter no máximo 255 caracteres')
+    ], render_kw={'placeholder': 'Digite o email profissional do avaliador', 'type': 'email'})
+    
+    submit = SubmitField('Salvar Dados do Avaliador')

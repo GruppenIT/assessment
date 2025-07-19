@@ -26,11 +26,11 @@
                                 <span class="badge bg-light text-dark fs-6">Score Médio: {{ score_medio_projeto }}/5.0</span>
                             </div>
                             <div class="btn-group">
-                                <a href="{{ url_for('projeto.exportar_estatisticas_markdown', projeto_id=projeto.id) }}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-file-alt me-1"></i>Relatório Markdown
+                                <a href="{{ url_for('projeto.gerar_relatorio_pdf', projeto_id=projeto.id) }}" class="btn btn-warning btn-sm" title="Gerar relatório PDF completo com formatação formal">
+                                    <i class="fas fa-file-pdf me-1"></i>Relatório Formal
                                 </a>
-                                <a href="{{ url_for('projeto.exportar_estatisticas_pdf', projeto_id=projeto.id) }}" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-file-pdf me-1"></i>Exportar PDF
+                                <a href="{{ url_for('projeto.editar_avaliador', projeto_id=projeto.id) }}" class="btn btn-info btn-sm" title="Configurar dados do avaliador para relatório">
+                                    <i class="fas fa-user-tie me-1"></i>Dados do Avaliador
                                 </a>
                                 <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" class="btn btn-light btn-sm">
                                     <i class="fas fa-arrow-left me-1"></i>Voltar aos Detalhes
