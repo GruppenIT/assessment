@@ -539,12 +539,47 @@ def coletar_dados_projeto_completo_para_ia(projeto):
             if not projeto_assessment.finalizado:
                 continue
                 
+            # Calcular score médio das respostas deste assessment
+            from models.resposta import Resposta
+            from models.pergunta import Pergunta
+            
+            score_medio = 0
+            if projeto_assessment.versao_assessment_id:
+                from models.assessment_version import AssessmentDominio
+                respostas_query = db.session.query(Resposta.nota).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).join(
+                    AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    AssessmentDominio.versao_id == projeto_assessment.versao_assessment_id,
+                    Resposta.nota.isnot(None)
+                )
+            elif projeto_assessment.tipo_assessment_id:
+                from models.dominio import Dominio
+                respostas_query = db.session.query(Resposta.nota).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).join(
+                    Dominio, Pergunta.dominio_id == Dominio.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Dominio.tipo_assessment_id == projeto_assessment.tipo_assessment_id,
+                    Resposta.nota.isnot(None)
+                )
+            else:
+                respostas_query = None
+            
+            if respostas_query:
+                notas = [nota for (nota,) in respostas_query.all()]
+                score_medio = round(sum(notas) / len(notas), 2) if notas else 0
+            
             # Dados do assessment
             assessment_data = {
                 'tipo': (projeto_assessment.versao_assessment.tipo.nome 
                         if projeto_assessment.versao_assessment_id 
                         else projeto_assessment.tipo_assessment.nome),
-                'score_geral': projeto_assessment.calcular_score_geral(),
+                'score_medio': score_medio,
+                'progresso_percentual': projeto_assessment.get_progresso_percentual(),
                 'finalizado': projeto_assessment.finalizado,
                 'data_finalizacao': projeto_assessment.data_finalizacao.isoformat() if projeto_assessment.data_finalizacao else None,
                 'dominios': []
