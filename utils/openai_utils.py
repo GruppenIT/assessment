@@ -91,7 +91,10 @@ def coletar_dados_projeto_para_ia(projeto):
                 "data_finalizacao": format_date_local(projeto.data_finalizacao) if projeto.data_finalizacao else None
             },
             "cliente": {
-                "nome": projeto.cliente.nome_fantasia if projeto.cliente else "Cliente não especificado"
+                "nome": projeto.cliente.nome if projeto.cliente else "Cliente não especificado",
+                "razao_social": projeto.cliente.razao_social if projeto.cliente else None,
+                "localidade": projeto.cliente.localidade if projeto.cliente else None,
+                "segmento": projeto.cliente.segmento if projeto.cliente else None
             },
             "respondentes": [],
             "tipos_assessment": []
@@ -110,8 +113,15 @@ def coletar_dados_projeto_para_ia(projeto):
         for tipo in tipos:
             dados["tipos_assessment"].append({
                 "nome": tipo.nome,
-                "descricao": tipo.descricao
+                "descricao": tipo.descricao if hasattr(tipo, 'descricao') else None
             })
+        
+        # Adicionar estatísticas básicas
+        dados["estatisticas"] = {
+            "total_respondentes": len(dados["respondentes"]),
+            "total_tipos_assessment": len(dados["tipos_assessment"]),
+            "progresso_geral": projeto.get_progresso_geral()
+        }
         
         return dados
         
