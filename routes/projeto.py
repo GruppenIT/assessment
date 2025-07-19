@@ -955,4 +955,37 @@ def gerar_introducao_ia(projeto_id):
     
     return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
 
+@projeto_bp.route('/<int:projeto_id>/gerar_analise_dominios_ia', methods=['POST'])
+@login_required
+@admin_required
+def gerar_analise_dominios_ia(projeto_id):
+    """Gera análise dos domínios do projeto usando IA"""
+    from utils.openai_utils import gerar_analise_dominios_ia
+    import json
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('A análise dos domínios só pode ser gerada quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+    
+    try:
+        # Gerar análise dos domínios
+        resultado = gerar_analise_dominios_ia(projeto)
+        
+        if resultado.get('erro'):
+            flash(f'Erro ao gerar análise dos domínios: {resultado["erro"]}', 'danger')
+        else:
+            # Salvar análises no projeto como JSON
+            projeto.analise_dominios_ia = json.dumps(resultado['analises'], ensure_ascii=False)
+            db.session.commit()
+            flash(f'Análise de {resultado["dominios_processados"]} domínios gerada com sucesso!', 'success')
+        
+    except Exception as e:
+        logging.error(f"Erro ao gerar análise dos domínios IA: {e}")
+        flash(f'Erro ao gerar análise dos domínios: {str(e)}', 'danger')
+    
+    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+
 

@@ -79,6 +79,48 @@ class OpenAIAssistant:
         except Exception as e:
             logging.error(f"Erro ao gerar introdução do projeto: {e}")
             return None
+    
+    def gerar_analise_dominio(self, dominio_data):
+        """Gera análise de um domínio específico usando IA"""
+        if not self.is_configured():
+            return None
+        
+        try:
+            # Preparar prompt específico para análise de domínio
+            prompt = f"""
+            Como analista especializado em assessments de maturidade organizacional, analise o domínio abaixo:
+
+            **DADOS DO DOMÍNIO (JSON):**
+            {json.dumps(dominio_data, indent=2, ensure_ascii=False)}
+
+            **INSTRUÇÕES PARA ANÁLISE:**
+            1. Escreva um parágrafo técnico como se você fosse o analista que avaliou pessoalmente as respostas
+            2. Mencione o nome do domínio e sua importância no contexto do assessment
+            3. Identifique os principais pontos fortes baseado nas respostas com notas altas
+            4. Identifique os pontos fracos ou áreas de melhoria baseado nas respostas com notas baixas
+            5. Faça considerações sobre a consistência das respostas e comentários fornecidos
+            6. Forneça uma avaliação geral da maturidade do cliente neste domínio
+
+            **FORMATO DE SAÍDA:**
+            Retorne apenas o parágrafo de análise, sem explicações adicionais ou formatação markdown.
+            Use linguagem técnica, objetiva e profissional, como um consultor especializado.
+            """
+            
+            response = self.client.chat.completions.create(
+                model="gpt-4o",  # newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                messages=[
+                    {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessments de maturidade organizacional com expertise técnica e visão analítica profunda."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=1000,
+                temperature=0.7
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logging.error(f"Erro ao gerar análise do domínio: {e}")
+            return None
 
 def coletar_dados_projeto_para_ia(projeto):
     """Coleta dados do projeto para envio à IA"""
@@ -167,6 +209,172 @@ def gerar_introducao_ia(projeto):
         
     except Exception as e:
         logging.error(f"Erro ao gerar introdução IA: {e}")
+        return {
+            'erro': f'Erro interno: {str(e)}'
+        }
+
+def coletar_dados_dominio_para_ia(projeto, dominio):
+    """Coleta dados de um domínio específico para análise IA"""
+    try:
+        from models.resposta import Resposta
+        from models.pergunta import Pergunta
+        
+        dados_dominio = {
+            "dominio": {
+                "nome": dominio.nome,
+                "descricao": dominio.descricao if hasattr(dominio, 'descricao') else None,
+                "ordem": dominio.ordem if hasattr(dominio, 'ordem') else None
+            },
+            "perguntas_respostas": [],
+            "estatisticas": {
+                "total_perguntas": 0,
+                "total_respostas": 0,
+                "nota_media": 0
+            }
+        }
+        
+        # Identificar se é sistema novo ou antigo
+        perguntas_dominio = []
+        if hasattr(dominio, 'versao_id'):
+            # Sistema novo - domínio versionado
+            perguntas_dominio = Pergunta.query.filter_by(
+                dominio_versao_id=dominio.id,
+                ativo=True
+            ).order_by(Pergunta.ordem).all()
+        else:
+            # Sistema antigo - domínio tradicional
+            perguntas_dominio = Pergunta.query.filter_by(
+                dominio_id=dominio.id,
+                ativo=True
+            ).order_by(Pergunta.ordem).all()
+        
+        notas_coletadas = []
+        
+        for pergunta in perguntas_dominio:
+            # Buscar respostas desta pergunta no projeto
+            respostas_pergunta = Resposta.query.filter_by(
+                projeto_id=projeto.id,
+                pergunta_id=pergunta.id
+            ).order_by(Resposta.data_resposta.desc()).all()
+            
+            if respostas_pergunta:
+                # Pegar a resposta mais recente (colaborativa)
+                resposta_final = respostas_pergunta[0]
+                
+                dados_dominio["perguntas_respostas"].append({
+                    "pergunta": {
+                        "texto": pergunta.texto,
+                        "ordem": pergunta.ordem,
+                        "referencia": pergunta.referencia if hasattr(pergunta, 'referencia') else None,
+                        "recomendacao": pergunta.recomendacao if hasattr(pergunta, 'recomendacao') else None
+                    },
+                    "resposta": {
+                        "nota": resposta_final.nota,
+                        "comentario": resposta_final.comentario,
+                        "respondente": resposta_final.respondente.nome if resposta_final.respondente else "Sistema",
+                        "data_resposta": resposta_final.data_resposta.strftime('%d/%m/%Y às %H:%M') if resposta_final.data_resposta else None
+                    },
+                    "historico_respostas": len(respostas_pergunta)
+                })
+                
+                notas_coletadas.append(resposta_final.nota)
+        
+        # Calcular estatísticas
+        dados_dominio["estatisticas"]["total_perguntas"] = len(perguntas_dominio)
+        dados_dominio["estatisticas"]["total_respostas"] = len(dados_dominio["perguntas_respostas"])
+        dados_dominio["estatisticas"]["nota_media"] = round(sum(notas_coletadas) / len(notas_coletadas) if notas_coletadas else 0, 2)
+        
+        return dados_dominio
+        
+    except Exception as e:
+        logging.error(f"Erro ao coletar dados do domínio para IA: {e}")
+        return None
+
+def gerar_analise_dominios_ia(projeto):
+    """Função principal para gerar análise dos domínios com IA"""
+    try:
+        # Verificar se projeto está finalizado
+        if not projeto.is_totalmente_finalizado():
+            return {
+                'erro': 'O projeto deve estar totalmente finalizado para gerar a análise dos domínios.'
+            }
+        
+        # Inicializar assistente
+        assistant = OpenAIAssistant()
+        if not assistant.is_configured():
+            return {
+                'erro': 'Integração com ChatGPT não configurada. Configure a API Key e o nome do Assistant em Parâmetros do Sistema.'
+            }
+        
+        # Coletar todos os domínios do projeto
+        dominios_analises = {}
+        total_dominios = 0
+        dominios_processados = 0
+        
+        for projeto_assessment in projeto.assessments:
+            if not projeto_assessment.finalizado:
+                continue
+                
+            # Identificar domínios do assessment
+            dominios_query = None
+            if projeto_assessment.versao_assessment_id:
+                # Sistema novo
+                from models.assessment_version import AssessmentDominio
+                dominios_query = AssessmentDominio.query.filter_by(
+                    versao_id=projeto_assessment.versao_assessment.id,
+                    ativo=True
+                ).order_by(AssessmentDominio.ordem)
+            elif projeto_assessment.tipo_assessment_id:
+                # Sistema antigo
+                from models.dominio import Dominio
+                dominios_query = Dominio.query.filter_by(
+                    tipo_assessment_id=projeto_assessment.tipo_assessment_id,
+                    ativo=True
+                ).order_by(Dominio.ordem)
+            
+            if not dominios_query:
+                continue
+                
+            tipo_nome = (projeto_assessment.versao_assessment.tipo.nome 
+                        if projeto_assessment.versao_assessment_id 
+                        else projeto_assessment.tipo_assessment.nome)
+            
+            if tipo_nome not in dominios_analises:
+                dominios_analises[tipo_nome] = {}
+            
+            for dominio in dominios_query:
+                total_dominios += 1
+                
+                # Coletar dados do domínio
+                dados_dominio = coletar_dados_dominio_para_ia(projeto, dominio)
+                if not dados_dominio:
+                    continue
+                
+                # Gerar análise do domínio
+                analise = assistant.gerar_analise_dominio(dados_dominio)
+                if analise:
+                    dominios_analises[tipo_nome][dominio.nome] = {
+                        'analise': analise,
+                        'estatisticas': dados_dominio['estatisticas'],
+                        'gerado_em': datetime.now().isoformat()
+                    }
+                    dominios_processados += 1
+        
+        if not dominios_analises:
+            return {
+                'erro': 'Nenhum domínio encontrado para análise.'
+            }
+        
+        return {
+            'analises': dominios_analises,
+            'assistant_name': assistant.assistant_name,
+            'total_dominios': total_dominios,
+            'dominios_processados': dominios_processados,
+            'gerado_em': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logging.error(f"Erro ao gerar análise dos domínios IA: {e}")
         return {
             'erro': f'Erro interno: {str(e)}'
         }
