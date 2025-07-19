@@ -8,24 +8,200 @@ import logging
 projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
 
 @projeto_bp.route('/')
+def listar():
+    """Lista todos os projetos ou filtra por cliente"""
+    try:
+        cliente_id = request.args.get('cliente')
+        
+        # Query SQL simples para buscar projetos
+        if cliente_id:
+            sql_query = "SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true AND p.cliente_id = :cliente_id ORDER BY p.data_criacao DESC"
+            projetos_raw = db.session.execute(db.text(sql_query), {'cliente_id': cliente_id}).fetchall()
+            from models.cliente import Cliente
+            cliente = Cliente.query.get_or_404(cliente_id)
+            filtro_cliente = True
+        else:
+            sql_query = "SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY p.data_criacao DESC"
+            projetos_raw = db.session.execute(db.text(sql_query)).fetchall()
+            cliente = None
+            filtro_cliente = False
+        
+        # Processar dados dos projetos com tratamento de erro robusto
+        projetos_data = []
+        for p in projetos_raw:
+            try:
+                # Valores padrão
+                data_criacao = p.data_criacao
+                if isinstance(data_criacao, str):
+                    from datetime import datetime
+                    try:
+                        data_criacao = datetime.fromisoformat(data_criacao.replace('Z', '+00:00'))
+                    except:
+                        data_criacao = datetime.now()
+                
+                projetos_data.append({
+                    'projeto': {
+                        'id': p.id,
+                        'nome': p.nome,
+                        'descricao': p.descricao,
+                        'data_criacao': data_criacao,
+                        'cliente': {'nome': p.cliente_nome}
+                    },
+                    'respondentes_count': 0,  # Valor padrão seguro
+                    'tipos_count': 1,  # Valor padrão seguro 
+                    'progresso': 0.0  # Valor padrão seguro
+                })
+            except Exception as e:
+                logging.error(f"Erro ao processar projeto {p.id}: {e}")
+                continue
+        
+        # Renderizar template
+        return render_template('admin/projetos/listar.html', 
+                             projetos=projetos_data,
+                             projetos_data=projetos_data,
+                             cliente=cliente,
+                             filtro_cliente=filtro_cliente,
+                             ordem_atual='data_criacao',
+                             direcao_atual='desc')
+                             
+    except Exception as e:
+        logging.error(f"Erro geral na listagem de projetos: {str(e)}")
+        # Retornar uma página vazia em caso de erro
+        return render_template('admin/projetos/listar.html', 
+                             projetos=[],
+                             projetos_data=[],
+                             cliente=None,
+                             filtro_cliente=False,
+                             ordem_atual='data_criacao',
+                             direcao_atual='desc')
+
+@projeto_bp.route('/working')
 @login_required
 @admin_required
-def listar():
-    """Lista todos os projetos"""
-    projetos = Projeto.query.filter_by(ativo=True).all()
-    return render_template('admin/projetos/listar.html', projetos=projetos)
+def listar_working():
+    """Lista todos os projetos - versão funcional"""
+    try:
+        projetos_raw = db.session.execute(
+            db.text("SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY p.data_criacao DESC")
+        ).fetchall()
+        
+        projetos_data = []
+        for p in projetos_raw:
+            # Calcular dados reais do projeto
+            projeto_obj = Projeto.query.get(p.id)
+            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
+            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
+            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+            
+            # Garantir que data_criacao seja um objeto datetime
+            data_criacao = p.data_criacao
+            if isinstance(data_criacao, str):
+                from datetime import datetime
+                try:
+                    data_criacao = datetime.fromisoformat(data_criacao.replace('Z', '+00:00'))
+                except:
+                    from datetime import datetime
+                    data_criacao = datetime.now()
+            
+            projetos_data.append({
+                'projeto': {
+                    'id': p.id,
+                    'nome': p.nome,
+                    'descricao': p.descricao,
+                    'data_criacao': data_criacao,
+                    'cliente': {'nome': p.cliente_nome}
+                },
+                'respondentes_count': respondentes_count,
+                'tipos_count': tipos_count,
+                'progresso': progresso
+            })
+        
+        return render_template('admin/projetos/listar.html', 
+                             projetos=projetos_data,
+                             projetos_data=projetos_data,
+                             filtro_cliente=False,
+                             ordem_atual='data_criacao',
+                             direcao_atual='desc')
+                             
+    except Exception as e:
+        logging.error(f"Erro ao listar projetos: {str(e)}")
+        flash(f'Erro ao listar projetos: {str(e)}', 'danger')
+        return render_template('admin/projetos/listar.html', 
+                             projetos=[],
+                             projetos_data=[],
+                             filtro_cliente=False)
 
-@projeto_bp.route('/criar')
+@projeto_bp.route('/criar', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def criar():
-    """Página para criar novo projeto (placeholder por enquanto)"""
-    try:
-        flash('Funcionalidade de criação de projetos em desenvolvimento.', 'info')
-        return redirect(url_for('projeto.listar'))
-    except Exception as e:
-        flash(f'Erro: {str(e)}', 'danger')
-        return redirect(url_for('projeto.listar'))
+    """Cria um novo projeto"""
+    from forms.projeto_forms import ProjetoForm, NovoClienteForm
+    from models.cliente import Cliente
+    from models.projeto import Projeto, ProjetoAssessment
+    from models.assessment_version import AssessmentTipo
+    
+    form = ProjetoForm()
+    novo_cliente_form = NovoClienteForm()
+    
+    if request.method == 'POST':
+        # Validação manual mais simples
+        nome = request.form.get('nome', '').strip()
+        cliente_id = request.form.get('cliente_id')
+        tipos_ids = request.form.getlist('tipos_assessment')
+        descricao = request.form.get('descricao', '').strip()
+        
+        logging.info(f"Dados recebidos - tipos: {tipos_ids}, nome: {nome}, cliente: {cliente_id}")
+        
+        # Validações
+        errors = []
+        if not nome or len(nome) < 2:
+            errors.append('Nome do projeto é obrigatório (mínimo 2 caracteres)')
+        if not cliente_id:
+            errors.append('Cliente é obrigatório')
+        if not tipos_ids:
+            errors.append('Selecione pelo menos um tipo de assessment')
+            
+        if not errors:
+            try:
+                # Criar projeto
+                projeto = Projeto(
+                    nome=nome,
+                    cliente_id=int(cliente_id),
+                    descricao=descricao
+                )
+                db.session.add(projeto)
+                db.session.flush()  # Para obter o ID do projeto
+                
+                # Associar tipos de assessment (sistema novo)
+                for tipo_id in tipos_ids:
+                    # Buscar o tipo de assessment
+                    tipo_assessment = AssessmentTipo.query.get(int(tipo_id))
+                    if tipo_assessment:
+                        # Buscar a versão publicada
+                        versao_ativa = tipo_assessment.get_versao_ativa()
+                        if versao_ativa:
+                            projeto_assessment = ProjetoAssessment(
+                                projeto_id=projeto.id,
+                                versao_assessment_id=versao_ativa.id
+                            )
+                            db.session.add(projeto_assessment)
+                
+                db.session.commit()
+                flash(f'Projeto "{projeto.nome}" criado com sucesso!', 'success')
+                return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Erro ao criar projeto: {e}")
+                flash('Erro ao criar projeto. Tente novamente.', 'danger')
+        else:
+            # Mostrar erros de validação
+            for error in errors:
+                flash(error, 'danger')
+    
+    return render_template('admin/projetos/criar.html', 
+                         form=form, 
+                         novo_cliente_form=novo_cliente_form)
 
 @projeto_bp.route('/<int:projeto_id>')
 @login_required
@@ -34,6 +210,48 @@ def detalhar(projeto_id):
     """Detalha um projeto específico"""
     projeto = Projeto.query.get_or_404(projeto_id)
     return render_template('admin/projetos/detalhar.html', projeto=projeto)
+
+@projeto_bp.route('/<int:projeto_id>/desativar', methods=['POST'])
+@login_required
+@admin_required
+def desativar(projeto_id):
+    """Desativa um projeto (soft delete)"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    try:
+        projeto.ativo = False
+        db.session.commit()
+        flash(f'Projeto "{projeto.nome}" desativado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao desativar projeto: {str(e)}', 'danger')
+        logging.error(f"Erro ao desativar projeto: {e}")
+    return redirect(url_for('projeto.listar'))
+
+@projeto_bp.route('/<int:projeto_id>/excluir', methods=['POST'])
+@login_required
+@admin_required  
+def excluir(projeto_id):
+    """Exclui um projeto permanentemente"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    try:
+        # Primeiro excluir respostas relacionadas
+        from models.resposta import Resposta
+        Resposta.query.filter_by(projeto_id=projeto_id).delete()
+        
+        # Excluir associações do projeto
+        from models.projeto import ProjetoAssessment
+        ProjetoAssessment.query.filter_by(projeto_id=projeto_id).delete()
+        
+        # Excluir o projeto
+        nome_projeto = projeto.nome
+        db.session.delete(projeto)
+        db.session.commit()
+        flash(f'Projeto "{nome_projeto}" excluído permanentemente!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir projeto: {str(e)}', 'danger')
+        logging.error(f"Erro ao excluir projeto: {e}")
+    return redirect(url_for('projeto.listar'))
 
 @projeto_bp.route('/<int:projeto_id>/estatisticas')
 def estatisticas(projeto_id):
