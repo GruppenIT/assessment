@@ -205,7 +205,8 @@ class OpenAIAssistant:
 
                 **FORMATO DE SAÍDA:**
                 Retorne apenas o texto das considerações finais, sem formatação markdown ou títulos.
-                O texto deve ter entre 800-1200 palavras e ser dividido em parágrafos bem estruturados.
+                O texto deve ter entre 800-1500 palavras e ser dividido em parágrafos bem estruturados.
+                IMPORTANTE: Complete todas as frases e termine com um ponto final para indicar conclusão.
                 """
                 
                 logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
@@ -216,12 +217,22 @@ class OpenAIAssistant:
                         {"role": "system", "content": f"Você é o {self.assistant_name}. Elabore considerações finais técnicas e estratégicas para relatórios de assessment de maturidade organizacional."},
                         {"role": "user", "content": prompt}
                     ],
-                    max_tokens=1000,
-                    temperature=0.7
+                    max_tokens=2500,  # Aumentar limite para texto completo (aproximadamente 1500-2000 palavras)
+                    temperature=0.7,
+                    timeout=45  # Timeout mais longo para respostas longas
                 )
                 
                 consideracoes = response.choices[0].message.content.strip()
-                logging.info(f"Considerações finais geradas com sucesso (tamanho: {len(consideracoes)} caracteres)")
+                
+                # Verificar se o texto está completo (termina com ponto)
+                termina_completo = consideracoes.endswith('.') or consideracoes.endswith('!') or consideracoes.endswith('?')
+                
+                logging.info(f"Considerações finais geradas (tamanho: {len(consideracoes)} caracteres, completo: {termina_completo})")
+                logging.info(f"Últimos 100 caracteres: ...{consideracoes[-100:]}")
+                
+                if not termina_completo:
+                    logging.warning("ATENÇÃO: Texto pode ter sido truncado - não termina com pontuação final")
+                
                 return consideracoes
                 
             except Exception as e:
