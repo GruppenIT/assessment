@@ -429,27 +429,150 @@ def estatisticas(projeto_id):
         except:
             pass
         
-        # Dados básicos para demonstração
+        # Calcular estatísticas reais
+        from models.resposta import Resposta
+        from models.pergunta import Pergunta
+        from models.dominio import Dominio
+        from models.assessment_version import AssessmentDominio
+        
+        # Calcular score médio real
+        respostas_projeto = Resposta.query.filter_by(projeto_id=projeto.id).all()
+        scores_validos = [r.nota for r in respostas_projeto if r.nota is not None]
+        score_medio_projeto = round(sum(scores_validos) / len(scores_validos), 1) if scores_validos else 0
+        
+        # Estatísticas por assessment
+        estatisticas_assessments = []
+        dados_graficos = {'radar': {}, 'scores_assessments': {}}
+        
+        for idx, projeto_assessment in enumerate(projeto.assessments, 1):
+            if projeto_assessment.versao_assessment_id:
+                versao = projeto_assessment.versao_assessment
+                
+                # Buscar domínios desta versão
+                dominios_versao = AssessmentDominio.query.filter_by(
+                    versao_id=versao.id, ativo=True
+                ).all()
+                
+                scores_dominios = []
+                radar_data = {'labels': [], 'scores': []}
+                
+                for dominio_versao in dominios_versao:
+                    # Buscar respostas deste domínio
+                    respostas_dominio = db.session.query(Resposta).join(
+                        Pergunta, Resposta.pergunta_id == Pergunta.id
+                    ).filter(
+                        Pergunta.dominio_versao_id == dominio_versao.id,
+                        Resposta.projeto_id == projeto.id
+                    ).all()
+                    
+                    scores_dominio = [r.nota for r in respostas_dominio if r.nota is not None]
+                    score_medio_dominio = round(sum(scores_dominio) / len(scores_dominio), 1) if scores_dominio else 0
+                    
+                    # Determinar classe CSS baseada no score
+                    if score_medio_dominio >= 4:
+                        classe_css = 'success'
+                    elif score_medio_dominio >= 3:
+                        classe_css = 'warning'
+                    elif score_medio_dominio >= 2:
+                        classe_css = 'info'
+                    else:
+                        classe_css = 'danger'
+                    
+                    # Contar total de perguntas do domínio
+                    total_perguntas_dominio = Pergunta.query.filter_by(
+                        dominio_versao_id=dominio_versao.id, ativo=True
+                    ).count()
+                    
+                    # Determinar nível de maturidade baseado no score
+                    if score_medio_dominio >= 4.5:
+                        nivel_maturidade = 'Otimizado'
+                    elif score_medio_dominio >= 3.5:
+                        nivel_maturidade = 'Avançado'
+                    elif score_medio_dominio >= 2.5:
+                        nivel_maturidade = 'Intermediário'
+                    elif score_medio_dominio >= 1.5:
+                        nivel_maturidade = 'Básico'
+                    else:
+                        nivel_maturidade = 'Inicial'
+                    
+                    # Criar estrutura compatível com template usando SimpleNamespace
+                    from types import SimpleNamespace
+                    dominio_data = SimpleNamespace(
+                        dominio=dominio_versao,
+                        score=score_medio_dominio,
+                        total_respostas=len(respostas_dominio),
+                        total_perguntas=total_perguntas_dominio,
+                        classe_css=classe_css,
+                        nivel_maturidade=nivel_maturidade
+                    )
+                    scores_dominios.append(dominio_data)
+                    
+                    radar_data['labels'].append(dominio_versao.nome[:15])  # Limitar nome
+                    radar_data['scores'].append(score_medio_dominio)
+                
+                # Score geral do assessment
+                todos_scores = [item.score for item in scores_dominios if item.score > 0]
+                score_geral = round(sum(todos_scores) / len(todos_scores), 1) if todos_scores else 0
+                
+                # Criar objeto para assessment também
+                from types import SimpleNamespace
+                assessment_data = SimpleNamespace(
+                    tipo=versao.tipo,
+                    versao_info=f"v{versao.versao}",
+                    score_geral=score_geral,
+                    total_respostas=len(respostas_projeto),
+                    data_finalizacao=projeto_assessment.data_finalizacao,
+                    scores_dominios=scores_dominios
+                )
+                estatisticas_assessments.append(assessment_data)
+                
+                dados_graficos['radar'][f'assessment_{idx}'] = radar_data
+        
+        # Memorial de respostas (comentários destacados)
+        memorial_respostas = {}
+        comentarios_importantes = Resposta.query.filter(
+            Resposta.projeto_id == projeto.id,
+            Resposta.comentario.isnot(None),
+            Resposta.comentario != ''
+        ).limit(10).all()
+        
+        for resposta in comentarios_importantes:
+            dominio_nome = "Domínio Geral"
+            try:
+                if resposta.pergunta and resposta.pergunta.dominio_versao_id:
+                    dominio_obj = AssessmentDominio.query.get(resposta.pergunta.dominio_versao_id)
+                    if dominio_obj:
+                        dominio_nome = dominio_obj.nome
+            except:
+                pass
+                
+            if dominio_nome not in memorial_respostas:
+                memorial_respostas[dominio_nome] = []
+            
+            memorial_respostas[dominio_nome].append({
+                'pergunta': resposta.pergunta.texto if resposta.pergunta else "Pergunta não encontrada",
+                'pontuacao': resposta.nota,
+                'comentario': resposta.comentario,
+                'respondente': resposta.respondente.nome if resposta.respondente else "Respondente não encontrado"
+            })
+        
+        # Dados para template
         total_assessments = len(projeto.assessments) if projeto.assessments else 0
         estatisticas_gerais = {
             'total_respondentes': len(respondentes),
             'total_assessments': total_assessments,
             'data_inicio': projeto.data_criacao,
-            'data_finalizacao': None
+            'data_finalizacao': projeto.data_conclusao
         }
         
-        logging.info(f"Debug - Estatísticas: respondentes={len(respondentes)}, assessments={total_assessments}")
-        logging.info(f"Debug - estatisticas_gerais: {estatisticas_gerais}")
-        
-        # Dados mínimos para template
         template_data = {
             'projeto': projeto,
             'estatisticas_gerais': estatisticas_gerais,
-            'estatisticas_assessments': [],
-            'score_medio_projeto': 0,
+            'estatisticas_assessments': estatisticas_assessments,
+            'score_medio_projeto': score_medio_projeto,
             'respondentes': respondentes,
-            'dados_graficos': {'radar': {}, 'scores_assessments': {}},
-            'memorial_respostas': {},
+            'dados_graficos': dados_graficos,
+            'memorial_respostas': memorial_respostas,
             'relatorio_ia': relatorio_ia
         }
         
