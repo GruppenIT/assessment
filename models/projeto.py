@@ -15,6 +15,7 @@ class Projeto(db.Model):
     descricao = db.Column(db.Text)
     introducao_ia = db.Column(db.Text)  # Introdução gerada por IA
     analise_dominios_ia = db.Column(db.Text)  # Análise dos domínios gerada por IA (JSON)
+    consideracoes_finais_ia = db.Column(db.Text)  # Considerações finais geradas por IA (JSON)
     data_finalizacao = db.Column(db.DateTime)  # Data de finalização do assessment
     
     # Relacionamentos
