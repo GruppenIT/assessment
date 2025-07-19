@@ -403,6 +403,7 @@ def estatisticas(projeto_id):
     """Exibe estatísticas detalhadas do projeto finalizado"""
     try:
         projeto = Projeto.query.get_or_404(projeto_id)
+        logging.info(f"Debug - Projeto encontrado: {projeto.nome} (ID: {projeto.id})")
         
         # Auto-login simplificado para contornar problema de autenticação
         from flask_login import login_user
@@ -415,7 +416,9 @@ def estatisticas(projeto_id):
         respondentes = []
         try:
             respondentes = projeto.get_respondentes_ativos()
-        except:
+            logging.info(f"Debug - Respondentes ativos: {len(respondentes)}")
+        except Exception as e:
+            logging.error(f"Debug - Erro ao buscar respondentes: {e}")
             respondentes = []
         
         # Verificar se existe relatório IA
@@ -427,12 +430,16 @@ def estatisticas(projeto_id):
             pass
         
         # Dados básicos para demonstração
+        total_assessments = len(projeto.assessments) if projeto.assessments else 0
         estatisticas_gerais = {
             'total_respondentes': len(respondentes),
-            'total_assessments': len(projeto.assessments) if projeto.assessments else 0,
+            'total_assessments': total_assessments,
             'data_inicio': projeto.data_criacao,
             'data_finalizacao': None
         }
+        
+        logging.info(f"Debug - Estatísticas: respondentes={len(respondentes)}, assessments={total_assessments}")
+        logging.info(f"Debug - estatisticas_gerais: {estatisticas_gerais}")
         
         # Dados mínimos para template
         template_data = {
@@ -445,6 +452,8 @@ def estatisticas(projeto_id):
             'memorial_respostas': {},
             'relatorio_ia': relatorio_ia
         }
+        
+        logging.info(f"Debug - template_data keys: {list(template_data.keys())}")
         
         return render_template('admin/projetos/estatisticas.html', **template_data)
     
