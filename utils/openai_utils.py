@@ -16,21 +16,6 @@ class OpenAIAssistant:
         self.client = None
         self.assistant_name = None
         self._initialize_client()
-        
-    def _make_request_with_retry(self, request_func, max_retries=3, timeout=60):
-        """Executa requisição com retry e timeout"""
-        import time
-        
-        for attempt in range(max_retries):
-            try:
-                return request_func()
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    raise e
-                logging.warning(f"Tentativa {attempt + 1} falhou: {e}. Tentando novamente...")
-                time.sleep(2 ** attempt)  # Backoff exponencial
-        
-        return None
     
     def _initialize_client(self):
         """Inicializa o cliente OpenAI"""
@@ -49,8 +34,7 @@ class OpenAIAssistant:
     
     def is_configured(self):
         """Verifica se o cliente está configurado"""
-        config = ParametroSistema.get_openai_config()
-        return self.client is not None and config.get('api_key_configured', False)
+        return self.client is not None
     
     def gerar_introducao_projeto(self, projeto_data):
         """Gera texto de introdução do projeto"""
@@ -73,19 +57,15 @@ class OpenAIAssistant:
             Responda apenas com o texto gerado, sem explicações adicionais.
             """
             
-            def make_request():
-                return self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": f"Você é o {self.assistant_name}. Gere textos técnicos para relatórios de assessment de maturidade organizacional."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=1000,
-                    temperature=0.7,
-                    timeout=30
-                )
-            
-            response = self._make_request_with_retry(make_request)
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": f"Você é o {self.assistant_name}. Gere textos técnicos para relatórios de assessment de maturidade organizacional."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=1000,
+                temperature=0.7
+            )
             
             return response.choices[0].message.content.strip()
             
@@ -115,19 +95,15 @@ class OpenAIAssistant:
             Responda apenas com o texto gerado, sem explicações adicionais.
             """
             
-            def make_request():
-                return self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessment com visão técnica e crítica."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=800,
-                    temperature=0.7,
-                    timeout=30
-                )
-            
-            response = self._make_request_with_retry(make_request)
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessment com visão técnica e crítica."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=800,
+                temperature=0.7
+            )
             
             return response.choices[0].message.content.strip()
             
@@ -157,19 +133,15 @@ class OpenAIAssistant:
             Responda apenas com o texto gerado, sem explicações adicionais.
             """
             
-            def make_request():
-                return self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": f"Você é o {self.assistant_name}. Gere considerações finais técnicas para relatórios de assessment."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=1200,
-                    temperature=0.7,
-                    timeout=30
-                )
-            
-            response = self._make_request_with_retry(make_request)
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": f"Você é o {self.assistant_name}. Gere considerações finais técnicas para relatórios de assessment."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=1200,
+                temperature=0.7
+            )
             
             return response.choices[0].message.content.strip()
             
@@ -186,12 +158,6 @@ def coletar_dados_projeto(projeto):
     from models.assessment_version import AssessmentVersao
     from sqlalchemy import func, desc
     
-    def format_date_local(date_obj):
-        """Formata data para display local"""
-        if date_obj:
-            return date_obj.strftime('%d/%m/%Y')
-        return None
-    
     # Dados básicos do projeto
     projeto_data = {
         'nome_projeto': projeto.nome,
@@ -205,148 +171,78 @@ def coletar_dados_projeto(projeto):
     }
     
     # Tipos de assessment
-    for projeto_assessment in projeto.assessments:
-        if projeto_assessment.versao_assessment_id:
-            # Usar o relacionamento correto através do ID
-            from models.assessment_version import AssessmentVersao
-            versao = AssessmentVersao.query.get(projeto_assessment.versao_assessment_id)
-            if versao:
-                projeto_data['tipos_assessment'].append({
-                    'nome': versao.tipo.nome,
-                    'descricao': versao.tipo.descricao
-                })
-        elif projeto_assessment.tipo_assessment:
-            projeto_data['tipos_assessment'].append({
-                'nome': projeto_assessment.tipo_assessment.nome,
-                'descricao': projeto_assessment.tipo_assessment.descricao
-            })
+    if projeto.versao_assessment:
+        projeto_data['tipos_assessment'].append({
+            'nome': projeto.versao_assessment.assessment_tipo.nome,
+            'descricao': projeto.versao_assessment.assessment_tipo.descricao
+        })
     
     # Respondentes
-    try:
-        respondentes = projeto.get_respondentes_ativos()
-        for respondente in respondentes:
-            projeto_data['respondentes'].append({
-                'nome': respondente.nome,
-                'email': respondente.email,
-                'login': respondente.login
-            })
-    except Exception as e:
-        logging.warning(f"Erro ao carregar respondentes: {e}")
-        projeto_data['respondentes'] = []
+    respondentes = Respondente.query.filter_by(cliente_id=projeto.cliente_id).all()
+    for respondente in respondentes:
+        projeto_data['respondentes'].append({
+            'nome': respondente.nome,
+            'email': respondente.email,
+            'login': respondente.login
+        })
     
     # Análise por domínio
-    try:
-        for projeto_assessment in projeto.assessments:
-            if projeto_assessment.versao_assessment_id:
-                # Novo sistema de versionamento
-                from models.assessment_version import AssessmentDominio
-                dominios = AssessmentDominio.query.filter_by(
-                    versao_id=projeto_assessment.versao_assessment_id,
-                    ativo=True
-                ).all()
-                
-                for dominio in dominios:
-                    # Estatísticas do domínio
-                    respostas_dominio = Resposta.query.join(Pergunta).filter(
-                        Pergunta.dominio_versao_id == dominio.id,
-                        Resposta.projeto_id == projeto.id
-                    ).all()
-                    
-                    if respostas_dominio:
-                        pontuacoes = [r.nota for r in respostas_dominio if r.nota is not None]
-                        comentarios = [r.comentario for r in respostas_dominio if r.comentario and r.comentario.strip()]
-                        
-                        dominio_data = {
-                            'nome': dominio.nome,
-                            'descricao': dominio.descricao,
-                            'total_perguntas': len(respostas_dominio),
-                            'pontuacao_media': sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0,
-                            'pontuacao_maxima': max(pontuacoes) if pontuacoes else 0,
-                            'pontuacao_minima': min(pontuacoes) if pontuacoes else 0,
-                            'total_comentarios': len(comentarios),
-                            'comentarios_destaque': comentarios[:5],  # Primeiros 5 comentários
-                            'perguntas_criticas': []
-                        }
-                        
-                        # Perguntas com pontuação baixa (críticas)
-                        for resposta in respostas_dominio:
-                            if resposta.nota is not None and resposta.nota <= 2:
-                                dominio_data['perguntas_criticas'].append({
-                                    'pergunta': resposta.pergunta.texto,
-                                    'pontuacao': resposta.nota,
-                                    'comentario': resposta.comentario or ''
-                                })
-                        
-                        projeto_data['dominios'].append(dominio_data)
+    if projeto.versao_assessment:
+        dominios = Dominio.query.filter_by(versao_assessment_id=projeto.versao_assessment_id).all()
         
-            elif projeto_assessment.tipo_assessment_id:
-                # Sistema antigo  
-                dominios = Dominio.query.filter_by(
-                    tipo_assessment_id=projeto_assessment.tipo_assessment_id,
-                    ativo=True
-                ).all()
+        for dominio in dominios:
+            # Estatísticas do domínio
+            respostas_dominio = Resposta.query.join(Pergunta).filter(
+                Pergunta.dominio_id == dominio.id,
+                Resposta.projeto_id == projeto.id
+            ).all()
+            
+            if respostas_dominio:
+                pontuacoes = [r.pontuacao for r in respostas_dominio if r.pontuacao is not None]
+                comentarios = [r.comentario for r in respostas_dominio if r.comentario and r.comentario.strip()]
                 
-                for dominio in dominios:
-                    # Estatísticas do domínio
-                    respostas_dominio = Resposta.query.join(Pergunta).filter(
-                        Pergunta.dominio_id == dominio.id,
-                        Resposta.projeto_id == projeto.id
-                    ).all()
-                    
-                    if respostas_dominio:
-                        pontuacoes = [r.nota for r in respostas_dominio if r.nota is not None]
-                        comentarios = [r.comentario for r in respostas_dominio if r.comentario and r.comentario.strip()]
-                        
-                        dominio_data = {
-                            'nome': dominio.nome,
-                            'descricao': dominio.descricao,
-                            'total_perguntas': len(respostas_dominio),
-                            'pontuacao_media': sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0,
-                            'pontuacao_maxima': max(pontuacoes) if pontuacoes else 0,
-                            'pontuacao_minima': min(pontuacoes) if pontuacoes else 0,
-                            'total_comentarios': len(comentarios),
-                            'comentarios_destaque': comentarios[:5],
-                            'perguntas_criticas': []
-                        }
-                        
-                        # Perguntas com pontuação baixa (críticas)
-                        for resposta in respostas_dominio:
-                            if resposta.nota is not None and resposta.nota <= 2:
-                                dominio_data['perguntas_criticas'].append({
-                                    'pergunta': resposta.pergunta.texto,
-                                    'pontuacao': resposta.nota,
-                                    'comentario': resposta.comentario or ''
-                                })
-                        
-                        projeto_data['dominios'].append(dominio_data)
-    
-    except Exception as e:
-        logging.error(f"Erro ao coletar dados do domínio: {e}")
-        # Continuar sem dados de domínio se houver erro
+                dominio_data = {
+                    'nome': dominio.nome,
+                    'descricao': dominio.descricao,
+                    'total_perguntas': len(respostas_dominio),
+                    'pontuacao_media': sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0,
+                    'pontuacao_maxima': max(pontuacoes) if pontuacoes else 0,
+                    'pontuacao_minima': min(pontuacoes) if pontuacoes else 0,
+                    'total_comentarios': len(comentarios),
+                    'comentarios_destaque': comentarios[:5],  # Primeiros 5 comentários
+                    'perguntas_criticas': []
+                }
+                
+                # Perguntas com pontuação baixa (críticas)
+                for resposta in respostas_dominio:
+                    if resposta.pontuacao is not None and resposta.pontuacao <= 2:
+                        dominio_data['perguntas_criticas'].append({
+                            'pergunta': resposta.pergunta.texto,
+                            'pontuacao': resposta.pontuacao,
+                            'comentario': resposta.comentario or ''
+                        })
+                
+                projeto_data['dominios'].append(dominio_data)
     
     # Estatísticas gerais
-    try:
-        total_respostas = Resposta.query.filter_by(projeto_id=projeto.id).count()
-        respostas_com_pontuacao = Resposta.query.filter(
-            Resposta.projeto_id == projeto.id,
-            Resposta.nota.isnot(None)
-        ).all()
-        
-        if respostas_com_pontuacao:
-            pontuacoes_gerais = [r.nota for r in respostas_com_pontuacao]
-            projeto_data['estatisticas_gerais'] = {
-                'total_respostas': total_respostas,
-                'pontuacao_media_geral': sum(pontuacoes_gerais) / len(pontuacoes_gerais),
-                'total_dominios': len(projeto_data['dominios']),
-                'total_respondentes': len(projeto_data['respondentes'])
-            }
-    except Exception as e:
-        logging.error(f"Erro ao calcular estatísticas gerais: {e}")
-        projeto_data['estatisticas_gerais'] = {}
+    total_respostas = Resposta.query.filter_by(projeto_id=projeto.id).count()
+    respostas_com_pontuacao = Resposta.query.filter(
+        Resposta.projeto_id == projeto.id,
+        Resposta.pontuacao.isnot(None)
+    ).all()
+    
+    if respostas_com_pontuacao:
+        pontuacoes_gerais = [r.pontuacao for r in respostas_com_pontuacao]
+        projeto_data['estatisticas_gerais'] = {
+            'total_respostas': total_respostas,
+            'pontuacao_media_geral': sum(pontuacoes_gerais) / len(pontuacoes_gerais),
+            'total_dominios': len(projeto_data['dominios']),
+            'total_respondentes': len(projeto_data['respondentes'])
+        }
     
     return projeto_data
 
-def gerar_relatorio_ia(projeto, callback_progress=None):
+def gerar_relatorio_ia(projeto):
     """Gera relatório completo usando IA"""
     assistant = OpenAIAssistant()
     
@@ -355,28 +251,16 @@ def gerar_relatorio_ia(projeto, callback_progress=None):
             'erro': 'Integração com ChatGPT não configurada. Configure a API Key e o nome do Assistant em Parâmetros do Sistema.'
         }
     
-    def update_progress(step, message):
-        if callback_progress:
-            callback_progress(step, message)
-    
     try:
         # Coletar dados do projeto
-        update_progress(30, "Coletando dados do projeto...")
         projeto_data = coletar_dados_projeto(projeto)
         
         # Gerar introdução
-        update_progress(40, "Gerando introdução do relatório com IA...")
         introducao = assistant.gerar_introducao_projeto(projeto_data)
         
         # Gerar análise de cada domínio
-        update_progress(50, "Analisando domínios do assessment...")
         analises_dominios = []
-        total_dominios = len(projeto_data.get('dominios', []))
-        
-        for i, dominio_data in enumerate(projeto_data['dominios']):
-            progress = 50 + (i * 20 // max(total_dominios, 1))
-            update_progress(progress, f"Analisando domínio: {dominio_data['nome']}")
-            
+        for dominio_data in projeto_data['dominios']:
             analise = assistant.gerar_analise_dominio(dominio_data)
             if analise:
                 analises_dominios.append({
@@ -385,10 +269,8 @@ def gerar_relatorio_ia(projeto, callback_progress=None):
                 })
         
         # Gerar considerações finais
-        update_progress(70, "Gerando considerações finais...")
         consideracoes_finais = assistant.gerar_consideracoes_finais(projeto_data)
         
-        update_progress(75, "Relatório IA gerado com sucesso!")
         return {
             'introducao': introducao,
             'analises_dominios': analises_dominios,

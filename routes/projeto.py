@@ -2,36 +2,157 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required
 from app import db
 from utils.auth_utils import admin_required
-from models.projeto import Projeto
-from sqlalchemy import text
+from forms.projeto_forms import ProjetoForm, NovoClienteForm, AdicionarRespondenteForm
+# Alias para compatibilidade
+ProjetoResponenteForm = AdicionarRespondenteForm
+from models.projeto import Projeto, ProjetoRespondente, ProjetoAssessment
+from models.cliente import Cliente
+from models.respondente import Respondente
+from models.tipo_assessment import TipoAssessment
+from models.assessment_version import AssessmentTipo, AssessmentVersao, AssessmentDominio
+from models.dominio import Dominio
+from models.pergunta import Pergunta
+from models.resposta import Resposta
+from werkzeug.security import generate_password_hash
+from sqlalchemy import func, case, and_
 import logging
+import json
+from datetime import datetime
 
 projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
+
+@projeto_bp.route('/auto-login')
+def auto_login():
+    """Auto login para teste"""
+    from flask_login import login_user
+    from models.usuario import Usuario
+    from flask import session
+    
+    admin = Usuario.query.filter_by(email='admin@sistema.com').first()
+    if admin:
+        login_user(admin)
+        session['user_type'] = 'admin'
+        return redirect(url_for('projeto.listar'))
+    else:
+        return "Admin não encontrado"
+
+
+
+@projeto_bp.route('/working')
+@login_required  
+@admin_required
+def listar_working():
+    """Lista todos os projetos com ordenação e autenticação"""
+    try:
+        # Query direto sem ORM - incluir TODOS os projetos ativos
+        projetos_raw = db.session.execute(
+            db.text("SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY p.data_criacao DESC")
+        ).fetchall()
+        
+        projetos_data = []
+        for p in projetos_raw:
+            # Calcular dados reais do projeto
+            projeto_obj = Projeto.query.get(p.id)
+            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
+            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
+            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+            
+            projetos_data.append({
+                'projeto': {
+                    'id': p.id,
+                    'nome': p.nome,
+                    'descricao': p.descricao,
+                    'data_criacao': p.data_criacao,
+                    'cliente': {'nome': p.cliente_nome}
+                },
+                'respondentes_count': respondentes_count,
+                'tipos_count': tipos_count,
+                'progresso': progresso
+            })
+        
+        # Obter parâmetro de ordenação
+        ordem = request.args.get('ordem', 'data_criacao')
+        direcao = request.args.get('dir', 'desc')
+        
+        # Aplicar ordenação
+        if ordem == 'nome':
+            ordem_sql = f"p.nome {direcao.upper()}"
+        elif ordem == 'cliente':
+            ordem_sql = f"c.nome {direcao.upper()}"
+        elif ordem == 'id':
+            ordem_sql = f"p.id {direcao.upper()}"
+        else:  # data_criacao (padrão)
+            ordem_sql = f"p.data_criacao {direcao.upper()}"
+        
+        # Nova query com ordenação
+        projetos_raw_ordenados = db.session.execute(
+            db.text(f"SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY {ordem_sql}")
+        ).fetchall()
+        
+        # Recriar dados com ordenação
+        projetos_data = []
+        for p in projetos_raw_ordenados:
+            # Calcular dados reais do projeto
+            projeto_obj = Projeto.query.get(p.id)
+            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
+            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
+            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+            
+            # Garantir que data_criacao seja um objeto datetime
+            data_criacao = p.data_criacao
+            if isinstance(data_criacao, str):
+                from datetime import datetime
+                try:
+                    data_criacao = datetime.fromisoformat(data_criacao.replace('Z', '+00:00'))
+                except:
+                    data_criacao = datetime.now()
+            
+            projetos_data.append({
+                'projeto': {
+                    'id': p.id,
+                    'nome': p.nome,
+                    'descricao': p.descricao,
+                    'data_criacao': data_criacao,
+                    'cliente': {'nome': p.cliente_nome}
+                },
+                'respondentes_count': respondentes_count,
+                'tipos_count': tipos_count,
+                'progresso': progresso
+            })
+
+        return render_template('admin/projetos/listar.html', 
+                             projetos=projetos_data,
+                             projetos_data=projetos_data,
+                             ordem_atual=ordem,
+                             direcao_atual=direcao)
+        
+    except Exception as e:
+        logging.error(f"Erro em listar_working: {str(e)}")
+        return f"<h1>Erro: {str(e)}</h1>"
 
 @projeto_bp.route('/')
 def listar():
     """Lista todos os projetos ou filtra por cliente"""
-    try:
-        cliente_id = request.args.get('cliente')
-        
-        # Query SQL simples para buscar projetos
-        if cliente_id:
-            sql_query = "SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true AND p.cliente_id = :cliente_id ORDER BY p.data_criacao DESC"
-            projetos_raw = db.session.execute(db.text(sql_query), {'cliente_id': cliente_id}).fetchall()
-            from models.cliente import Cliente
+    cliente_id = request.args.get('cliente')
+    
+    if cliente_id:
+        # Filtrar projetos por cliente específico
+        try:
             cliente = Cliente.query.get_or_404(cliente_id)
-            filtro_cliente = True
-        else:
-            sql_query = "SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY p.data_criacao DESC"
-            projetos_raw = db.session.execute(db.text(sql_query)).fetchall()
-            cliente = None
-            filtro_cliente = False
-        
-        # Processar dados dos projetos com tratamento de erro robusto
-        projetos_data = []
-        for p in projetos_raw:
-            try:
-                # Valores padrão
+            projetos_raw = db.session.execute(
+                db.text("SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true AND p.cliente_id = :cliente_id ORDER BY p.data_criacao DESC"),
+                {'cliente_id': cliente_id}
+            ).fetchall()
+            
+            projetos_data = []
+            for p in projetos_raw:
+                # Calcular dados reais do projeto
+                projeto_obj = Projeto.query.get(p.id)
+                progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
+                respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
+                tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+                
+                # Garantir que data_criacao seja um objeto datetime
                 data_criacao = p.data_criacao
                 if isinstance(data_criacao, str):
                     from datetime import datetime
@@ -48,100 +169,31 @@ def listar():
                         'data_criacao': data_criacao,
                         'cliente': {'nome': p.cliente_nome}
                     },
-                    'respondentes_count': 0,  # Valor padrão seguro
-                    'tipos_count': 1,  # Valor padrão seguro 
-                    'progresso': 0.0  # Valor padrão seguro
+                    'respondentes_count': respondentes_count,
+                    'tipos_count': tipos_count,
+                    'progresso': progresso
                 })
-            except Exception as e:
-                logging.error(f"Erro ao processar projeto {p.id}: {e}")
-                continue
-        
-        # Renderizar template
-        return render_template('admin/projetos/listar.html', 
-                             projetos=projetos_data,
-                             projetos_data=projetos_data,
-                             cliente=cliente,
-                             filtro_cliente=filtro_cliente,
-                             ordem_atual='data_criacao',
-                             direcao_atual='desc')
-                             
-    except Exception as e:
-        logging.error(f"Erro geral na listagem de projetos: {str(e)}")
-        # Retornar uma página vazia em caso de erro
-        return render_template('admin/projetos/listar.html', 
-                             projetos=[],
-                             projetos_data=[],
-                             cliente=None,
-                             filtro_cliente=False,
-                             ordem_atual='data_criacao',
-                             direcao_atual='desc')
-
-@projeto_bp.route('/working')
-@login_required
-@admin_required
-def listar_working():
-    """Lista todos os projetos - versão funcional"""
-    try:
-        projetos_raw = db.session.execute(
-            db.text("SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY p.data_criacao DESC")
-        ).fetchall()
-        
-        projetos_data = []
-        for p in projetos_raw:
-            # Calcular dados reais do projeto
-            projeto_obj = Projeto.query.get(p.id)
-            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
-            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
-            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
             
-            # Garantir que data_criacao seja um objeto datetime
-            data_criacao = p.data_criacao
-            if isinstance(data_criacao, str):
-                from datetime import datetime
-                try:
-                    data_criacao = datetime.fromisoformat(data_criacao.replace('Z', '+00:00'))
-                except:
-                    from datetime import datetime
-                    data_criacao = datetime.now()
-            
-            projetos_data.append({
-                'projeto': {
-                    'id': p.id,
-                    'nome': p.nome,
-                    'descricao': p.descricao,
-                    'data_criacao': data_criacao,
-                    'cliente': {'nome': p.cliente_nome}
-                },
-                'respondentes_count': respondentes_count,
-                'tipos_count': tipos_count,
-                'progresso': progresso
-            })
-        
-        return render_template('admin/projetos/listar.html', 
-                             projetos=projetos_data,
-                             projetos_data=projetos_data,
-                             filtro_cliente=False,
-                             ordem_atual='data_criacao',
-                             direcao_atual='desc')
-                             
-    except Exception as e:
-        logging.error(f"Erro ao listar projetos: {str(e)}")
-        flash(f'Erro ao listar projetos: {str(e)}', 'danger')
-        return render_template('admin/projetos/listar.html', 
-                             projetos=[],
-                             projetos_data=[],
-                             filtro_cliente=False)
+            return render_template('admin/projetos/listar.html', 
+                                 projetos=projetos_data,
+                                 projetos_data=projetos_data,
+                                 cliente=cliente,
+                                 filtro_cliente=True,
+                                 ordem_atual='data_criacao',
+                                 direcao_atual='desc')
+        except Exception as e:
+            logging.error(f"Erro ao filtrar projetos: {str(e)}")
+            flash(f'Erro ao filtrar projetos: {str(e)}', 'danger')
+            return redirect(url_for('projeto.listar_working'))
+    else:
+        # Listar todos os projetos - redireciona para versão working
+        return redirect(url_for('projeto.listar_working'))
 
 @projeto_bp.route('/criar', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def criar():
     """Cria um novo projeto"""
-    from forms.projeto_forms import ProjetoForm, NovoClienteForm
-    from models.cliente import Cliente
-    from models.projeto import Projeto, ProjetoAssessment
-    from models.assessment_version import AssessmentTipo
-    
     form = ProjetoForm()
     novo_cliente_form = NovoClienteForm()
     
@@ -175,6 +227,7 @@ def criar():
                 db.session.flush()  # Para obter o ID do projeto
                 
                 # Associar tipos de assessment (sistema novo)
+                from models.assessment_version import AssessmentTipo
                 for tipo_id in tipos_ids:
                     # Buscar o tipo de assessment
                     tipo_assessment = AssessmentTipo.query.get(int(tipo_id))
@@ -204,262 +257,770 @@ def criar():
                          form=form, 
                          novo_cliente_form=novo_cliente_form)
 
+@projeto_bp.route('/criar-cliente', methods=['POST'])
+@login_required
+@admin_required
+def criar_cliente():
+    """Cria um novo cliente durante a criação do projeto"""
+    form = NovoClienteForm()
+    
+    if form.validate_on_submit():
+        try:
+            cliente = Cliente(
+                nome=form.nome.data,
+                razao_social=form.nome.data,  # Usar mesmo nome inicialmente
+                ativo=True
+            )
+            db.session.add(cliente)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'cliente_id': cliente.id,
+                'cliente_nome': cliente.nome,
+                'message': f'Cliente "{cliente.nome}" criado com sucesso!'
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erro ao criar cliente: {e}")
+            return jsonify({
+                'success': False,
+                'message': 'Erro ao criar cliente. Tente novamente.'
+            })
+    
+    return jsonify({
+        'success': False,
+        'message': 'Dados inválidos.',
+        'errors': form.errors
+    })
+
 @projeto_bp.route('/<int:projeto_id>')
+@login_required
+@admin_required
 def detalhar(projeto_id):
     """Detalha um projeto específico"""
-    return f"""
-    <h1>Detalhes do Projeto #{projeto_id}</h1>
-    <div style="font-family: Arial; max-width: 800px; margin: 20px auto; padding: 20px;">
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h2>✅ Projeto com Assessment Associado</h2>
-            <p><strong>Nome:</strong> Maturidade em SI - 2025</p>
-            <p><strong>Cliente:</strong> Melnick</p>
-            <p><strong>Assessment:</strong> Cibersegurança (Testes)</p>
-            <p><strong>Status:</strong> Publicado</p>
-        </div>
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Dados do projeto
+    progresso = projeto.get_progresso_geral()
+    respondentes = projeto.get_respondentes_ativos()
+    tipos_assessment = projeto.get_tipos_assessment()
+    
+    # Progresso por tipo de assessment (colaborativo)
+    progressos_por_tipo = {}
+    assessments_com_versao = {}
+    
+    for projeto_assessment in projeto.assessments:
+        from models.pergunta import Pergunta
+        from models.dominio import Dominio
+        from models.resposta import Resposta
         
-        <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <h3 style="color: #155724;">✓ Sistema Funcionando Corretamente</h3>
-            <p style="color: #155724;">O projeto agora tem o assessment associado conforme esperado. O erro "nenhum assessment associado" foi resolvido!</p>
-        </div>
+        # Determinar tipo e versão do assessment
+        tipo = None
+        versao_info = "Sistema Antigo"
         
-        <div style="background: #fff3cd; padding: 15px; border-radius: 8px;">
-            <h3 style="color: #856404;">📋 Próximos Passos</h3>
-            <ul style="color: #856404;">
-                <li>Página de listagem funcionando: ✅</li>
-                <li>Página de detalhes funcionando: ✅</li>
-                <li>Assessment associado: ✅</li>
-                <li>Dados do cliente disponíveis: ✅</li>
-            </ul>
-        </div>
+        if projeto_assessment.versao_assessment_id:
+            # Novo sistema de versionamento
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            versao_info = f"Versão {versao.versao}"
+        elif projeto_assessment.tipo_assessment_id:
+            # Sistema antigo
+            tipo = projeto_assessment.tipo_assessment
+            versao_info = "Sistema Antigo"
         
-        <div style="margin-top: 20px;">
-            <a href="/admin/projetos/?cliente=1" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">← Voltar para Lista de Projetos</a>
-        </div>
-    </div>
-    """
+        # Pular se não conseguir determinar o tipo
+        if not tipo:
+            continue
+        
+        if projeto_assessment.versao_assessment_id:
+            # Novo sistema de versionamento
+            from models.assessment_version import AssessmentDominio
+            
+            versao = projeto_assessment.versao_assessment
+            total_perguntas = db.session.query(Pergunta).join(
+                AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+            ).filter(
+                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            
+            # Contar perguntas únicas respondidas (colaborativo)
+            perguntas_respondidas = db.session.query(Pergunta.id).join(
+                Resposta, Pergunta.id == Resposta.pergunta_id
+            ).join(
+                AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.ativo == True,
+                Pergunta.ativo == True
+            ).distinct().count()
+        else:
+            # Sistema antigo
+            total_perguntas = Pergunta.query.join(Dominio).filter(
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).count()
+            
+            # Contar perguntas únicas respondidas (colaborativo)
+            perguntas_respondidas = db.session.query(Pergunta.id).join(
+                Resposta, Pergunta.id == Resposta.pergunta_id
+            ).join(Dominio).filter(
+                Resposta.projeto_id == projeto.id,
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).distinct().count()
+        
+        progresso_tipo = round((perguntas_respondidas / total_perguntas * 100) if total_perguntas > 0 else 0, 1)
+        
+        progressos_por_tipo[tipo.id] = {
+            'tipo': tipo,
+            'progresso': progresso_tipo,
+            'perguntas_respondidas': perguntas_respondidas,
+            'total_perguntas': total_perguntas,
+            'versao': versao_info
+        }
+    
+    return render_template('admin/projetos/detalhar.html',
+                         projeto=projeto,
+                         progresso=progresso,
+                         respondentes=respondentes,
+                         tipos_assessment=tipos_assessment,
+                         progressos_por_tipo=progressos_por_tipo)
+
+@projeto_bp.route('/<int:projeto_id>/estatisticas')
+@login_required
+@admin_required
+def estatisticas(projeto_id):
+    """Exibe estatísticas detalhadas do projeto finalizado"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    finalizados, total_assessments = projeto.get_assessments_finalizados()
+    totalmente_finalizado = projeto.is_totalmente_finalizado()
+    
+    if not totalmente_finalizado:
+        flash('As estatísticas completas só estão disponíveis quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+    
+    # Dados do projeto
+    respondentes = projeto.get_respondentes_ativos()
+    
+    # Estatísticas gerais do projeto
+    estatisticas_gerais = {
+        'total_respondentes': len(respondentes),
+        'total_assessments': total_assessments,
+        'data_inicio': projeto.data_criacao,
+        'data_finalizacao': None
+    }
+    
+    # Encontrar data de finalização mais recente
+    for pa in projeto.assessments:
+        if pa.finalizado and pa.data_finalizacao:
+            if not estatisticas_gerais['data_finalizacao'] or pa.data_finalizacao > estatisticas_gerais['data_finalizacao']:
+                estatisticas_gerais['data_finalizacao'] = pa.data_finalizacao
+    
+    # Estatísticas por assessment
+    estatisticas_assessments = []
+    scores_gerais = []
+    dados_grafico_radar = {}
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        versao_info = "Sistema Antigo"
+        
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            versao_info = f"Versão {versao.versao}"
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            versao_info = "Sistema Antigo"
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+        
+        # Calcular score geral do assessment
+        if projeto_assessment.versao_assessment_id:
+            # Novo sistema de versionamento
+            score_query = db.session.query(
+                func.avg(Resposta.nota).label('score_medio'),
+                func.count(Resposta.id).label('total_respostas')
+            ).join(
+                Pergunta, Resposta.pergunta_id == Pergunta.id
+            ).join(
+                AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.ativo == True,
+                Pergunta.ativo == True
+            ).first()
+        else:
+            # Sistema antigo
+            score_query = db.session.query(
+                func.avg(Resposta.nota).label('score_medio'),
+                func.count(Resposta.id).label('total_respostas')
+            ).join(
+                Pergunta, Resposta.pergunta_id == Pergunta.id
+            ).join(
+                Dominio, Pergunta.dominio_id == Dominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).first()
+        
+        score_geral = round(float(score_query.score_medio or 0), 2)
+        total_respostas = score_query.total_respostas or 0
+        
+        # Calcular scores por domínio
+        scores_dominios = []
+        dominios_radar = []
+        scores_radar = []
+        
+        for dominio in dominios_query.order_by('ordem'):
+            if projeto_assessment.versao_assessment_id:
+                # Novo sistema
+                dominio_score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio'),
+                    func.count(Resposta.id).label('total_respostas'),
+                    func.count(Pergunta.id.distinct()).label('total_perguntas')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Pergunta.dominio_versao_id == dominio.id,
+                    Pergunta.ativo == True
+                ).first()
+                
+                total_perguntas_dominio = db.session.query(
+                    func.count(Pergunta.id)
+                ).filter(
+                    Pergunta.dominio_versao_id == dominio.id,
+                    Pergunta.ativo == True
+                ).scalar()
+            else:
+                # Sistema antigo
+                dominio_score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio'),
+                    func.count(Resposta.id).label('total_respostas'),
+                    func.count(Pergunta.id.distinct()).label('total_perguntas')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Pergunta.dominio_id == dominio.id,
+                    Pergunta.ativo == True
+                ).first()
+                
+                total_perguntas_dominio = db.session.query(
+                    func.count(Pergunta.id)
+                ).filter(
+                    Pergunta.dominio_id == dominio.id,
+                    Pergunta.ativo == True
+                ).scalar()
+            
+            dominio_score = round(float(dominio_score_query.score_medio or 0), 2)
+            respostas_dominio = dominio_score_query.total_respostas or 0
+            
+            # Calcular nível de maturidade
+            if dominio_score >= 4.5:
+                nivel_maturidade = "Otimizado"
+                classe_css = "success"
+            elif dominio_score >= 3.5:
+                nivel_maturidade = "Avançado"
+                classe_css = "info"
+            elif dominio_score >= 2.5:
+                nivel_maturidade = "Intermediário"
+                classe_css = "warning"
+            elif dominio_score >= 1.5:
+                nivel_maturidade = "Básico"
+                classe_css = "secondary"
+            elif dominio_score >= 0.5:
+                nivel_maturidade = "Inicial"
+                classe_css = "danger"
+            else:
+                nivel_maturidade = "Inexistente"
+                classe_css = "dark"
+            
+            scores_dominios.append({
+                'dominio': dominio,
+                'score': dominio_score,
+                'total_respostas': respostas_dominio,
+                'total_perguntas': total_perguntas_dominio,
+                'nivel_maturidade': nivel_maturidade,
+                'classe_css': classe_css,
+                'percentual_completude': round((respostas_dominio / total_perguntas_dominio * 100) if total_perguntas_dominio > 0 else 0, 1)
+            })
+            
+            # Dados para gráfico radar
+            dominios_radar.append(dominio.nome)
+            scores_radar.append(dominio_score)
+        
+        # Dados do assessment
+        assessment_data = {
+            'tipo': tipo,
+            'versao_info': versao_info,
+            'score_geral': score_geral,
+            'total_respostas': total_respostas,
+            'scores_dominios': scores_dominios,
+            'data_finalizacao': projeto_assessment.data_finalizacao
+        }
+        
+        estatisticas_assessments.append(assessment_data)
+        scores_gerais.append(score_geral)
+        
+        # Dados para gráfico radar
+        dados_grafico_radar[tipo.nome] = {
+            'dominios': dominios_radar,
+            'scores': scores_radar
+        }
+    
+    # Score médio geral do projeto
+    score_medio_projeto = round(sum(scores_gerais) / len(scores_gerais) if scores_gerais else 0, 2)
+    
+    # Coletar memorial de respostas por domínio
+    memorial_respostas = {}
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+            
+        memorial_respostas[tipo.nome] = []
+        
+        for dominio in dominios_query.order_by('ordem'):
+            # Coletar perguntas e respostas do domínio
+            if projeto_assessment.versao_assessment_id:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_versao_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            else:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            
+            respostas_dominio = []
+            for pergunta in perguntas_dominio:
+                # Buscar respostas desta pergunta no projeto
+                respostas_pergunta = Resposta.query.filter_by(
+                    projeto_id=projeto.id,
+                    pergunta_id=pergunta.id
+                ).order_by(Resposta.data_resposta.desc()).all()
+                
+                if respostas_pergunta:
+                    # Pegar a resposta mais recente (colaborativa)
+                    resposta_final = respostas_pergunta[0]
+                    
+                    # Coletar histórico de respostas para mostrar evolução
+                    historico_respostas = []
+                    for resp in respostas_pergunta:
+                        historico_respostas.append({
+                            'nota': resp.nota,
+                            'comentario': resp.comentario,
+                            'respondente': resp.respondente.nome if resp.respondente else 'Sistema',
+                            'data': resp.data_resposta
+                        })
+                    
+                    respostas_dominio.append({
+                        'pergunta': pergunta,
+                        'resposta_final': resposta_final,
+                        'historico': historico_respostas
+                    })
+            
+            if respostas_dominio:
+                memorial_respostas[tipo.nome].append({
+                    'dominio': dominio,
+                    'respostas': respostas_dominio
+                })
+    
+    # Preparar dados para gráficos
+    dados_graficos = {
+        'radar': dados_grafico_radar,
+        'scores_assessments': {assessment['tipo'].nome: assessment['score_geral'] for assessment in estatisticas_assessments}
+    }
+    
+    # Verificar se existe relatório IA
+    from models.relatorio_ia import RelatorioIA
+    relatorio_ia = RelatorioIA.get_by_projeto(projeto.id)
+    
+    return render_template('admin/projetos/estatisticas.html',
+                         projeto=projeto,
+                         estatisticas_gerais=estatisticas_gerais,
+                         estatisticas_assessments=estatisticas_assessments,
+                         score_medio_projeto=score_medio_projeto,
+                         respondentes=respondentes,
+                         dados_graficos=dados_graficos,
+                         memorial_respostas=memorial_respostas,
+                         relatorio_ia=relatorio_ia)
+
+@projeto_bp.route('/<int:projeto_id>/estatisticas/pdf')
+@login_required
+@admin_required
+def exportar_estatisticas_pdf(projeto_id):
+    """Exporta as estatísticas do projeto para PDF com identidade visual das estatísticas"""
+    from utils.pdf_utils import gerar_relatorio_estatisticas_visual
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('As estatísticas só podem ser exportadas quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+    
+    try:
+        # Gerar o PDF com a nova identidade visual
+        filename = gerar_relatorio_estatisticas_visual(projeto)
+        
+        from flask import send_file
+        return send_file(
+            filename,
+            as_attachment=True,
+            download_name=f"estatisticas_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        flash(f'Erro ao gerar o PDF: {str(e)}', 'danger')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+
+@projeto_bp.route('/<int:projeto_id>/estatisticas/markdown')
+@login_required
+@admin_required
+def exportar_estatisticas_markdown(projeto_id):
+    """Exporta as estatísticas do projeto para Markdown"""
+    from utils.pdf_utils import gerar_relatorio_markdown
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('As estatísticas só podem ser exportadas quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+    
+    try:
+        # Gerar o relatório em Markdown
+        filename = gerar_relatorio_markdown(projeto)
+        
+        from flask import send_file
+        return send_file(
+            filename,
+            as_attachment=True,
+            download_name=f"relatorio_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+            mimetype='text/markdown'
+        )
+    except Exception as e:
+        flash(f'Erro ao gerar o relatório Markdown: {str(e)}', 'danger')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+
+@projeto_bp.route('/<int:projeto_id>/respondentes')
+@login_required
+@admin_required
+def gerenciar_respondentes(projeto_id):
+    """Gerencia respondentes do projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    from forms.projeto_forms import AdicionarRespondenteForm
+    form = AdicionarRespondenteForm(cliente_id=projeto.cliente_id, projeto_id=projeto.id)
+    
+    # Respondentes atuais do projeto (objetos ProjetoRespondente)
+    projeto_respondentes = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto.id, 
+        ativo=True
+    ).all()
+    
+    # Extrair os objetos Respondente
+    respondentes_projeto = [pr.respondente for pr in projeto_respondentes]
+    
+    # Respondentes disponíveis do cliente que não estão no projeto
+    respondentes_disponiveis = []
+    for resp in projeto.cliente.get_respondentes_ativos():
+        if resp not in respondentes_projeto:
+            respondentes_disponiveis.append(resp)
+    
+    return render_template('admin/projetos/gerenciar_respondentes.html',
+                         projeto=projeto,
+                         form=form,
+                         respondentes_projeto=respondentes_projeto,
+                         respondentes_disponiveis=respondentes_disponiveis)
+
+@projeto_bp.route('/<int:projeto_id>/adicionar-respondente', methods=['POST'])
+@login_required
+@admin_required
+def adicionar_respondente(projeto_id):
+    """Adiciona um respondente existente ao projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    from forms.projeto_forms import AdicionarRespondenteForm
+    form = AdicionarRespondenteForm(cliente_id=projeto.cliente_id, projeto_id=projeto.id)
+    
+    if form.validate_on_submit():
+        try:
+            respondente_id = int(form.respondente_id.data) if form.respondente_id.data else None
+            
+            if not respondente_id:
+                flash('Selecione um respondente válido.', 'danger')
+                return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+            
+            # Verificar se já está associado
+            associacao_existente = ProjetoRespondente.query.filter_by(
+                projeto_id=projeto.id,
+                respondente_id=respondente_id
+            ).first()
+            
+            if associacao_existente:
+                if not associacao_existente.ativo:
+                    associacao_existente.ativo = True
+                    db.session.commit()
+                    flash('Respondente reativado no projeto!', 'success')
+                else:
+                    flash('Respondente já está no projeto.', 'info')
+            else:
+                # Criar nova associação
+                projeto_respondente = ProjetoRespondente(
+                    projeto_id=projeto.id,
+                    respondente_id=respondente_id,
+                    ativo=True
+                )
+                db.session.add(projeto_respondente)
+                db.session.commit()
+                
+                respondente = Respondente.query.get(respondente_id)
+                flash(f'Respondente "{respondente.nome}" adicionado ao projeto!', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erro ao adicionar respondente: {e}")
+            flash('Erro ao adicionar respondente. Tente novamente.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
+    
+    return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+
+@projeto_bp.route('/<int:projeto_id>/associar-respondente/<int:respondente_id>', methods=['POST'])
+@login_required
+@admin_required
+def associar_respondente_existente(projeto_id, respondente_id):
+    """Associa um respondente existente ao projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    respondente = Respondente.query.get_or_404(respondente_id)
+    
+    # Verificar se respondente pertence ao cliente do projeto
+    if respondente.cliente_id != projeto.cliente_id:
+        flash('Respondente não pertence ao cliente do projeto.', 'danger')
+        return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+    
+    # Verificar se já está associado
+    associacao_existente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto.id,
+        respondente_id=respondente.id
+    ).first()
+    
+    if associacao_existente:
+        if not associacao_existente.ativo:
+            associacao_existente.ativo = True
+            db.session.commit()
+            flash(f'Respondente "{respondente.nome}" reativado no projeto!', 'success')
+        else:
+            flash(f'Respondente "{respondente.nome}" já está no projeto.', 'info')
+    else:
+        try:
+            projeto_respondente = ProjetoRespondente(
+                projeto_id=projeto.id,
+                respondente_id=respondente.id,
+                ativo=True
+            )
+            db.session.add(projeto_respondente)
+            db.session.commit()
+            flash(f'Respondente "{respondente.nome}" adicionado ao projeto!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erro ao associar respondente: {e}")
+            flash('Erro ao associar respondente. Tente novamente.', 'danger')
+    
+    return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+
+@projeto_bp.route('/<int:projeto_id>/remover-respondente/<int:respondente_id>', methods=['POST'])
+@login_required
+@admin_required
+def remover_respondente(projeto_id, respondente_id):
+    """Remove um respondente do projeto"""
+    projeto_respondente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto_id,
+        respondente_id=respondente_id
+    ).first_or_404()
+    
+    try:
+        projeto_respondente.ativo = False
+        db.session.commit()
+        flash('Respondente removido do projeto.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao remover respondente: {e}")
+        flash('Erro ao remover respondente. Tente novamente.', 'danger')
+    
+    return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+
+@projeto_bp.route('/<int:projeto_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar(projeto_id):
+    """Edita um projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    form = ProjetoForm(obj=projeto)
+    
+    if form.validate_on_submit():
+        try:
+            projeto.nome = form.nome.data
+            projeto.cliente_id = form.cliente_id.data
+            projeto.descricao = form.descricao.data
+            
+            # Atualizar tipos de assessment
+            # Remover associações atuais
+            ProjetoAssessment.query.filter_by(projeto_id=projeto.id).delete()
+            
+            # Adicionar novas associações
+            for tipo_id in form.tipos_assessment.data:
+                projeto_assessment = ProjetoAssessment(
+                    projeto_id=projeto.id,
+                    tipo_assessment_id=tipo_id
+                )
+                db.session.add(projeto_assessment)
+            
+            db.session.commit()
+            flash(f'Projeto "{projeto.nome}" atualizado com sucesso!', 'success')
+            return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erro ao editar projeto: {e}")
+            flash('Erro ao editar projeto. Tente novamente.', 'danger')
+    
+    # Pré-selecionar tipos de assessment atuais
+    tipos_selecionados = [pa.tipo_assessment_id for pa in projeto.assessments]
+    form.tipos_assessment.data = tipos_selecionados
+    
+    # Criar formulário para novo cliente
+    from forms.cliente_forms import NovoClienteForm
+    novo_cliente_form = NovoClienteForm()
+    
+    return render_template('admin/projetos/editar.html', 
+                         form=form, 
+                         projeto=projeto,
+                         novo_cliente_form=novo_cliente_form)
 
 @projeto_bp.route('/<int:projeto_id>/desativar', methods=['POST'])
 @login_required
 @admin_required
 def desativar(projeto_id):
-    """Desativa um projeto (soft delete)"""
+    """Desativa um projeto"""
     projeto = Projeto.query.get_or_404(projeto_id)
+    
     try:
         projeto.ativo = False
         db.session.commit()
         flash(f'Projeto "{projeto.nome}" desativado com sucesso!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao desativar projeto: {str(e)}', 'danger')
         logging.error(f"Erro ao desativar projeto: {e}")
+        flash('Erro ao desativar projeto.', 'danger')
+    
     return redirect(url_for('projeto.listar'))
 
 @projeto_bp.route('/<int:projeto_id>/excluir', methods=['POST'])
 @login_required
-@admin_required  
+@admin_required
 def excluir(projeto_id):
     """Exclui um projeto permanentemente"""
     projeto = Projeto.query.get_or_404(projeto_id)
+    
     try:
-        # Primeiro excluir respostas relacionadas
-        from models.resposta import Resposta
-        Resposta.query.filter_by(projeto_id=projeto_id).delete()
-        
-        # Excluir associações do projeto
-        from models.projeto import ProjetoAssessment
-        ProjetoAssessment.query.filter_by(projeto_id=projeto_id).delete()
-        
-        # Excluir o projeto
         nome_projeto = projeto.nome
+        
+        # Remover todas as associações primeiro
+        ProjetoRespondente.query.filter_by(projeto_id=projeto.id).delete()
+        ProjetoAssessment.query.filter_by(projeto_id=projeto.id).delete()
+        
+        # Remover respostas relacionadas (se existirem)
+        from models.resposta import Resposta
+        Resposta.query.filter_by(projeto_id=projeto.id).delete()
+        
+        # Remover o projeto
         db.session.delete(projeto)
         db.session.commit()
+        
         flash(f'Projeto "{nome_projeto}" excluído permanentemente!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao excluir projeto: {str(e)}', 'danger')
         logging.error(f"Erro ao excluir projeto: {e}")
+        flash('Erro ao excluir projeto. Tente novamente.', 'danger')
+    
     return redirect(url_for('projeto.listar'))
 
-@projeto_bp.route('/<int:projeto_id>/editar', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def editar(projeto_id):
-    """Edita um projeto existente"""
-    from forms.projeto_forms import ProjetoForm
-    from models.cliente import Cliente
-    
-    projeto = Projeto.query.get_or_404(projeto_id)
-    form = ProjetoForm(obj=projeto)
-    
-    if request.method == 'POST' and form.validate_on_submit():
-        try:
-            projeto.nome = form.nome.data
-            projeto.descricao = form.descricao.data
-            projeto.cliente_id = form.cliente_id.data
-            
-            db.session.commit()
-            flash(f'Projeto "{projeto.nome}" atualizado com sucesso!', 'success')
-            return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro ao atualizar projeto: {str(e)}', 'danger')
-            logging.error(f"Erro ao editar projeto: {e}")
-    
-    return render_template('admin/projetos/editar.html', form=form, projeto=projeto)
-
-@projeto_bp.route('/<int:projeto_id>/respondentes')
-@login_required
-@admin_required
-def gerenciar_respondentes(projeto_id):
-    """Gerencia respondentes de um projeto"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
-    # Buscar respondentes do cliente do projeto
-    respondentes_cliente = []
-    if projeto.cliente:
-        from models.respondente import Respondente
-        respondentes_cliente = Respondente.query.filter_by(
-            cliente_id=projeto.cliente_id, 
-            ativo=True
-        ).all()
-    
-    # Respondentes já associados ao projeto
-    respondentes_projeto = projeto.get_respondentes_ativos()
-    
-    return render_template('admin/projetos/gerenciar_respondentes.html', 
-                         projeto=projeto,
-                         respondentes_cliente=respondentes_cliente,
-                         respondentes_projeto=respondentes_projeto)
-
-@projeto_bp.route('/<int:projeto_id>/estatisticas')
-def estatisticas(projeto_id):
-    """Exibe estatísticas detalhadas do projeto"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
-    # Dados básicos para o template
-    estatisticas_gerais = {
-        'total_respondentes': 0,
-        'total_assessments': 0,
-        'data_inicio': projeto.data_criacao,
-        'data_finalizacao': None
-    }
-    
-    # Verificar se existe relatório IA
-    try:
-        from models.relatorio_ia import RelatorioIA
-        relatorio_ia = RelatorioIA.get_by_projeto(projeto.id)
-    except:
-        relatorio_ia = None
-    
-    return render_template('admin/projetos/estatisticas.html',
-                         projeto=projeto,
-                         estatisticas_gerais=estatisticas_gerais,
-                         estatisticas_assessments=[],
-                         score_medio_projeto=0,
-                         respondentes=[],
-                         dados_graficos={},
-                         memorial_respostas={},
-                         relatorio_ia=relatorio_ia)
-
 @projeto_bp.route('/<int:projeto_id>/gerar-relatorio-ia', methods=['POST'])
+@login_required
+@admin_required
 def gerar_relatorio_ia(projeto_id):
-    """Inicia a geração do relatório inteligente usando ChatGPT"""
+    """Gera relatório inteligente usando ChatGPT"""
     projeto = Projeto.query.get_or_404(projeto_id)
     
-    from flask import session
-    import threading
-    import uuid
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('O relatório IA só pode ser gerado quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
     
-    # Gerar ID único para o processo
-    task_id = str(uuid.uuid4())
-    _task_storage[task_id] = {
-        'status': 'iniciado',
-        'progresso': 0,
-        'mensagem': 'Inicializando geração do relatório...',
-        'projeto_id': projeto_id
-    }
+    try:
+        from utils.openai_utils import gerar_relatorio_ia
+        from models.relatorio_ia import RelatorioIA
+        
+        # Gerar relatório
+        dados_relatorio = gerar_relatorio_ia(projeto)
+        
+        # Salvar no banco
+        relatorio = RelatorioIA.criar_relatorio(projeto_id, dados_relatorio)
+        
+        if dados_relatorio.get('erro'):
+            flash(f'Erro ao gerar relatório: {dados_relatorio["erro"]}', 'danger')
+        else:
+            flash('Relatório inteligente gerado com sucesso!', 'success')
+        
+    except Exception as e:
+        logging.error(f"Erro ao gerar relatório IA: {e}")
+        flash(f'Erro ao gerar relatório: {str(e)}', 'danger')
     
-    # Iniciar processo em thread separada
-    thread = threading.Thread(target=_gerar_relatorio_background, args=(projeto_id, task_id))
-    thread.daemon = True
-    thread.start()
-    
-    return redirect(url_for('projeto.progresso_relatorio_ia', projeto_id=projeto_id, task_id=task_id))
-
-# Armazenamento global para tasks (em produção, use Redis ou banco de dados)
-_task_storage = {}
-
-def _gerar_relatorio_background(projeto_id, task_id):
-    """Gera relatório em background com atualizações de progresso"""
-    from app import app
-    
-    with app.app_context():
-        try:
-            from utils.openai_utils import gerar_relatorio_ia
-            from models.relatorio_ia import RelatorioIA
-            from models.projeto import Projeto
-            
-            projeto = Projeto.query.get(projeto_id)
-            
-            # Atualizar progresso
-            _task_storage[task_id] = {
-                'status': 'processando',
-                'progresso': 20,
-                'mensagem': 'Coletando dados do projeto...',
-                'projeto_id': projeto_id
-            }
-            
-            # Função de callback para atualizações de progresso
-            def update_progress(step, message):
-                _task_storage[task_id]['progresso'] = step
-                _task_storage[task_id]['mensagem'] = message
-            
-            # Gerar relatório
-            dados_relatorio = gerar_relatorio_ia(projeto, callback_progress=update_progress)
-            
-            _task_storage[task_id]['progresso'] = 80
-            _task_storage[task_id]['mensagem'] = 'Salvando relatório no banco de dados...'
-            
-            # Salvar no banco
-            relatorio = RelatorioIA.criar_relatorio(projeto_id, dados_relatorio)
-            
-            if dados_relatorio.get('erro'):
-                _task_storage[task_id]['status'] = 'erro'
-                _task_storage[task_id]['mensagem'] = f'Erro: {dados_relatorio["erro"]}'
-            else:
-                _task_storage[task_id]['status'] = 'concluido'
-                _task_storage[task_id]['progresso'] = 100
-                _task_storage[task_id]['mensagem'] = 'Relatório gerado com sucesso!'
-                _task_storage[task_id]['relatorio_id'] = relatorio.id
-                
-        except Exception as e:
-            _task_storage[task_id]['status'] = 'erro'
-            _task_storage[task_id]['mensagem'] = f'Erro inesperado: {str(e)}'
-
-@projeto_bp.route('/<int:projeto_id>/relatorio-ia/progresso/<task_id>')
-def progresso_relatorio_ia(projeto_id, task_id):
-    """Exibe página de progresso do relatório IA"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    return render_template('admin/projetos/progresso_relatorio_ia.html',
-                         projeto=projeto,
-                         task_id=task_id)
-
-@projeto_bp.route('/<int:projeto_id>/relatorio-ia/status/<task_id>')
-def status_relatorio_ia(projeto_id, task_id):
-    """Retorna status atual do relatório IA (AJAX)"""
-    from flask import jsonify
-    
-    task_data = _task_storage.get(task_id, {})
-    
-    return jsonify({
-        'status': task_data.get('status', 'desconhecido'),
-        'progresso': task_data.get('progresso', 0),
-        'mensagem': task_data.get('mensagem', 'Processando...'),
-        'relatorio_id': task_data.get('relatorio_id')
-    })
+    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
 
 @projeto_bp.route('/<int:projeto_id>/relatorio-ia/<int:relatorio_id>')
+@login_required
+@admin_required
 def visualizar_relatorio_ia(projeto_id, relatorio_id):
     """Visualiza relatório IA específico"""
     projeto = Projeto.query.get_or_404(projeto_id)
@@ -474,27 +1035,3 @@ def visualizar_relatorio_ia(projeto_id, relatorio_id):
                          projeto=projeto,
                          relatorio=relatorio)
 
-@projeto_bp.route('/<int:projeto_id>/estatisticas/pdf')
-def exportar_estatisticas_pdf(projeto_id):
-    """Exporta as estatísticas do projeto para PDF"""
-    return f"Exportar PDF - Projeto {projeto_id}"
-
-@projeto_bp.route('/<int:projeto_id>/estatisticas/markdown')
-def exportar_estatisticas_markdown(projeto_id):
-    """Exporta as estatísticas do projeto para Markdown"""
-    return f"Exportar Markdown - Projeto {projeto_id}"
-
-@projeto_bp.route('/auto-login')
-def auto_login():
-    """Auto login para teste"""
-    from flask_login import login_user
-    from models.usuario import Usuario
-    from flask import session
-    
-    admin = Usuario.query.filter_by(email='admin@sistema.com').first()
-    if admin:
-        login_user(admin)
-        session['user_type'] = 'admin'
-        return redirect(url_for('projeto.listar'))
-    else:
-        return "Admin não encontrado"

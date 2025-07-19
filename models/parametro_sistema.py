@@ -25,26 +25,13 @@ class ParametroSistema(db.Model):
     @staticmethod
     def get_chave_criptografia():
         """Gera ou recupera a chave de criptografia"""
-        # Usar uma chave fixa baseada no SECRET_KEY do Flask para manter consistência
-        import hashlib
-        import os
-        from flask import current_app
-        
-        # Tentar usar a chave da variável de ambiente primeiro
         chave_env = os.environ.get('CRYPTO_KEY')
         if chave_env:
             return chave_env.encode()
         
-        # Usar o SECRET_KEY do Flask como base para gerar uma chave consistente
-        secret_key = current_app.config.get('SECRET_KEY', 'default-secret-key')
-        # Gerar uma chave Fernet válida a partir do SECRET_KEY
-        hash_obj = hashlib.sha256(secret_key.encode())
-        key_material = hash_obj.digest()
-        
-        # Converter para base64 (formato necessário para Fernet)
-        import base64
-        fernet_key = base64.urlsafe_b64encode(key_material)
-        return fernet_key
+        # Gerar nova chave se não existir
+        chave = Fernet.generate_key()
+        return chave
     
     @staticmethod
     def get_valor(chave, valor_padrao=None):
@@ -57,14 +44,8 @@ class ParametroSistema(db.Model):
             try:
                 fernet = Fernet(ParametroSistema.get_chave_criptografia())
                 valor_descriptografado = fernet.decrypt(parametro.valor_criptografado.encode())
-                resultado = valor_descriptografado.decode()
-                # Log para debug (sem mostrar a chave real)
-                import logging
-                logging.info(f"Descriptografia bem-sucedida para {chave}: {'*' * len(resultado)}")
-                return resultado
-            except Exception as e:
-                import logging
-                logging.error(f"Erro ao descriptografar {chave}: {str(e)}")
+                return valor_descriptografado.decode()
+            except:
                 return valor_padrao
         elif parametro.tipo == 'json' and parametro.valor:
             try:
@@ -110,22 +91,13 @@ class ParametroSistema(db.Model):
     @staticmethod
     def get_openai_config():
         """Recupera configurações do OpenAI"""
-        # Verificar se existe registro de API key (mesmo que não consiga descriptografar)
-        parametro_api_key = ParametroSistema.query.filter_by(chave='openai_api_key').first()
-        api_key_existe = bool(parametro_api_key and parametro_api_key.valor_criptografado)
-        
-        # Tentar recuperar valores
         api_key = ParametroSistema.get_valor('openai_api_key', '')
         assistant_name = ParametroSistema.get_valor('openai_assistant_name', '')
-        
-        # Log para debug
-        import logging
-        logging.info(f"OpenAI Config - API Key no banco: {api_key_existe}, Descriptografada: {bool(api_key)}, Assistant: {assistant_name}")
         
         return {
             'api_key': api_key,
             'assistant_name': assistant_name,
-            'api_key_configured': api_key_existe or bool(api_key and api_key.strip())
+            'api_key_configured': bool(api_key and api_key.strip())
         }
     
     @staticmethod

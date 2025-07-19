@@ -79,7 +79,7 @@
                                                        class="btn btn-outline-info" title="Gerenciar Respondentes">
                                                         <i class="fas fa-users"></i>
                                                     </a>
-                                                    <a href="{{ url_for('projeto.criar', cliente_id=item.cliente.id) }}" 
+                                                    <a href="{{ url_for('projeto.criar') }}?cliente_id={{ item.cliente.id }}" 
                                                        class="btn btn-outline-success" title="Novo Projeto">
                                                         <i class="fas fa-plus"></i>
                                                     </a>
