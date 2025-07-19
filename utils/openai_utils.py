@@ -173,39 +173,47 @@ class OpenAIAssistant:
                 
                 # Preparar prompt específico para considerações finais
                 prompt = f"""
-                Como consultor especializado em assessments de maturidade organizacional, elabore as CONSIDERAÇÕES FINAIS do relatório baseado nos dados completos do projeto abaixo:
+                Como consultor especializado da GRUPPEN IT SECURITY em assessments de maturidade organizacional, elabore as CONSIDERAÇÕES FINAIS do relatório baseado nos dados completos do projeto abaixo:
 
                 **DADOS COMPLETOS DO PROJETO (JSON):**
                 {json.dumps(dados_projeto, indent=2, ensure_ascii=False)}
 
-                **INSTRUÇÕES PARA AS CONSIDERAÇÕES FINAIS:**
-                
-                1. **ESTRUTURA OBRIGATÓRIA:**
-                   - Parágrafo introdutório resumindo o escopo e objetivo do assessment
-                   - Para cada tipo de assessment, um parágrafo específico com recomendações detalhadas
-                   - Parágrafo de conclusão com próximos passos e prioridades
+                **ESTRUTURA OBRIGATÓRIA PARA AS CONSIDERAÇÕES FINAIS:**
 
-                2. **ANÁLISE TÉCNICA REQUERIDA:**
-                   - Identifique os domínios com melhor e pior desempenho em cada assessment
-                   - Mencione scores específicos e percentuais de conclusão
-                   - Analise consistência entre diferentes respondentes quando aplicável
-                   - Identifique gaps críticos de segurança ou compliance
+                1. **PARÁGRAFO INTRODUTÓRIO:**
+                   - Inicie apresentando as conclusões do projeto
+                   - Cite quantos assessments foram realizados e quais tipos (ex: "O projeto compreendeu 1 assessment de Cibersegurança...")
+                   - Mencione o escopo e metodologia utilizada
 
-                3. **RECOMENDAÇÕES ESTRATÉGICAS:**
-                   - Priorize ações por impacto e urgência
-                   - Sugira cronograma para implementação das melhorias
-                   - Mencione recursos necessários (pessoas, tecnologia, processos)
-                   - Considere interdependências entre domínios
+                2. **ANÁLISE POR ASSESSMENT:**
+                   - Para cada tipo de assessment presente nos dados:
+                     - Um parágrafo introdutório sobre o assessment específico
+                     - Subtópicos em parágrafos separados para cada domínio com:
+                       * Nome do domínio e sua nota/desempenho
+                       * Análise dos pontos fortes identificados
+                       * Gaps e oportunidades de melhoria
+                       * Recomendações específicas e acionáveis
 
-                4. **LINGUAGEM E TOM:**
-                   - Use linguagem técnica e consultiva
-                   - Seja específico e acionável nas recomendações
-                   - Mantenha tom profissional e construtivo
-                   - Evite generalizações, use dados concretos do assessment
+                3. **ANÁLISE FINAL ABRANGENTE:**
+                   - Parágrafo com opinião geral sobre o panorama de maturidade
+                   - Priorização das ações por impacto e urgência
+                   - Cronograma sugerido de implementação (curto, médio, longo prazo)
+                   - Recursos necessários (pessoas, tecnologia, processos)
+
+                4. **PARÁGRAFO DE CONCLUSÃO E ENCERRAMENTO:**
+                   - Agradecimento pela oportunidade de trabalhar no projeto
+                   - Colocar a Gruppen IT Security à disposição para quaisquer ações advindas do relatório
+                   - Encerramento formal e profissional
+
+                **DIRETRIZES TÉCNICAS:**
+                - Use dados específicos dos assessments (scores, percentuais, números)
+                - Seja técnico mas acessível para gestores
+                - Mencione frameworks relevantes quando aplicável (ISO 27001, NIST, etc.)
+                - Priorize recomendações por criticidade e viabilidade
 
                 **FORMATO DE SAÍDA:**
                 Retorne apenas o texto das considerações finais, sem formatação markdown ou títulos.
-                O texto deve ter entre 800-1500 palavras e ser dividido em parágrafos bem estruturados.
+                O texto deve ter entre 1000-1800 palavras, bem estruturado em parágrafos.
                 IMPORTANTE: Complete todas as frases e termine com um ponto final para indicar conclusão.
                 """
                 
