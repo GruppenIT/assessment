@@ -29,9 +29,10 @@ class ParametroSistema(db.Model):
         if chave_env:
             return chave_env.encode()
         
-        # Gerar nova chave se não existir
-        chave = Fernet.generate_key()
-        return chave
+        # Usar uma chave fixa para o ambiente (não recomendado para produção)
+        # Em produção, deve-se usar uma variável de ambiente
+        chave_fixa = "ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg="
+        return chave_fixa.encode()
     
     @staticmethod
     def get_valor(chave, valor_padrao=None):
@@ -44,8 +45,12 @@ class ParametroSistema(db.Model):
             try:
                 fernet = Fernet(ParametroSistema.get_chave_criptografia())
                 valor_descriptografado = fernet.decrypt(parametro.valor_criptografado.encode())
-                return valor_descriptografado.decode()
-            except:
+                resultado = valor_descriptografado.decode()
+                # Log para debug
+                logging.info(f"Descriptografia bem-sucedida para chave: {chave}")
+                return resultado
+            except Exception as e:
+                logging.error(f"Erro ao descriptografar {chave}: {e}")
                 return valor_padrao
         elif parametro.tipo == 'json' and parametro.valor:
             try:
