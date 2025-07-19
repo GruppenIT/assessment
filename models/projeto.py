@@ -13,6 +13,8 @@ class Projeto(db.Model):
     data_conclusao = db.Column(db.DateTime)
     ativo = db.Column(db.Boolean, default=True)
     descricao = db.Column(db.Text)
+    introducao_ia = db.Column(db.Text)  # Introdução gerada por IA
+    data_finalizacao = db.Column(db.DateTime)  # Data de finalização do assessment
     
     # Relacionamentos
     cliente = relationship('Cliente', backref='projetos')
@@ -75,7 +77,14 @@ class Projeto(db.Model):
         if not assessments_ativos:
             return False
         
-        return all(assessment.finalizado for assessment in assessments_ativos)
+        finalizado = all(assessment.finalizado for assessment in assessments_ativos)
+        
+        # Se acabou de ser finalizado e não tem data de finalização, marcar agora
+        if finalizado and not self.data_finalizacao:
+            self.data_finalizacao = datetime.utcnow()
+            db.session.commit()
+        
+        return finalizado
     
     def get_assessments_finalizados(self):
         """Retorna quantidade de assessments finalizados vs total"""

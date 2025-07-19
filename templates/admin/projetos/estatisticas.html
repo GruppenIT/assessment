@@ -46,6 +46,60 @@
         </div>
     </div>
 
+    <!-- Introdução Inteligente (IA) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="d-flex justify-content-between align-items-center text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-robot me-2"></i>Introdução do Relatório (ChatGPT)
+                        </h5>
+                        <div>
+                            {% if not projeto.introducao_ia %}
+                                <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-light btn-sm">
+                                        <i class="fas fa-magic me-1"></i>Criar Introdução com IA
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar uma nova introdução? A atual será substituída.');">
+                                        <i class="fas fa-sync me-1"></i>Gerar Nova Introdução
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if projeto.introducao_ia %}
+                        <div class="alert alert-light border-primary">
+                            <div class="formatted-text text-justify" style="line-height: 1.6; font-size: 1.05em;">
+                                {{ projeto.introducao_ia|replace('\n', '<br>')|safe }}
+                            </div>
+                        </div>
+                        <div class="mt-3 text-muted">
+                            <small>
+                                <i class="fas fa-robot me-1"></i>
+                                Introdução gerada automaticamente usando inteligência artificial
+                            </small>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-robot text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mb-3">Introdução não gerada</h5>
+                            <p class="text-muted mb-4">
+                                Gere uma introdução profissional para o relatório usando ChatGPT.<br>
+                                A introdução incluirá informações sobre o cliente, assessments e respondentes.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Estatísticas Gerais -->
     <div class="row mb-4">
         <div class="col-md-3">

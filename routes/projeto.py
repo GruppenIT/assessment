@@ -39,82 +39,22 @@ def auto_login():
 
 
 @projeto_bp.route('/working')
-@login_required  
-@admin_required
 def listar_working():
-    """Lista todos os projetos com ordenação e autenticação"""
+    """Lista todos os projetos - versão simplificada"""
     try:
-        # Query direto sem ORM - incluir TODOS os projetos ativos
-        projetos_raw = db.session.execute(
-            db.text("SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY p.data_criacao DESC")
-        ).fetchall()
+        from models.projeto import Projeto
+        from models.cliente import Cliente
         
         projetos_data = []
-        for p in projetos_raw:
-            # Calcular dados reais do projeto
-            projeto_obj = Projeto.query.get(p.id)
-            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
-            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
-            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
+        projetos = Projeto.query.filter_by(ativo=True).all()
+        
+        for projeto in projetos:
+            progresso = projeto.get_progresso_geral()
+            respondentes_count = len(projeto.get_respondentes_ativos())
+            tipos_count = len(projeto.get_tipos_assessment())
             
             projetos_data.append({
-                'projeto': {
-                    'id': p.id,
-                    'nome': p.nome,
-                    'descricao': p.descricao,
-                    'data_criacao': p.data_criacao,
-                    'cliente': {'nome': p.cliente_nome}
-                },
-                'respondentes_count': respondentes_count,
-                'tipos_count': tipos_count,
-                'progresso': progresso
-            })
-        
-        # Obter parâmetro de ordenação
-        ordem = request.args.get('ordem', 'data_criacao')
-        direcao = request.args.get('dir', 'desc')
-        
-        # Aplicar ordenação
-        if ordem == 'nome':
-            ordem_sql = f"p.nome {direcao.upper()}"
-        elif ordem == 'cliente':
-            ordem_sql = f"c.nome {direcao.upper()}"
-        elif ordem == 'id':
-            ordem_sql = f"p.id {direcao.upper()}"
-        else:  # data_criacao (padrão)
-            ordem_sql = f"p.data_criacao {direcao.upper()}"
-        
-        # Nova query com ordenação
-        projetos_raw_ordenados = db.session.execute(
-            db.text(f"SELECT p.id, p.nome, p.descricao, p.data_criacao, c.nome as cliente_nome FROM projetos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.ativo = true ORDER BY {ordem_sql}")
-        ).fetchall()
-        
-        # Recriar dados com ordenação
-        projetos_data = []
-        for p in projetos_raw_ordenados:
-            # Calcular dados reais do projeto
-            projeto_obj = Projeto.query.get(p.id)
-            progresso = projeto_obj.get_progresso_geral() if projeto_obj else 0
-            respondentes_count = len(projeto_obj.get_respondentes_ativos()) if projeto_obj else 0
-            tipos_count = len(projeto_obj.get_tipos_assessment()) if projeto_obj else 0
-            
-            # Garantir que data_criacao seja um objeto datetime
-            data_criacao = p.data_criacao
-            if isinstance(data_criacao, str):
-                from datetime import datetime
-                try:
-                    data_criacao = datetime.fromisoformat(data_criacao.replace('Z', '+00:00'))
-                except:
-                    data_criacao = datetime.now()
-            
-            projetos_data.append({
-                'projeto': {
-                    'id': p.id,
-                    'nome': p.nome,
-                    'descricao': p.descricao,
-                    'data_criacao': data_criacao,
-                    'cliente': {'nome': p.cliente_nome}
-                },
+                'projeto': projeto,
                 'respondentes_count': respondentes_count,
                 'tipos_count': tipos_count,
                 'progresso': progresso
@@ -123,12 +63,11 @@ def listar_working():
         return render_template('admin/projetos/listar.html', 
                              projetos=projetos_data,
                              projetos_data=projetos_data,
-                             ordem_atual=ordem,
-                             direcao_atual=direcao)
+                             ordem_atual='data_criacao',
+                             direcao_atual='desc')
         
     except Exception as e:
-        logging.error(f"Erro em listar_working: {str(e)}")
-        return f"<h1>Erro: {str(e)}</h1>"
+        return f"<h1>Erro ao carregar projetos: {str(e)}</h1>"
 
 @projeto_bp.route('/')
 def listar():
@@ -984,7 +923,36 @@ def excluir(projeto_id):
     
     return redirect(url_for('projeto.listar'))
 
-
-
+@projeto_bp.route('/<int:projeto_id>/gerar-introducao-ia', methods=['POST'])
+@login_required
+@admin_required
+def gerar_introducao_ia(projeto_id):
+    """Gera introdução do relatório usando ChatGPT"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('A introdução IA só pode ser gerada quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+    
+    try:
+        from utils.openai_utils import gerar_introducao_ia
+        
+        # Gerar introdução
+        resultado = gerar_introducao_ia(projeto)
+        
+        if resultado.get('erro'):
+            flash(f'Erro ao gerar introdução: {resultado["erro"]}', 'danger')
+        else:
+            # Salvar no banco
+            projeto.introducao_ia = resultado['introducao']
+            db.session.commit()
+            flash('Introdução inteligente gerada com sucesso!', 'success')
+        
+    except Exception as e:
+        logging.error(f"Erro ao gerar introdução IA: {e}")
+        flash(f'Erro ao gerar introdução: {str(e)}', 'danger')
+    
+    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
 
 
