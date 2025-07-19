@@ -528,7 +528,9 @@ def coletar_dados_projeto_completo_para_ia(projeto):
                 'id': projeto.id,
                 'nome': projeto.nome,
                 'cliente': projeto.cliente.nome,
-                'finalizado_em': projeto.finalizado_em.isoformat() if projeto.finalizado_em else None
+                'data_criacao': projeto.data_criacao.isoformat() if projeto.data_criacao else None,
+                'data_conclusao': projeto.data_conclusao.isoformat() if projeto.data_conclusao else None,
+                'data_finalizacao': projeto.data_finalizacao.isoformat() if projeto.data_finalizacao else None
             },
             'assessments': []
         }
@@ -543,7 +545,8 @@ def coletar_dados_projeto_completo_para_ia(projeto):
                         if projeto_assessment.versao_assessment_id 
                         else projeto_assessment.tipo_assessment.nome),
                 'score_geral': projeto_assessment.calcular_score_geral(),
-                'finalizado_em': projeto_assessment.finalizado_em.isoformat() if projeto_assessment.finalizado_em else None,
+                'finalizado': projeto_assessment.finalizado,
+                'data_finalizacao': projeto_assessment.data_finalizacao.isoformat() if projeto_assessment.data_finalizacao else None,
                 'dominios': []
             }
             
