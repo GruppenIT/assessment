@@ -35,8 +35,11 @@ class Projeto(db.Model):
         for projeto_assessment in self.assessments:
             # Usar sistema novo de versionamento
             if projeto_assessment.versao_assessment_id:
-                versao = projeto_assessment.versao_assessment
-                
+                from models.assessment_version import AssessmentVersao
+                versao = AssessmentVersao.query.get(projeto_assessment.versao_assessment_id)
+                if not versao:
+                    continue
+                    
                 # Contar total de perguntas desta versão
                 from models.assessment_version import AssessmentDominio
                 perguntas_count = db.session.query(Pergunta).join(
@@ -92,7 +95,10 @@ class Projeto(db.Model):
         tipos = []
         for pa in self.assessments:
             if pa.versao_assessment_id:
-                tipos.append(pa.versao_assessment.tipo)
+                from models.assessment_version import AssessmentVersao
+                versao = AssessmentVersao.query.get(pa.versao_assessment_id)
+                if versao:
+                    tipos.append(versao.tipo)
         return tipos
     
     def get_progresso_respondente(self, respondente_id):
@@ -107,8 +113,11 @@ class Projeto(db.Model):
         for projeto_assessment in self.assessments:
             # Usar sistema novo de versionamento
             if projeto_assessment.versao_assessment_id:
-                versao = projeto_assessment.versao_assessment
-                
+                from models.assessment_version import AssessmentVersao
+                versao = AssessmentVersao.query.get(projeto_assessment.versao_assessment_id)
+                if not versao:
+                    continue
+                    
                 # Contar total de perguntas desta versão
                 from models.assessment_version import AssessmentDominio
                 perguntas = db.session.query(Pergunta).join(
@@ -187,7 +196,10 @@ class ProjetoAssessment(db.Model):
         
         if self.versao_assessment_id:
             # Novo sistema de versionamento
-            versao = self.versao_assessment
+            from models.assessment_version import AssessmentVersao
+            versao = AssessmentVersao.query.get(self.versao_assessment_id)
+            if not versao:
+                return 0
             
             # Total de perguntas da versão
             total_perguntas = db.session.query(Pergunta).join(
