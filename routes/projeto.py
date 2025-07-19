@@ -667,9 +667,8 @@ def estatisticas(projeto_id):
         'scores_assessments': {assessment['tipo'].nome: assessment['score_geral'] for assessment in estatisticas_assessments}
     }
     
-    # Verificar se existe relatório IA
-    from models.relatorio_ia import RelatorioIA
-    relatorio_ia = RelatorioIA.get_by_projeto(projeto.id)
+    # Remover referência a relatórios IA
+    relatorio_ia = None
     
     return render_template('admin/projetos/estatisticas.html',
                          projeto=projeto,
@@ -985,53 +984,7 @@ def excluir(projeto_id):
     
     return redirect(url_for('projeto.listar'))
 
-@projeto_bp.route('/<int:projeto_id>/gerar-relatorio-ia', methods=['POST'])
-@login_required
-@admin_required
-def gerar_relatorio_ia(projeto_id):
-    """Gera relatório inteligente usando ChatGPT"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
-    # Verificar se projeto está totalmente finalizado
-    if not projeto.is_totalmente_finalizado():
-        flash('O relatório IA só pode ser gerado quando todos os assessments estão finalizados.', 'warning')
-        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-    
-    try:
-        from utils.openai_utils import gerar_relatorio_ia
-        from models.relatorio_ia import RelatorioIA
-        
-        # Gerar relatório
-        dados_relatorio = gerar_relatorio_ia(projeto)
-        
-        # Salvar no banco
-        relatorio = RelatorioIA.criar_relatorio(projeto_id, dados_relatorio)
-        
-        if dados_relatorio.get('erro'):
-            flash(f'Erro ao gerar relatório: {dados_relatorio["erro"]}', 'danger')
-        else:
-            flash('Relatório inteligente gerado com sucesso!', 'success')
-        
-    except Exception as e:
-        logging.error(f"Erro ao gerar relatório IA: {e}")
-        flash(f'Erro ao gerar relatório: {str(e)}', 'danger')
-    
-    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
 
-@projeto_bp.route('/<int:projeto_id>/relatorio-ia/<int:relatorio_id>')
-@login_required
-@admin_required
-def visualizar_relatorio_ia(projeto_id, relatorio_id):
-    """Visualiza relatório IA específico"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
-    from models.relatorio_ia import RelatorioIA
-    relatorio = RelatorioIA.query.filter_by(
-        id=relatorio_id,
-        projeto_id=projeto_id
-    ).first_or_404()
-    
-    return render_template('admin/projetos/relatorio_ia.html',
-                         projeto=projeto,
-                         relatorio=relatorio)
+
+
 

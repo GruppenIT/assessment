@@ -207,7 +207,7 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema, relatorio_ia
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema
         db.create_all()
         
         # Criar usuário admin padrão se não existir
