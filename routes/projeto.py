@@ -960,7 +960,7 @@ def gerar_introducao_ia(projeto_id):
 @admin_required
 def gerar_analise_dominios_ia(projeto_id):
     """Gera análise dos domínios do projeto usando IA"""
-    from utils.openai_utils import gerar_analise_dominios_ia as gerar_analise_util
+    from utils.ia_batch_processor import gerar_analise_incremental
     import json
     
     projeto = Projeto.query.get_or_404(projeto_id)
@@ -974,19 +974,20 @@ def gerar_analise_dominios_ia(projeto_id):
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
     
     try:
-        # Gerar análise dos domínios
-        logging.info(f"Iniciando geração de análise IA para projeto {projeto_id}")
-        resultado = gerar_analise_util(projeto)
+        # Gerar análise dos domínios com processamento incremental
+        logging.info(f"Iniciando análise incremental IA para projeto {projeto_id}")
+        resultado = gerar_analise_incremental(projeto)
         
         if resultado.get('erro'):
             logging.error(f"Erro na análise IA: {resultado['erro']}")
             flash(f'{resultado["erro"]}', 'warning')
         else:
-            # Salvar análises no projeto como JSON
-            logging.info(f"Salvando análise de {resultado['dominios_processados']} domínios")
-            projeto.analise_dominios_ia = json.dumps(resultado['analises'], ensure_ascii=False)
-            db.session.commit()
-            flash(f'Análise de {resultado["dominios_processados"]} domínios gerada com sucesso!', 'success')
+            # As análises já foram salvas incrementalmente durante o processamento
+            logging.info(f"Análise concluída: {resultado['dominios_processados']} domínios processados")
+            if resultado['dominios_processados'] == resultado['total_dominios']:
+                flash(f'Análise completa de {resultado["dominios_processados"]} domínios gerada com sucesso!', 'success')
+            else:
+                flash(f'Análise parcial: {resultado["dominios_processados"]} de {resultado["total_dominios"]} domínios processados. Alguns domínios podem ter falhado por problemas de conectividade.', 'info')
         
     except Exception as e:
         logging.error(f"Erro crítico ao gerar análise dos domínios IA: {e}", exc_info=True)

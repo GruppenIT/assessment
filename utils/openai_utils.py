@@ -86,49 +86,69 @@ class OpenAIAssistant:
             logging.error("Assistente OpenAI não configurado para gerar análise")
             return None
         
-        try:
-            logging.info(f"Gerando análise para domínio: {dominio_data.get('dominio', {}).get('nome', 'Unknown')}")
-            
-            # Preparar prompt específico para análise de domínio
-            prompt = f"""
-            Como analista especializado em assessments de maturidade organizacional, analise o domínio abaixo:
+        import time
+        
+        max_tentativas = 3
+        tentativa = 0
+        
+        while tentativa < max_tentativas:
+            try:
+                tentativa += 1
+                logging.info(f"Gerando análise para domínio: {dominio_data.get('dominio', {}).get('nome', 'Unknown')} (tentativa {tentativa})")
+                
+                # Preparar prompt específico para análise de domínio
+                prompt = f"""
+                Como analista especializado em assessments de maturidade organizacional, analise o domínio abaixo:
 
-            **DADOS DO DOMÍNIO (JSON):**
-            {json.dumps(dominio_data, indent=2, ensure_ascii=False)}
+                **DADOS DO DOMÍNIO (JSON):**
+                {json.dumps(dominio_data, indent=2, ensure_ascii=False)}
 
-            **INSTRUÇÕES PARA ANÁLISE:**
-            1. Escreva um parágrafo técnico como se você fosse o analista que avaliou pessoalmente as respostas
-            2. Mencione o nome do domínio e sua importância no contexto do assessment
-            3. Identifique os principais pontos fortes baseado nas respostas com notas altas
-            4. Identifique os pontos fracos ou áreas de melhoria baseado nas respostas com notas baixas
-            5. Faça considerações sobre a consistência das respostas e comentários fornecidos
-            6. Forneça uma avaliação geral da maturidade do cliente neste domínio
+                **INSTRUÇÕES PARA ANÁLISE:**
+                1. Escreva um parágrafo técnico como se você fosse o analista que avaliou pessoalmente as respostas
+                2. Mencione o nome do domínio e sua importância no contexto do assessment
+                3. Identifique os principais pontos fortes baseado nas respostas com notas altas
+                4. Identifique os pontos fracos ou áreas de melhoria baseado nas respostas com notas baixas
+                5. Faça considerações sobre a consistência das respostas e comentários fornecidos
+                6. Forneça uma avaliação geral da maturidade do cliente neste domínio
 
-            **FORMATO DE SAÍDA:**
-            Retorne apenas o parágrafo de análise, sem explicações adicionais ou formatação markdown.
-            Use linguagem técnica, objetiva e profissional, como um consultor especializado.
-            """
-            
-            logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
-            
-            response = self.client.chat.completions.create(
-                model="gpt-4o",  # newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-                messages=[
-                    {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessments de maturidade organizacional com expertise técnica e visão analítica profunda."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=1000,
-                temperature=0.7,
-                timeout=30  # Timeout reduzido para 30 segundos
-            )
-            
-            analise = response.choices[0].message.content.strip()
-            logging.info(f"Análise gerada com sucesso (tamanho: {len(analise)} caracteres)")
-            return analise
-            
-        except Exception as e:
-            logging.error(f"Erro ao gerar análise do domínio: {e}", exc_info=True)
-            return None
+                **FORMATO DE SAÍDA:**
+                Retorne apenas o parágrafo de análise, sem explicações adicionais ou formatação markdown.
+                Use linguagem técnica, objetiva e profissional, como um consultor especializado.
+                """
+                
+                logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
+                
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",  # newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                    messages=[
+                        {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessments de maturidade organizacional com expertise técnica e visão analítica profunda."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.7,
+                    timeout=15  # Timeout mais curto ainda
+                )
+                
+                analise = response.choices[0].message.content.strip()
+                logging.info(f"Análise gerada com sucesso (tamanho: {len(analise)} caracteres)")
+                return analise
+                
+            except Exception as e:
+                logging.error(f"Erro na tentativa {tentativa}: {e}")
+                
+                # Se é erro SSL ou timeout e ainda há tentativas, aguardar e tentar novamente
+                if tentativa < max_tentativas and ("SSL" in str(e) or "timeout" in str(e).lower() or "recv" in str(e)):
+                    wait_time = tentativa * 2  # Aumentar tempo de espera a cada tentativa
+                    logging.info(f"Aguardando {wait_time} segundos antes da próxima tentativa...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    # Se não é erro de conectividade ou acabaram as tentativas
+                    logging.error(f"Falha definitiva ao gerar análise do domínio: {e}")
+                    return None
+        
+        logging.error("Todas as tentativas falharam")
+        return None
 
 def coletar_dados_projeto_para_ia(projeto):
     """Coleta dados do projeto para envio à IA"""
@@ -381,6 +401,7 @@ def gerar_analise_dominios_ia(projeto):
                         logging.warning(f"Análise vazia para domínio: {dominio.nome}")
                 except Exception as e:
                     logging.error(f"Erro ao gerar análise para domínio {dominio.nome}: {e}")
+                    # Em caso de erro SSL/timeout, continuar com os próximos domínios
                     continue
         
         if not dominios_analises:
@@ -388,13 +409,22 @@ def gerar_analise_dominios_ia(projeto):
                 'erro': 'Nenhum domínio encontrado para análise.'
             }
         
-        return {
+        resultado_final = {
             'analises': dominios_analises,
             'assistant_name': assistant.assistant_name,
             'total_dominios': total_dominios,
             'dominios_processados': dominios_processados,
             'gerado_em': datetime.now().isoformat()
         }
+        
+        # Se processou pelo menos alguns domínios com sucesso, considerar sucesso parcial
+        if dominios_processados > 0:
+            logging.info(f"Processamento concluído: {dominios_processados}/{total_dominios} domínios")
+            return resultado_final
+        else:
+            return {
+                'erro': f'Não foi possível processar nenhum domínio. Total tentativas: {total_dominios}'
+            }
         
     except Exception as e:
         logging.error(f"Erro ao gerar análise dos domínios IA: {e}")
