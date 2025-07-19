@@ -1024,6 +1024,8 @@ def gerar_consideracoes_finais(projeto_id):
         else:
             # Salvar considerações no projeto como JSON
             logging.info("Salvando considerações finais no projeto")
+            logging.debug(f"Resultado recebido: {type(resultado)}, keys: {resultado.keys() if isinstance(resultado, dict) else 'N/A'}")
+            
             consideracoes_data = {
                 'consideracoes': resultado['consideracoes'],
                 'assistant_name': resultado['assistant_name'],
@@ -1031,9 +1033,22 @@ def gerar_consideracoes_finais(projeto_id):
                 'dados_utilizados': resultado['dados_utilizados']
             }
             
+            logging.debug(f"Dados a serem salvos: {consideracoes_data}")
+            logging.debug(f"Projeto ID: {projeto.id}, campo antes: {projeto.consideracoes_finais_ia}")
+            
             projeto.consideracoes_finais_ia = json.dumps(consideracoes_data, ensure_ascii=False)
-            db.session.commit()
-            flash('Considerações finais geradas com sucesso!', 'success')
+            
+            logging.debug(f"Campo após atribuição: {projeto.consideracoes_finais_ia}")
+            
+            try:
+                db.session.commit()
+                logging.info("Commit realizado com sucesso")
+                logging.debug(f"Verificação após commit: {projeto.consideracoes_finais_ia}")
+                flash('Considerações finais geradas com sucesso!', 'success')
+            except Exception as commit_error:
+                logging.error(f"Erro no commit: {commit_error}")
+                db.session.rollback()
+                flash('Erro ao salvar considerações finais.', 'error')
         
     except Exception as e:
         logging.error(f"Erro crítico ao gerar considerações finais: {e}", exc_info=True)
