@@ -660,8 +660,13 @@
                         <!-- Texto das Considerações Finais -->
                         <div class="card border-0" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             <div class="card-body p-4">
-                                <div class="text-content" style="line-height: 1.8; font-size: 1.1em; text-align: justify; color: #2d3748;">
+                                <div class="text-content" style="line-height: 1.8; font-size: 1.1em; text-align: justify; color: #2d3748; white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-wrap: anywhere;">
                                     {{ consideracoes_data.consideracoes | nl2br }}
+                                </div>
+                                <!-- Debug: Mostrar tamanho do texto -->
+                                <div class="mt-3 text-muted small">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Tamanho do texto: {{ consideracoes_data.consideracoes | length }} caracteres
                                 </div>
                             </div>
                         </div>
