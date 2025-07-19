@@ -6,6 +6,7 @@ import json
 import logging
 from datetime import datetime
 from openai import OpenAI
+from app import db
 from models.parametro_sistema import ParametroSistema
 from utils.timezone_utils import format_date_local, format_datetime_local
 
