@@ -26,7 +26,11 @@ class OpenAIAssistant:
             self.assistant_name = config.get('assistant_name', 'Assessment Assistant')
             
             if api_key:
-                self.client = OpenAI(api_key=api_key)
+                self.client = OpenAI(
+                    api_key=api_key,
+                    timeout=60,  # 60 segundos timeout
+                    max_retries=3  # 3 tentativas
+                )
                 logging.info(f"Cliente OpenAI inicializado com assistant: {self.assistant_name}")
             else:
                 logging.warning("API Key OpenAI não configurada")
@@ -207,14 +211,13 @@ class OpenAIAssistant:
                 logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
                 
                 response = self.client.chat.completions.create(
-                    model="gpt-4o",  # newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                    model="gpt-4o-mini",  # Usar modelo mais rápido para evitar timeout
                     messages=[
                         {"role": "system", "content": f"Você é o {self.assistant_name}. Elabore considerações finais técnicas e estratégicas para relatórios de assessment de maturidade organizacional."},
                         {"role": "user", "content": prompt}
                     ],
-                    max_tokens=1500,
-                    temperature=0.7,
-                    timeout=15
+                    max_tokens=1000,
+                    temperature=0.7
                 )
                 
                 consideracoes = response.choices[0].message.content.strip()
@@ -224,10 +227,15 @@ class OpenAIAssistant:
             except Exception as e:
                 logging.error(f"Erro na tentativa {tentativa}: {e}")
                 
-                # Se é erro SSL ou timeout e ainda há tentativas, aguardar e tentar novamente
-                if tentativa < max_tentativas and ("SSL" in str(e) or "timeout" in str(e).lower() or "recv" in str(e)):
-                    wait_time = tentativa * 2
-                    logging.info(f"Aguardando {wait_time} segundos antes da próxima tentativa...")
+                # Verificar se é erro de conectividade para retry
+                error_str = str(e).lower()
+                connectivity_errors = ["ssl", "timeout", "recv", "connection", "network", "read timed out", "connection reset"]
+                
+                is_connectivity_error = any(keyword in error_str for keyword in connectivity_errors)
+                
+                if tentativa < max_tentativas and is_connectivity_error:
+                    wait_time = tentativa * 3  # Aumentar tempo de espera
+                    logging.info(f"Erro de conectividade detectado: {type(e).__name__}. Aguardando {wait_time} segundos antes da próxima tentativa...")
                     time.sleep(wait_time)
                     continue
                 else:
