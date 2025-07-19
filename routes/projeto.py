@@ -253,6 +253,57 @@ def excluir(projeto_id):
         logging.error(f"Erro ao excluir projeto: {e}")
     return redirect(url_for('projeto.listar'))
 
+@projeto_bp.route('/<int:projeto_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar(projeto_id):
+    """Edita um projeto existente"""
+    from forms.projeto_forms import ProjetoForm
+    from models.cliente import Cliente
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    form = ProjetoForm(obj=projeto)
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            projeto.nome = form.nome.data
+            projeto.descricao = form.descricao.data
+            projeto.cliente_id = form.cliente_id.data
+            
+            db.session.commit()
+            flash(f'Projeto "{projeto.nome}" atualizado com sucesso!', 'success')
+            return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar projeto: {str(e)}', 'danger')
+            logging.error(f"Erro ao editar projeto: {e}")
+    
+    return render_template('admin/projetos/editar.html', form=form, projeto=projeto)
+
+@projeto_bp.route('/<int:projeto_id>/respondentes')
+@login_required
+@admin_required
+def gerenciar_respondentes(projeto_id):
+    """Gerencia respondentes de um projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Buscar respondentes do cliente do projeto
+    respondentes_cliente = []
+    if projeto.cliente:
+        from models.respondente import Respondente
+        respondentes_cliente = Respondente.query.filter_by(
+            cliente_id=projeto.cliente_id, 
+            ativo=True
+        ).all()
+    
+    # Respondentes já associados ao projeto
+    respondentes_projeto = projeto.get_respondentes_ativos()
+    
+    return render_template('admin/projetos/gerenciar_respondentes.html', 
+                         projeto=projeto,
+                         respondentes_cliente=respondentes_cliente,
+                         respondentes_projeto=respondentes_projeto)
+
 @projeto_bp.route('/<int:projeto_id>/estatisticas')
 def estatisticas(projeto_id):
     """Exibe estatísticas detalhadas do projeto"""
