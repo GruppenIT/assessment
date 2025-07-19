@@ -150,6 +150,92 @@ class OpenAIAssistant:
         logging.error("Todas as tentativas falharam")
         return None
 
+    def gerar_consideracoes_finais(self, dados_projeto):
+        """Gera considerações finais para o projeto baseado em todas as respostas"""
+        if not self.is_configured():
+            logging.error("Assistente OpenAI não configurado para gerar considerações finais")
+            return None
+        
+        import time
+        
+        max_tentativas = 3
+        tentativa = 0
+        
+        while tentativa < max_tentativas:
+            try:
+                tentativa += 1
+                logging.info(f"Gerando considerações finais para projeto (tentativa {tentativa})")
+                
+                # Preparar prompt específico para considerações finais
+                prompt = f"""
+                Como consultor especializado em assessments de maturidade organizacional, elabore as CONSIDERAÇÕES FINAIS do relatório baseado nos dados completos do projeto abaixo:
+
+                **DADOS COMPLETOS DO PROJETO (JSON):**
+                {json.dumps(dados_projeto, indent=2, ensure_ascii=False)}
+
+                **INSTRUÇÕES PARA AS CONSIDERAÇÕES FINAIS:**
+                
+                1. **ESTRUTURA OBRIGATÓRIA:**
+                   - Parágrafo introdutório resumindo o escopo e objetivo do assessment
+                   - Para cada tipo de assessment, um parágrafo específico com recomendações detalhadas
+                   - Parágrafo de conclusão com próximos passos e prioridades
+
+                2. **ANÁLISE TÉCNICA REQUERIDA:**
+                   - Identifique os domínios com melhor e pior desempenho em cada assessment
+                   - Mencione scores específicos e percentuais de conclusão
+                   - Analise consistência entre diferentes respondentes quando aplicável
+                   - Identifique gaps críticos de segurança ou compliance
+
+                3. **RECOMENDAÇÕES ESTRATÉGICAS:**
+                   - Priorize ações por impacto e urgência
+                   - Sugira cronograma para implementação das melhorias
+                   - Mencione recursos necessários (pessoas, tecnologia, processos)
+                   - Considere interdependências entre domínios
+
+                4. **LINGUAGEM E TOM:**
+                   - Use linguagem técnica e consultiva
+                   - Seja específico e acionável nas recomendações
+                   - Mantenha tom profissional e construtivo
+                   - Evite generalizações, use dados concretos do assessment
+
+                **FORMATO DE SAÍDA:**
+                Retorne apenas o texto das considerações finais, sem formatação markdown ou títulos.
+                O texto deve ter entre 800-1200 palavras e ser dividido em parágrafos bem estruturados.
+                """
+                
+                logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
+                
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",  # newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                    messages=[
+                        {"role": "system", "content": f"Você é o {self.assistant_name}. Elabore considerações finais técnicas e estratégicas para relatórios de assessment de maturidade organizacional."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=1500,
+                    temperature=0.7,
+                    timeout=15
+                )
+                
+                consideracoes = response.choices[0].message.content.strip()
+                logging.info(f"Considerações finais geradas com sucesso (tamanho: {len(consideracoes)} caracteres)")
+                return consideracoes
+                
+            except Exception as e:
+                logging.error(f"Erro na tentativa {tentativa}: {e}")
+                
+                # Se é erro SSL ou timeout e ainda há tentativas, aguardar e tentar novamente
+                if tentativa < max_tentativas and ("SSL" in str(e) or "timeout" in str(e).lower() or "recv" in str(e)):
+                    wait_time = tentativa * 2
+                    logging.info(f"Aguardando {wait_time} segundos antes da próxima tentativa...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logging.error(f"Falha definitiva ao gerar considerações finais: {e}")
+                    return None
+        
+        logging.error("Todas as tentativas falharam")
+        return None
+
 def coletar_dados_projeto_para_ia(projeto):
     """Coleta dados do projeto para envio à IA"""
     try:
@@ -430,4 +516,127 @@ def gerar_analise_dominios_ia(projeto):
         logging.error(f"Erro ao gerar análise dos domínios IA: {e}")
         return {
             'erro': f'Erro interno: {str(e)}'
+        }
+
+def coletar_dados_projeto_completo_para_ia(projeto):
+    """Coleta dados completos do projeto para geração de considerações finais"""
+    try:
+        logging.info(f"Coletando dados completos do projeto {projeto.id}")
+        
+        dados_projeto = {
+            'projeto': {
+                'id': projeto.id,
+                'nome': projeto.nome,
+                'cliente': projeto.cliente.nome,
+                'finalizado_em': projeto.finalizado_em.isoformat() if projeto.finalizado_em else None
+            },
+            'assessments': []
+        }
+        
+        for projeto_assessment in projeto.assessments:
+            if not projeto_assessment.finalizado:
+                continue
+                
+            # Dados do assessment
+            assessment_data = {
+                'tipo': (projeto_assessment.versao_assessment.tipo.nome 
+                        if projeto_assessment.versao_assessment_id 
+                        else projeto_assessment.tipo_assessment.nome),
+                'score_geral': projeto_assessment.calcular_score_geral(),
+                'finalizado_em': projeto_assessment.finalizado_em.isoformat() if projeto_assessment.finalizado_em else None,
+                'dominios': []
+            }
+            
+            # Identificar domínios do assessment
+            dominios_query = None
+            if projeto_assessment.versao_assessment_id:
+                from models.assessment_version import AssessmentDominio
+                dominios_query = AssessmentDominio.query.filter_by(
+                    versao_id=projeto_assessment.versao_assessment.id,
+                    ativo=True
+                ).order_by(AssessmentDominio.ordem)
+            elif projeto_assessment.tipo_assessment_id:
+                from models.dominio import Dominio
+                dominios_query = Dominio.query.filter_by(
+                    tipo_assessment_id=projeto_assessment.tipo_assessment_id,
+                    ativo=True
+                ).order_by(Dominio.ordem)
+            
+            if not dominios_query:
+                continue
+            
+            # Coletar dados de cada domínio
+            for dominio in dominios_query:
+                dominio_data = coletar_dados_dominio_para_ia(projeto, dominio)
+                if dominio_data:
+                    assessment_data['dominios'].append(dominio_data)
+            
+            dados_projeto['assessments'].append(assessment_data)
+        
+        # Estatísticas gerais do projeto
+        from models.resposta import Resposta
+        total_respostas = Resposta.query.join(Resposta.pergunta).filter(
+            Resposta.projeto_id == projeto.id,
+            Resposta.nota.isnot(None)
+        ).count()
+        
+        dados_projeto['estatisticas_gerais'] = {
+            'total_respostas': total_respostas,
+            'total_assessments': len(dados_projeto['assessments']),
+            'respondentes': len(set(r.respondente_id for r in projeto.respostas if r.respondente_id))
+        }
+        
+        logging.info(f"Dados completos coletados: {len(dados_projeto['assessments'])} assessments, {total_respostas} respostas")
+        return dados_projeto
+        
+    except Exception as e:
+        logging.error(f"Erro ao coletar dados completos do projeto: {e}")
+        return None
+
+def gerar_consideracoes_finais_projeto(projeto):
+    """Gera considerações finais completas para o projeto"""
+    try:
+        logging.info(f"Iniciando geração de considerações finais para projeto {projeto.id}")
+        
+        # Verificar se projeto está finalizado
+        if not projeto.is_totalmente_finalizado():
+            return {
+                'erro': 'O projeto deve estar totalmente finalizado para gerar as considerações finais.'
+            }
+        
+        # Inicializar assistente
+        assistant = OpenAIAssistant()
+        if not assistant.is_configured():
+            return {
+                'erro': 'Integração com ChatGPT não configurada.'
+            }
+        
+        # Coletar dados completos do projeto
+        dados_projeto = coletar_dados_projeto_completo_para_ia(projeto)
+        if not dados_projeto:
+            return {
+                'erro': 'Não foi possível coletar dados do projeto para análise.'
+            }
+        
+        # Gerar considerações finais
+        consideracoes = assistant.gerar_consideracoes_finais(dados_projeto)
+        if not consideracoes:
+            return {
+                'erro': 'Não foi possível gerar as considerações finais.'
+            }
+        
+        return {
+            'consideracoes': consideracoes,
+            'assistant_name': assistant.assistant_name,
+            'gerado_em': datetime.now().isoformat(),
+            'dados_utilizados': {
+                'total_assessments': len(dados_projeto['assessments']),
+                'total_respostas': dados_projeto['estatisticas_gerais']['total_respostas']
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"Erro crítico na geração de considerações finais: {e}")
+        return {
+            'erro': f'Erro durante processamento: {str(e)}'
         }

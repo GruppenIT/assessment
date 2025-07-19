@@ -995,4 +995,50 @@ def gerar_analise_dominios_ia(projeto_id):
     
     return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
 
+@projeto_bp.route('/projeto/<int:projeto_id>/gerar_consideracoes_finais', methods=['POST'])
+@login_required
+@admin_required  
+def gerar_consideracoes_finais(projeto_id):
+    """Gera considerações finais do projeto usando IA"""
+    from utils.openai_utils import gerar_consideracoes_finais_projeto
+    import json
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    logging.info(f"Requisição para gerar considerações finais do projeto {projeto_id}")
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        logging.warning(f"Projeto {projeto_id} não está totalmente finalizado")
+        flash('As considerações finais só podem ser geradas quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+    
+    try:
+        # Gerar considerações finais
+        logging.info(f"Iniciando geração de considerações finais para projeto {projeto_id}")
+        resultado = gerar_consideracoes_finais_projeto(projeto)
+        
+        if resultado.get('erro'):
+            logging.error(f"Erro nas considerações finais: {resultado['erro']}")
+            flash(f'{resultado["erro"]}', 'warning')
+        else:
+            # Salvar considerações no projeto como JSON
+            logging.info("Salvando considerações finais no projeto")
+            consideracoes_data = {
+                'consideracoes': resultado['consideracoes'],
+                'assistant_name': resultado['assistant_name'],
+                'gerado_em': resultado['gerado_em'],
+                'dados_utilizados': resultado['dados_utilizados']
+            }
+            
+            projeto.consideracoes_finais_ia = json.dumps(consideracoes_data, ensure_ascii=False)
+            db.session.commit()
+            flash('Considerações finais geradas com sucesso!', 'success')
+        
+    except Exception as e:
+        logging.error(f"Erro crítico ao gerar considerações finais: {e}", exc_info=True)
+        flash('Erro interno ao processar considerações finais. Tente novamente em alguns minutos.', 'error')
+    
+    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+
 

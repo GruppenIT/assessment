@@ -597,6 +597,104 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Considerações Finais (IA) -->
+    <div class="row mt-5 mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);">
+                    <div class="d-flex justify-content-between align-items-center text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-check me-2"></i>Considerações Finais do Relatório
+                        </h5>
+                        <div>
+                            {% if projeto.consideracoes_finais_ia %}
+                                <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar novas considerações finais? As atuais serão substituídas.');">
+                                        <i class="fas fa-sync me-1"></i>Gerar Novas Considerações
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-light btn-sm">
+                                        <i class="fas fa-magic me-1"></i>Gerar Considerações Finais
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if projeto.consideracoes_finais_ia %}
+                        {% set consideracoes_data = projeto.consideracoes_finais_ia | from_json %}
+                        
+                        <!-- Informações de Geração -->
+                        <div class="alert alert-info border-0 mb-4" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-robot me-2 text-primary"></i>
+                                        <span class="fw-bold">Análise gerada por:</span>
+                                        <span class="ms-2">{{ consideracoes_data.assistant_name }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        <strong>Gerado em:</strong> {{ consideracoes_data.gerado_em[:19] | replace('T', ' às ') }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <small class="text-muted">
+                                        <i class="fas fa-chart-bar me-1"></i>
+                                        <strong>Base para análise:</strong> 
+                                        {{ consideracoes_data.dados_utilizados.total_assessments }} assessment(s), 
+                                        {{ consideracoes_data.dados_utilizados.total_respostas }} respostas coletadas
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Texto das Considerações Finais -->
+                        <div class="card border-0" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div class="card-body p-4">
+                                <div class="text-content" style="line-height: 1.8; font-size: 1.1em; text-align: justify; color: #2d3748;">
+                                    {{ consideracoes_data.consideracoes | nl2br }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                    {% else %}
+                        <!-- Quando não há considerações finais -->
+                        <div class="text-center py-5">
+                            <div class="mb-4">
+                                <i class="fas fa-clipboard-check fa-3x text-muted"></i>
+                            </div>
+                            <h6 class="text-muted mb-3">Considerações Finais não geradas</h6>
+                            <p class="text-muted mb-4">
+                                As considerações finais fornecem uma visão executiva completa do assessment,<br>
+                                incluindo recomendações estratégicas e próximos passos para o cliente.
+                            </p>
+                            {% if projeto.is_totalmente_finalizado() %}
+                                <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-magic me-2"></i>Gerar Considerações Finais com IA
+                                    </button>
+                                </form>
+                            {% else %}
+                                <div class="alert alert-warning d-inline-block">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Para gerar as considerações finais, todos os assessments devem estar finalizados.
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Incluir modal de progresso -->
