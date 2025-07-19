@@ -326,17 +326,13 @@
                         </h5>
                         <div>
                             {% if projeto.analise_dominios_ia %}
-                                <form method="POST" action="{{ url_for('projeto.gerar_analise_dominios_ia', projeto_id=projeto.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar uma nova análise? A atual será substituída. Este processo pode levar alguns minutos.');">
-                                        <i class="fas fa-sync me-1"></i>Gerar Nova Análise
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-outline-light btn-sm" onclick="if(confirm('Deseja gerar uma nova análise? A atual será substituída.')) { startAnalysisProgress({{ projeto.id }}); }">
+                                    <i class="fas fa-sync me-1"></i>Gerar Nova Análise
+                                </button>
                             {% else %}
-                                <form method="POST" action="{{ url_for('projeto.gerar_analise_dominios_ia', projeto_id=projeto.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-light btn-sm" onclick="return confirm('Este processo pode levar alguns minutos para analisar todos os domínios. Deseja continuar?');">
-                                        <i class="fas fa-brain me-1"></i>Gerar Análise dos Domínios
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-light btn-sm" onclick="startAnalysisProgress({{ projeto.id }})">
+                                    <i class="fas fa-brain me-1"></i>Gerar Análise dos Domínios
+                                </button>
                             {% endif %}
                         </div>
                     </div>
@@ -602,6 +598,9 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Incluir modal de progresso -->
+{% include 'admin/projetos/progress_modal.html' %}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

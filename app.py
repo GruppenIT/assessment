@@ -44,6 +44,19 @@ def create_app():
     login_manager.login_message = 'Por favor, faça login para acessar esta página.'
     login_manager.login_message_category = 'info'
     
+    # Adicionar filtros personalizados ao Jinja2
+    import json
+    
+    @app.template_filter('from_json')
+    def from_json_filter(value):
+        """Filtro para converter string JSON em dict"""
+        if not value:
+            return {}
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            return {}
+    
     # Handler personalizado para unauthorized - BYPASS COMPLETO
     @login_manager.unauthorized_handler
     def unauthorized():
@@ -116,11 +129,13 @@ def create_app():
     from routes.cliente import cliente_bp
     from routes.admin import admin_bp
     from routes.respondente import respondente_bp
+    from routes.sse_progress import sse_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(cliente_bp, url_prefix='/cliente')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(respondente_bp, url_prefix='/respondente')
+    app.register_blueprint(sse_bp, url_prefix='/sse')
     
     # Blueprint admin_old removido - causava conflito de rotas
     

@@ -1,0 +1,228 @@
+<!-- Modal de Progresso da Análise IA -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="progressModalLabel">
+                    <i class="fas fa-brain me-2"></i>
+                    Gerando Análise dos Domínios com IA
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="spinner-border text-primary mb-3" role="status" id="loadingSpinner">
+                        <span class="visually-hidden">Processando...</span>
+                    </div>
+                    <h6 id="currentStatus" class="text-muted">Iniciando processamento...</h6>
+                </div>
+                
+                <!-- Barra de Progresso -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small text-muted">Progresso</span>
+                        <span class="small text-muted">
+                            <span id="progressCount">0</span> / <span id="totalCount">0</span> domínios
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             id="progressBar" 
+                             style="width: 0%;"
+                             aria-valuenow="0" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            <span id="progressPercentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Atual -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-cogs me-2"></i>
+                            Status Atual
+                        </h6>
+                        <p class="card-text" id="currentDomain">
+                            Preparando processamento...
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Log de Progresso -->
+                <div class="mt-3">
+                    <h6 class="mb-2">
+                        <i class="fas fa-list me-2"></i>
+                        Log de Processamento
+                    </h6>
+                    <div class="bg-dark text-white p-3 rounded" style="max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                        <div id="progressLog">
+                            <div class="text-info">[INICIANDO] Preparando análise de domínios...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary d-none" id="closeButton" data-bs-dismiss="modal">
+                    Fechar
+                </button>
+                <div id="processingInfo" class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Este processo pode levar alguns minutos. Por favor, mantenha esta janela aberta.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let eventSource = null;
+let sessionId = null;
+
+function startAnalysisProgress(projetoId) {
+    // Mostrar modal
+    $('#progressModal').modal('show');
+    
+    // Reinicializar elementos
+    resetProgressModal();
+    
+    // Iniciar análise
+    fetch(`/sse/start_analysis/${projetoId}`)
+        .then(response => response.json())
+        .then(data => {
+            sessionId = data.session_id;
+            addToLog(`[INICIADO] Sessão ${sessionId} iniciada com sucesso`);
+            
+            // Conectar ao stream de progresso
+            eventSource = new EventSource(`/sse/progress/${sessionId}`);
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateProgress(data);
+            };
+            
+            eventSource.onerror = function(event) {
+                addToLog('[ERRO] Erro na conexão de progresso');
+                console.error('EventSource error:', event);
+            };
+        })
+        .catch(error => {
+            console.error('Erro ao iniciar análise:', error);
+            addToLog(`[ERRO] Falha ao iniciar: ${error.message}`);
+            showError('Erro ao iniciar análise. Tente novamente.');
+        });
+}
+
+function updateProgress(data) {
+    const status = data.status;
+    
+    if (status === 'processing') {
+        // Atualizar contadores
+        $('#progressCount').text(data.processed);
+        $('#totalCount').text(data.total);
+        
+        // Atualizar barra de progresso
+        const percentage = data.percentage || 0;
+        $('#progressBar').css('width', percentage + '%');
+        $('#progressBar').attr('aria-valuenow', percentage);
+        $('#progressPercentage').text(percentage + '%');
+        
+        // Atualizar status atual
+        $('#currentStatus').text(data.current_domain);
+        $('#currentDomain').text(data.current_domain);
+        
+        // Adicionar ao log
+        if (data.processed > 0) {
+            addToLog(`[PROCESSADO] ${data.current_domain} (${data.processed}/${data.total})`);
+        }
+        
+    } else if (status === 'completed') {
+        // Processo concluído
+        $('#loadingSpinner').addClass('d-none');
+        $('#currentStatus').text('Processamento concluído com sucesso!');
+        $('#currentDomain').html('<i class="fas fa-check-circle text-success me-2"></i>Análise concluída!');
+        
+        // Atualizar progresso final
+        $('#progressCount').text(data.processed);
+        $('#totalCount').text(data.total);
+        $('#progressBar').css('width', '100%');
+        $('#progressBar').removeClass('progress-bar-animated progress-bar-striped');
+        $('#progressBar').addClass('bg-success');
+        $('#progressPercentage').text('100%');
+        
+        addToLog(`[CONCLUÍDO] ${data.success_message}`);
+        addToLog(`[FINALIZADO] Análise salva no banco de dados`);
+        
+        // Mostrar botão fechar
+        $('#closeButton').removeClass('d-none');
+        $('#processingInfo').addClass('d-none');
+        
+        // Fechar eventSource
+        if (eventSource) {
+            eventSource.close();
+        }
+        
+        // Recarregar página após 3 segundos
+        setTimeout(() => {
+            window.location.reload();
+        }, 3000);
+        
+    } else if (status === 'error') {
+        showError(data.message);
+    }
+}
+
+function resetProgressModal() {
+    $('#loadingSpinner').removeClass('d-none');
+    $('#currentStatus').text('Iniciando processamento...');
+    $('#currentDomain').text('Preparando processamento...');
+    $('#progressCount').text('0');
+    $('#totalCount').text('0');
+    $('#progressBar').css('width', '0%');
+    $('#progressBar').addClass('progress-bar-animated progress-bar-striped');
+    $('#progressBar').removeClass('bg-success bg-danger');
+    $('#progressPercentage').text('0%');
+    $('#closeButton').addClass('d-none');
+    $('#processingInfo').removeClass('d-none');
+    
+    // Limpar log
+    $('#progressLog').html('<div class="text-info">[INICIANDO] Preparando análise de domínios...</div>');
+}
+
+function addToLog(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `<div class="mb-1">[${timestamp}] ${message}</div>`;
+    $('#progressLog').append(logEntry);
+    
+    // Auto-scroll para o final
+    const logContainer = $('#progressLog').parent();
+    logContainer.scrollTop(logContainer[0].scrollHeight);
+}
+
+function showError(message) {
+    $('#loadingSpinner').addClass('d-none');
+    $('#currentStatus').text('Erro no processamento');
+    $('#currentDomain').html(`<i class="fas fa-exclamation-circle text-danger me-2"></i>${message}`);
+    $('#progressBar').removeClass('progress-bar-animated progress-bar-striped');
+    $('#progressBar').addClass('bg-danger');
+    
+    addToLog(`[ERRO] ${message}`);
+    
+    $('#closeButton').removeClass('d-none');
+    $('#processingInfo').addClass('d-none');
+    
+    // Fechar eventSource
+    if (eventSource) {
+        eventSource.close();
+    }
+}
+
+// Limpar EventSource ao fechar modal
+$('#progressModal').on('hidden.bs.modal', function () {
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+});
+</script>
