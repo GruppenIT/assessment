@@ -47,10 +47,9 @@ class ParametroSistema(db.Model):
                 valor_descriptografado = fernet.decrypt(parametro.valor_criptografado.encode())
                 resultado = valor_descriptografado.decode()
                 # Log para debug
-                logging.info(f"Descriptografia bem-sucedida para chave: {chave}")
                 return resultado
             except Exception as e:
-                logging.error(f"Erro ao descriptografar {chave}: {e}")
+                # Silenciar erro de descriptografia
                 return valor_padrao
         elif parametro.tipo == 'json' and parametro.valor:
             try:
