@@ -91,7 +91,7 @@ def coletar_dados_projeto_para_ia(projeto):
                 "data_finalizacao": format_date_local(projeto.data_finalizacao) if projeto.data_finalizacao else None
             },
             "cliente": {
-                "nome": projeto.cliente.nome if projeto.cliente else "Cliente não especificado"
+                "nome": projeto.cliente.nome_fantasia if projeto.cliente else "Cliente não especificado"
             },
             "respondentes": [],
             "tipos_assessment": []
