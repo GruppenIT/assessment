@@ -29,3 +29,5 @@ werkzeug
 pytz
 openai
 cryptography
+matplotlib
+numpy

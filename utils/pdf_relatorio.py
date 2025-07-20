@@ -27,6 +27,10 @@ from models.respondente import Respondente
 from app import db
 from utils.timezone_utils import format_datetime_local, format_date_local
 from sqlalchemy import func
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import numpy as np
+from io import BytesIO
 
 class RelatorioPDF:
     """Classe para geração de relatórios PDF completos e formais"""
@@ -610,6 +614,29 @@ class RelatorioPDF:
                 
                 self.story.append(tabela_scores)
                 self.story.append(Spacer(1, 20))
+                
+                # Gerar e adicionar gráfico radar
+                try:
+                    grafico_path = self._gerar_grafico_radar(tipo, dados_dominios)
+                    if grafico_path and os.path.exists(grafico_path):
+                        self.story.append(Paragraph("Análise Visual por Domínio", self.styles['Subtitulo']))
+                        self.story.append(Spacer(1, 10))
+                        
+                        # Adicionar imagem do gráfico radar
+                        img = Image(grafico_path, width=4.5*inch, height=4.5*inch)
+                        img.hAlign = 'CENTER'
+                        self.story.append(img)
+                        self.story.append(Spacer(1, 20))
+                        
+                        # Limpar arquivo temporário
+                        try:
+                            os.unlink(grafico_path)
+                        except:
+                            pass
+                except Exception as e:
+                    # Se houver erro na geração do gráfico, continuar sem ele
+                    print(f"Erro ao gerar gráfico radar: {e}")
+                    pass
         
         self.story.append(PageBreak())
     
@@ -803,6 +830,66 @@ class RelatorioPDF:
                                                 fontSize=10,
                                                 alignment=TA_LEFT,
                                                 fontName='Helvetica')))
+
+    def _gerar_grafico_radar(self, tipo_assessment, dados_dominios):
+        """Gera gráfico radar para os domínios de um assessment"""
+        if not dados_dominios:
+            return None
+        
+        try:
+            # Configurar matplotlib para usar backend não-interativo
+            plt.switch_backend('Agg')
+            
+            # Extrair dados
+            labels = [dado[0] for dado in dados_dominios]
+            values = [float(dado[1]) for dado in dados_dominios]
+            
+            # Configurar o gráfico radar
+            N = len(labels)
+            if N == 0:
+                return None
+                
+            # Calcular ângulos para cada eixo
+            angles = [n / float(N) * 2 * np.pi for n in range(N)]
+            angles += angles[:1]  # Fechar o círculo
+            
+            # Adicionar o primeiro valor no final para fechar o gráfico
+            values += values[:1]
+            
+            # Criar figura
+            fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(projection='polar'))
+            
+            # Plotar a área
+            ax.plot(angles, values, 'o-', linewidth=2, label=tipo_assessment.nome, color='#6f42c1')
+            ax.fill(angles, values, alpha=0.25, color='#6f42c1')
+            
+            # Configurar labels
+            ax.set_xticks(angles[:-1])
+            ax.set_xticklabels(labels, fontsize=10)
+            
+            # Configurar escala radial
+            ax.set_ylim(0, 5)
+            ax.set_yticks([0, 1, 2, 3, 4, 5])
+            ax.set_yticklabels(['0', '1', '2', '3', '4', '5'], fontsize=8)
+            ax.grid(True)
+            
+            # Adicionar título
+            plt.title(f'Assessment: {tipo_assessment.nome}', size=14, fontweight='bold', pad=20)
+            
+            # Configurar layout
+            plt.tight_layout()
+            
+            # Salvar em arquivo temporário
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+                plt.savefig(tmp_file.name, format='png', dpi=150, bbox_inches='tight', 
+                           facecolor='white', edgecolor='none')
+                plt.close()
+                return tmp_file.name
+                
+        except Exception as e:
+            print(f"Erro na geração do gráfico radar: {e}")
+            plt.close('all')
+            return None
 
 
 def gerar_relatorio_pdf_completo(projeto):
