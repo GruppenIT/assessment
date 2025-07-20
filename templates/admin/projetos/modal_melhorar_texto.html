@@ -129,8 +129,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Fechar modal
                 bootstrap.Modal.getInstance(modal).hide();
                 
-                // Recarregar página para mostrar texto atualizado
-                window.location.reload();
+                // Se estamos na página de edição, chamar função de callback
+                if (typeof window.onTextoMelhoradoCallback === 'function') {
+                    window.onTextoMelhoradoCallback(data.texto_melhorado);
+                } else {
+                    // Caso contrário, recarregar a página
+                    window.location.reload();
+                }
             } else {
                 alert('Erro ao melhorar texto: ' + (data.message || 'Erro desconhecido'));
             }

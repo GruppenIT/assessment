@@ -98,6 +98,11 @@
                         <!-- Botões de Ação -->
                         <div class="d-flex gap-2">
                             {{ form.submit(class="btn btn-success") }}
+                            {% if not projeto.liberado_cliente %}
+                                <button type="button" class="btn btn-info" onclick="abrirModalMelhoria('{{ form.tipo_texto.data }}', document.getElementById('texto_ia').value, {{ projeto.id }})">
+                                    <i class="fas fa-magic me-1"></i>Melhorar com IA
+                                </button>
+                            {% endif %}
                             <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-times me-1"></i>Cancelar
                             </a>
@@ -119,4 +124,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- Incluir modal de melhoria de texto -->
+{% include 'admin/projetos/modal_melhorar_texto.html' %}
+
+<script>
+// Função para atualizar o texto no formulário após melhoria
+function atualizarTextoAposMelhoria(novoTexto) {
+    const textarea = document.getElementById('texto_ia');
+    if (textarea) {
+        textarea.value = novoTexto;
+        
+        // Mostrar feedback visual
+        textarea.style.border = '2px solid #28a745';
+        setTimeout(() => {
+            textarea.style.border = '';
+        }, 2000);
+    }
+}
+
+// Override da função de callback do modal para esta página
+window.onTextoMelhoradoCallback = atualizarTextoAposMelhoria;
+</script>
+
 {% endblock %}
