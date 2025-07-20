@@ -32,7 +32,9 @@ class RelatorioPDF:
     """Classe para geração de relatórios PDF completos e formais"""
     
     def __init__(self, projeto):
-        self.projeto = projeto
+        # Recarregar o projeto do banco para garantir dados atualizados
+        from models.projeto import Projeto
+        self.projeto = Projeto.query.get(projeto.id)
         self.story = []
         self.styles = getSampleStyleSheet()
         self.page_number = 0
@@ -720,17 +722,18 @@ class RelatorioPDF:
         """Adiciona considerações finais"""
         self.story.append(Paragraph("8. CONSIDERAÇÕES FINAIS", self.styles['TituloCapitulo']))
         
+        # Debug: verificar dados carregados
+        print(f"DEBUG PDF: consideracoes_finais_ia exists: {bool(self.projeto.consideracoes_finais_ia)}")
+        if self.projeto.consideracoes_finais_ia:
+            print(f"DEBUG PDF: consideracoes_finais_ia length: {len(self.projeto.consideracoes_finais_ia)}")
+            print(f"DEBUG PDF: First 100 chars: {self.projeto.consideracoes_finais_ia[:100]}")
+        
         if self.projeto.consideracoes_finais_ia:
             try:
-                # Verificar se é JSON primeiro
-                if self.projeto.consideracoes_finais_ia.strip().startswith('{'):
-                    consideracoes_data = json.loads(self.projeto.consideracoes_finais_ia)
-                    texto_consideracoes = consideracoes_data.get('consideracoes', '')
-                else:
-                    # Se não for JSON, usar como texto simples
-                    texto_consideracoes = self.projeto.consideracoes_finais_ia
+                # Sempre usar como texto simples (evitando problemas de JSON)
+                texto_consideracoes = self.projeto.consideracoes_finais_ia.strip()
                 
-                if texto_consideracoes and texto_consideracoes.strip():
+                if texto_consideracoes:
                     # Remover tags HTML se houver
                     import re
                     texto_limpo = re.sub(r'<[^>]+>', '', texto_consideracoes)
@@ -740,18 +743,9 @@ class RelatorioPDF:
                             self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
                 else:
                     self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
-            except (json.JSONDecodeError, KeyError, TypeError):
-                # Se falhar o parse JSON, tentar usar como texto simples
-                texto_simples = self.projeto.consideracoes_finais_ia.strip()
-                if texto_simples:
-                    import re
-                    texto_limpo = re.sub(r'<[^>]+>', '', texto_simples)
-                    paragrafos = texto_limpo.split('\n\n')
-                    for paragrafo in paragrafos:
-                        if paragrafo.strip():
-                            self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
-                else:
-                    self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
+            except Exception as e:
+                print(f"DEBUG PDF: Erro ao processar considerações finais: {e}")
+                self.story.append(Paragraph("Erro ao processar considerações finais.", self.styles['TextoJustificado']))
         else:
             self.story.append(Paragraph("Considerações finais não geradas.", self.styles['TextoJustificado']))
         
