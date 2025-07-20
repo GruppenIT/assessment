@@ -204,7 +204,7 @@ class RelatorioPDF:
             ['<b>CNPJ:</b>', cliente.cnpj or 'Não informado'],
             ['<b>Localidade:</b>', cliente.localidade or 'Não informado'],
             ['<b>Segmento:</b>', cliente.segmento or 'Não informado'],
-            ['<b>Data de Cadastro:</b>', format_date_local(cliente.data_cadastro) if cliente.data_cadastro else 'Não informado']
+            ['<b>Data de Cadastro:</b>', format_date_local(cliente.data_criacao) if cliente.data_criacao else 'Não informado']
         ]
         
         tabela_cliente = Table(dados_cliente, colWidths=[4*inch, 3*inch])
@@ -410,8 +410,8 @@ class RelatorioPDF:
                     ).order_by(Resposta.data_resposta.desc()).first()
                     
                     if resposta:
-                        respostas_dominio.append(resposta.valor)
-                        todas_respostas.append(resposta.valor)
+                        respostas_dominio.append(resposta.nota)
+                        todas_respostas.append(resposta.nota)
                 
                 # Calcular média do domínio
                 if respostas_dominio:
@@ -516,7 +516,7 @@ class RelatorioPDF:
                             ['<b>Pergunta:</b>', pergunta.texto],
                             ['<b>Descrição:</b>', pergunta.descricao or 'Não informado'],
                             ['<b>Referência:</b>', pergunta.referencia or 'Não informado'],
-                            ['<b>Pontuação:</b>', f"{resposta.valor}/5"],
+                            ['<b>Pontuação:</b>', f"{resposta.nota}/5"],
                             ['<b>Comentário:</b>', resposta.comentario or 'Sem comentários'],
                             ['<b>Respondente:</b>', resposta.respondente.nome if resposta.respondente else 'Não identificado'],
                             ['<b>Data:</b>', format_datetime_local(resposta.data_resposta) if resposta.data_resposta else 'Não informado'],
