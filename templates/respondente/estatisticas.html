@@ -47,6 +47,26 @@
         </div>
     </div>
 
+    <!-- Introdução do Projeto -->
+    {% if projeto.introducao_ia %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    <h5 class="text-white mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Introdução
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="bg-light p-4 rounded">
+                        {{ projeto.introducao_ia.strip() | replace('\n', '<br>') | safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Estatísticas por Assessment -->
     {% for assessment_id, stats in estatisticas_assessments.items() %}
     <div class="row mb-5">
@@ -171,38 +191,20 @@
     </div>
     {% endfor %}
 
-    <!-- Textos Gerados por IA -->
-    {% if projeto.introducao_ia or projeto.consideracoes_finais_ia %}
+    <!-- Considerações Finais -->
+    {% if projeto.consideracoes_finais_ia %}
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);">
                     <h5 class="text-white mb-0">
-                        <i class="fas fa-robot me-2"></i>Análise Executiva
+                        <i class="fas fa-clipboard-check me-2"></i>Considerações Finais
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% if projeto.introducao_ia %}
-                    <div class="mb-4">
-                        <h6 class="text-primary mb-3">
-                            <i class="fas fa-play me-2"></i>Introdução
-                        </h6>
-                        <div class="bg-light p-3 rounded">
-                            {{ projeto.introducao_ia.strip() | replace('\n', '<br>') | safe }}
-                        </div>
+                    <div class="bg-light p-4 rounded">
+                        {{ projeto.consideracoes_finais_ia.strip() | replace('\n', '<br>') | safe }}
                     </div>
-                    {% endif %}
-
-                    {% if projeto.consideracoes_finais_ia %}
-                    <div>
-                        <h6 class="text-primary mb-3">
-                            <i class="fas fa-clipboard-check me-2"></i>Considerações Finais
-                        </h6>
-                        <div class="bg-light p-3 rounded">
-                            {{ projeto.consideracoes_finais_ia.strip() | replace('\n', '<br>') | safe }}
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
