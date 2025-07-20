@@ -193,7 +193,7 @@ def visualizar_estatisticas(projeto_id):
     # Agora vamos buscar todos os dados estatísticos como na página admin
     
     # Buscar respondentes do projeto
-    respondentes_projeto = projeto.get_respondentes()
+    respondentes_projeto = [pr.respondente for pr in projeto.respondentes if pr.ativo]
     
     # Calcular estatísticas por assessment
     estatisticas_assessments = {}
