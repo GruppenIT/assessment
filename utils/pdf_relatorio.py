@@ -198,15 +198,28 @@ class RelatorioPDF:
                 os.path.join('static', 'img', 'gruppen_logo.png'),
                 os.path.join('static', 'img', 'logo.png'),
                 os.path.join('static', 'assets', 'gruppen_logo.png'),
-                os.path.join('static', 'assets', 'logo.png')
+                os.path.join('static', 'assets', 'logo.png'),
+                os.path.join('static', 'img', 'gruppen_logo.svg')
             ]
             
+            logo_encontrado = False
             for logo_path in logo_paths:
                 if os.path.exists(logo_path):
                     canvas.drawImage(logo_path, 1*inch, A4[1] - 0.9*inch, width=0.8*inch, height=0.4*inch, preserveAspectRatio=True)
+                    logo_encontrado = True
                     break
-        except:
-            pass
+            
+            # Se não encontrou logo, desenhar um simples
+            if not logo_encontrado:
+                canvas.setFont('Helvetica-Bold', 8)
+                canvas.setFillColor(HexColor('#2c3e50'))
+                canvas.drawString(1*inch, A4[1] - 0.7*inch, 'GRUPPEN IT SECURITY')
+                
+        except Exception as e:
+            # Fallback: texto simples
+            canvas.setFont('Helvetica-Bold', 8)
+            canvas.setFillColor(HexColor('#2c3e50'))
+            canvas.drawString(1*inch, A4[1] - 0.7*inch, 'GRUPPEN IT SECURITY')
         
         # Nome cliente e projeto no centro
         canvas.setFont('Helvetica', 9)
