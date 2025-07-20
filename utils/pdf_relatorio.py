@@ -722,11 +722,7 @@ class RelatorioPDF:
         """Adiciona considerações finais"""
         self.story.append(Paragraph("8. CONSIDERAÇÕES FINAIS", self.styles['TituloCapitulo']))
         
-        # Debug: verificar dados carregados
-        print(f"DEBUG PDF: consideracoes_finais_ia exists: {bool(self.projeto.consideracoes_finais_ia)}")
-        if self.projeto.consideracoes_finais_ia:
-            print(f"DEBUG PDF: consideracoes_finais_ia length: {len(self.projeto.consideracoes_finais_ia)}")
-            print(f"DEBUG PDF: First 100 chars: {self.projeto.consideracoes_finais_ia[:100]}")
+        # Debug removido - funcionalidade corrigida
         
         if self.projeto.consideracoes_finais_ia:
             try:

@@ -152,6 +152,176 @@ def dashboard():
         flash('Erro ao carregar dashboard. Entre em contato com o suporte.', 'danger')
         return redirect(url_for('auth.login'))
 
+@respondente_bp.route('/projeto/<int:projeto_id>/estatisticas')
+@login_required
+@respondente_required
+def visualizar_estatisticas(projeto_id):
+    """Visualizar estatísticas liberadas de um projeto"""
+    if not isinstance(current_user, Respondente):
+        return redirect(url_for('auth.login'))
+    
+    # Verificar se o respondente tem acesso a este projeto
+    from models.projeto import ProjetoRespondente, Projeto
+    projeto_respondente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto_id,
+        respondente_id=current_user.id,
+        ativo=True
+    ).first()
+    
+    if not projeto_respondente:
+        flash('Acesso negado a este projeto.', 'danger')
+        return redirect(url_for('respondente.dashboard'))
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se o projeto foi liberado para o cliente
+    if not projeto.liberado_cliente:
+        flash('As estatísticas deste projeto ainda não foram liberadas.', 'warning')
+        return redirect(url_for('respondente.dashboard'))
+    
+    # Importar modelos necessários
+    from models.resposta import Resposta
+    from models.pergunta import Pergunta
+    from models.dominio import Dominio
+    from models.assessment_version import AssessmentDominio, AssessmentVersao, AssessmentTipo
+    from models.tipo_assessment import TipoAssessment
+    from datetime import datetime
+    import pytz
+    from utils.timezone_utils import format_datetime_local
+    
+    # Dados do projeto já foram carregados
+    # Agora vamos buscar todos os dados estatísticos como na página admin
+    
+    # Buscar respondentes do projeto
+    respondentes_projeto = projeto.get_respondentes()
+    
+    # Calcular estatísticas por assessment
+    estatisticas_assessments = {}
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão
+        tipo = None
+        versao = None
+        
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+        
+        # Estatísticas por domínio
+        dominios_stats = []
+        todas_respostas = []
+        
+        for dominio in dominios_query.order_by('ordem'):
+            # Buscar perguntas do domínio
+            if versao:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_versao_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            else:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            
+            # Buscar respostas do domínio para este projeto
+            respostas_dominio = []
+            for pergunta in perguntas_dominio:
+                resposta = Resposta.query.filter_by(
+                    projeto_id=projeto.id,
+                    pergunta_id=pergunta.id
+                ).order_by(Resposta.data_resposta.desc()).first()
+                
+                if resposta:
+                    respostas_dominio.append(resposta.nota)
+                    todas_respostas.append(resposta.nota)
+            
+            # Calcular média do domínio
+            if respostas_dominio:
+                media_dominio = sum(respostas_dominio) / len(respostas_dominio)
+            else:
+                media_dominio = 0
+            
+            dominios_stats.append({
+                'dominio': dominio,
+                'media': media_dominio,
+                'total_perguntas': len(perguntas_dominio),
+                'respostas_dadas': len(respostas_dominio),
+                'respostas': respostas_dominio
+            })
+        
+        # Score geral do assessment
+        score_geral = sum(todas_respostas) / len(todas_respostas) if todas_respostas else 0
+        
+        estatisticas_assessments[tipo.id] = {
+            'tipo': tipo,
+            'versao': versao,
+            'dominios': dominios_stats,
+            'score_geral': score_geral,
+            'total_respostas': len(todas_respostas)
+        }
+    
+    return render_template('respondente/estatisticas.html',
+                         projeto=projeto,
+                         respondente=current_user,
+                         respondentes_projeto=respondentes_projeto,
+                         estatisticas_assessments=estatisticas_assessments)
+
+@respondente_bp.route('/projeto/<int:projeto_id>/relatorio-pdf')
+@login_required
+@respondente_required
+def gerar_relatorio_pdf(projeto_id):
+    """Gera relatório PDF para o cliente"""
+    if not isinstance(current_user, Respondente):
+        return redirect(url_for('auth.login'))
+    
+    # Verificar se o respondente tem acesso a este projeto
+    from models.projeto import ProjetoRespondente, Projeto
+    projeto_respondente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto_id,
+        respondente_id=current_user.id,
+        ativo=True
+    ).first()
+    
+    if not projeto_respondente:
+        flash('Acesso negado a este projeto.', 'danger')
+        return redirect(url_for('respondente.dashboard'))
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se o projeto foi liberado para o cliente
+    if not projeto.liberado_cliente:
+        flash('O relatório deste projeto ainda não foi liberado.', 'warning')
+        return redirect(url_for('respondente.dashboard'))
+    
+    try:
+        from utils.pdf_relatorio import gerar_relatorio_pdf_completo
+        from datetime import datetime
+        
+        # Gerar o PDF completo
+        filename = gerar_relatorio_pdf_completo(projeto)
+        
+        from flask import send_file
+        return send_file(
+            filename,
+            as_attachment=True,
+            download_name=f"relatorio_assessment_{projeto.nome.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        flash(f'Erro ao gerar o relatório PDF: {str(e)}', 'danger')
+        return redirect(url_for('respondente.visualizar_estatisticas', projeto_id=projeto.id))
+
 @respondente_bp.route('/assessment/<int:projeto_id>/<int:tipo_assessment_id>')
 @login_required
 def assessment(projeto_id, tipo_assessment_id):
