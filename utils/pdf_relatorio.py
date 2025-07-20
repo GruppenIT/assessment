@@ -16,6 +16,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 from reportlab.platypus.tableofcontents import TableOfContents
 from reportlab.platypus.doctemplate import BaseDocTemplate, PageTemplate
 from reportlab.platypus.frames import Frame
+from reportlab.platypus import Image
 from reportlab.graphics.shapes import Drawing, Line
 from reportlab.graphics import renderPDF
 from models.assessment_version import AssessmentDominio
@@ -34,6 +35,8 @@ class RelatorioPDF:
         self.projeto = projeto
         self.story = []
         self.styles = getSampleStyleSheet()
+        self.page_number = 0
+        self.total_pages = 0
         self._setup_styles()
     
     def _setup_styles(self):
@@ -175,9 +178,36 @@ class RelatorioPDF:
         self._adicionar_consideracoes_finais()
         self._adicionar_assinatura()
         
-        # Gerar PDF
-        doc.build(self.story)
+        # Gerar PDF com callback para cabeçalho/rodapé
+        doc.build(self.story, onFirstPage=self._primeira_pagina, onLaterPages=self._demais_paginas)
         return temp_filename
+    
+    def _primeira_pagina(self, canvas, doc):
+        """Callback para primeira página (capa) - sem cabeçalho/rodapé"""
+        pass
+    
+    def _demais_paginas(self, canvas, doc):
+        """Callback para demais páginas - com cabeçalho e rodapé"""
+        canvas.saveState()
+        
+        # CABEÇALHO
+        # Nome cliente e projeto no centro
+        canvas.setFont('Helvetica', 9)
+        cliente_nome = self.projeto.cliente.nome or 'Cliente'
+        projeto_nome = self.projeto.nome or 'Projeto'
+        texto_centro = f"{cliente_nome} - {projeto_nome} - 2025"
+        canvas.drawCentredText(A4[0]/2, A4[1] - 0.7*inch, texto_centro)
+        
+        # Número da página à direita
+        page_num = canvas.getPageNumber()
+        canvas.drawRightString(A4[0] - 1*inch, A4[1] - 0.7*inch, f"Página {page_num:02d}")
+        
+        # RODAPÉ
+        canvas.setFont('Helvetica-Oblique', 8)
+        rodape_texto = "DOCUMENTO CONFIDENCIAL - Este relatório contém informações privilegiadas destinadas exclusivamente ao cliente."
+        canvas.drawCentredText(A4[0]/2, 0.5*inch, rodape_texto)
+        
+        canvas.restoreState()
     
     def _adicionar_capa(self):
         """Adiciona a capa do relatório"""
@@ -203,11 +233,23 @@ class RelatorioPDF:
         
         # Dados do cliente
         dados_cliente = f"""
-        <b>Cliente:</b> {self.projeto.cliente.nome}<br/>
-        <b>Projeto:</b> {self.projeto.nome}<br/>
-        <b>Data de Geração:</b> {format_datetime_local(datetime.utcnow(), '%d/%m/%Y %H:%M')}
+        Cliente: {self.projeto.cliente.nome}<br/>
+        Projeto: {self.projeto.nome}<br/>
+        Data de Geração: {format_datetime_local(datetime.utcnow(), '%d/%m/%Y %H:%M')}
         """
         self.story.append(Paragraph(dados_cliente, self.styles['Normal']))
+        
+        # Logo do cliente (se disponível)
+        if hasattr(self.projeto.cliente, 'logo') and self.projeto.cliente.logo:
+            try:
+                logo_path = os.path.join('static', 'uploads', self.projeto.cliente.logo)
+                if os.path.exists(logo_path):
+                    self.story.append(Spacer(1, 20))
+                    logo_cliente = Image(logo_path, width=2*inch, height=1*inch, kind='proportional')
+                    logo_cliente.hAlign = 'CENTER'
+                    self.story.append(logo_cliente)
+            except Exception:
+                pass
         self.story.append(Spacer(1, 100))
         
         # Rodapé da capa
@@ -373,25 +415,29 @@ class RelatorioPDF:
             if tipo:
                 self.story.append(Paragraph(tipo.nome, self.styles['Subtitulo']))
                 
-                dados_assessment = [
-                    ['Descrição:', tipo.descricao or 'Não informado'],
+                # Informações básicas sem descrição
+                dados_basicos = [
                     ['Domínios:', str(dominios_count)],
                     ['Perguntas:', str(perguntas_count)],
                     ['Status:', 'Finalizado' if projeto_assessment.finalizado else 'Em andamento']
                 ]
                 
-                tabela_assessment = Table(dados_assessment, colWidths=[2*inch, 5*inch])
-                tabela_assessment.setStyle(TableStyle([
+                tabela_basica = Table(dados_basicos, colWidths=[2*inch, 5*inch])
+                tabela_basica.setStyle(TableStyle([
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
                     ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
                     ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
                     ('FONTSIZE', (0, 0), (-1, -1), 9),
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-                    ('WORDWRAP', (1, 0), (1, -1), 1),
                 ]))
                 
-                self.story.append(tabela_assessment)
+                self.story.append(tabela_basica)
+                
+                # Descrição em parágrafo separado para quebra correta
+                if tipo.descricao:
+                    self.story.append(Spacer(1, 6))
+                    self.story.append(Paragraph(f"Descrição: {tipo.descricao}", self.styles['TextoJustificado']))
                 self.story.append(Spacer(1, 15))
         
         self.story.append(Spacer(1, 20))
@@ -500,14 +546,14 @@ class RelatorioPDF:
             if todas_respostas:
                 score_geral = sum(todas_respostas) / len(todas_respostas)
                 self.story.append(Paragraph(
-                    f"<b>Score Geral: {score_geral:.1f}/5.0</b>",
+                    f"Score Geral: {score_geral:.1f}/5.0",
                     self.styles['TextoJustificado']
                 ))
                 self.story.append(Spacer(1, 10))
             
             # Tabela de scores por domínio
             if dados_dominios:
-                headers = ['<b>Domínio</b>', '<b>Score</b>', '<b>Respostas</b>']
+                headers = ['Domínio', 'Score', 'Respostas']
                 dados_tabela = [headers] + dados_dominios
                 
                 tabela_scores = Table(dados_tabela, colWidths=[4*inch, 1.5*inch, 1.5*inch])
