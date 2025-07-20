@@ -722,17 +722,36 @@ class RelatorioPDF:
         
         if self.projeto.consideracoes_finais_ia:
             try:
-                consideracoes_data = json.loads(self.projeto.consideracoes_finais_ia)
-                texto_consideracoes = consideracoes_data.get('consideracoes', '')
-                if texto_consideracoes:
-                    paragrafos = texto_consideracoes.split('\n\n')
+                # Verificar se é JSON primeiro
+                if self.projeto.consideracoes_finais_ia.strip().startswith('{'):
+                    consideracoes_data = json.loads(self.projeto.consideracoes_finais_ia)
+                    texto_consideracoes = consideracoes_data.get('consideracoes', '')
+                else:
+                    # Se não for JSON, usar como texto simples
+                    texto_consideracoes = self.projeto.consideracoes_finais_ia
+                
+                if texto_consideracoes and texto_consideracoes.strip():
+                    # Remover tags HTML se houver
+                    import re
+                    texto_limpo = re.sub(r'<[^>]+>', '', texto_consideracoes)
+                    paragrafos = texto_limpo.split('\n\n')
                     for paragrafo in paragrafos:
                         if paragrafo.strip():
                             self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
                 else:
                     self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
-            except (json.JSONDecodeError, KeyError):
-                self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
+            except (json.JSONDecodeError, KeyError, TypeError):
+                # Se falhar o parse JSON, tentar usar como texto simples
+                texto_simples = self.projeto.consideracoes_finais_ia.strip()
+                if texto_simples:
+                    import re
+                    texto_limpo = re.sub(r'<[^>]+>', '', texto_simples)
+                    paragrafos = texto_limpo.split('\n\n')
+                    for paragrafo in paragrafos:
+                        if paragrafo.strip():
+                            self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
+                else:
+                    self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
         else:
             self.story.append(Paragraph("Considerações finais não geradas.", self.styles['TextoJustificado']))
         
