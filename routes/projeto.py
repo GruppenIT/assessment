@@ -407,7 +407,7 @@ def estatisticas(projeto_id):
                 AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
             ).filter(
                 Resposta.projeto_id == projeto.id,
-                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.versao_id == projeto_assessment.versao_assessment_id,
                 AssessmentDominio.ativo == True,
                 Pergunta.ativo == True
             ).first()
@@ -427,8 +427,8 @@ def estatisticas(projeto_id):
                 Pergunta.ativo == True
             ).first()
         
-        score_geral = round(float(score_query.score_medio or 0), 2)
-        total_respostas = score_query.total_respostas or 0
+        score_geral = round(float(score_query.score_medio or 0), 2) if score_query else 0
+        total_respostas = score_query.total_respostas or 0 if score_query else 0
         
         # Calcular scores por domínio
         scores_dominios = []
@@ -477,8 +477,8 @@ def estatisticas(projeto_id):
                     Pergunta.ativo == True
                 ).scalar()
             
-            dominio_score = round(float(dominio_score_query.score_medio or 0), 2)
-            respostas_dominio = dominio_score_query.total_respostas or 0
+            dominio_score = round(float(dominio_score_query.score_medio or 0), 2) if dominio_score_query else 0
+            respostas_dominio = dominio_score_query.total_respostas or 0 if dominio_score_query else 0
             
             # Calcular nível de maturidade
             if dominio_score >= 4.5:

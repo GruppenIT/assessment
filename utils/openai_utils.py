@@ -4,6 +4,7 @@ Utilitários para integração com OpenAI
 
 import json
 import logging
+import time
 from datetime import datetime
 from openai import OpenAI
 from app import db
