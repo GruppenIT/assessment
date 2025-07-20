@@ -401,38 +401,38 @@ def estatisticas(projeto_id):
                 if projeto_assessment.versao_assessment_id:
                     # Novo sistema de versionamento
                     score_query = db.session.query(
-                    func.avg(Resposta.nota).label('score_medio'),
-                    func.count(Resposta.id).label('total_respostas')
-                ).join(
-                    Pergunta, Resposta.pergunta_id == Pergunta.id
-                ).join(
-                    AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
-                ).filter(
-                    Resposta.projeto_id == projeto.id,
-                    AssessmentDominio.versao_id == projeto_assessment.versao_assessment_id,
-                    AssessmentDominio.ativo == True,
-                    Pergunta.ativo == True
-                ).first()
-            else:
-                # Sistema antigo
-                score_query = db.session.query(
-                    func.avg(Resposta.nota).label('score_medio'),
-                    func.count(Resposta.id).label('total_respostas')
-                ).join(
-                    Pergunta, Resposta.pergunta_id == Pergunta.id
-                ).join(
-                    Dominio, Pergunta.dominio_id == Dominio.id
-                ).filter(
-                    Resposta.projeto_id == projeto.id,
-                    Dominio.tipo_assessment_id == tipo.id,
-                    Dominio.ativo == True,
-                    Pergunta.ativo == True
-                ).first()
+                        func.avg(Resposta.nota).label('score_medio'),
+                        func.count(Resposta.id).label('total_respostas')
+                    ).join(
+                        Pergunta, Resposta.pergunta_id == Pergunta.id
+                    ).join(
+                        AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+                    ).filter(
+                        Resposta.projeto_id == projeto.id,
+                        AssessmentDominio.versao_id == projeto_assessment.versao_assessment_id,
+                        AssessmentDominio.ativo == True,
+                        Pergunta.ativo == True
+                    ).first()
+                else:
+                    # Sistema antigo
+                    score_query = db.session.query(
+                        func.avg(Resposta.nota).label('score_medio'),
+                        func.count(Resposta.id).label('total_respostas')
+                    ).join(
+                        Pergunta, Resposta.pergunta_id == Pergunta.id
+                    ).join(
+                        Dominio, Pergunta.dominio_id == Dominio.id
+                    ).filter(
+                        Resposta.projeto_id == projeto.id,
+                        Dominio.tipo_assessment_id == tipo.id,
+                        Dominio.ativo == True,
+                        Pergunta.ativo == True
+                    ).first()
 
-            score_geral = round(float(score_query.score_medio or 0), 2) if score_query else 0
-            total_respostas = score_query.total_respostas or 0 if score_query else 0
+                score_geral = round(float(score_query.score_medio or 0), 2) if score_query else 0
+                total_respostas = score_query.total_respostas or 0 if score_query else 0
 
-            # Calcular scores por domínio
+                # Calcular scores por domínio
             scores_dominios = []
             dominios_radar = []
             scores_radar = []
@@ -617,15 +617,15 @@ def estatisticas(projeto_id):
         # Remover referência a relatórios IA
         relatorio_ia = None
 
-            return render_template('admin/projetos/estatisticas.html',
-                                 projeto=projeto,
-                                 estatisticas_gerais=estatisticas_gerais,
-                                 estatisticas_assessments=estatisticas_assessments,
-                                 score_medio_projeto=score_medio_projeto,
-                                 respondentes=respondentes,
-                                 dados_graficos=dados_graficos,
-                                 memorial_respostas=memorial_respostas,
-                                 relatorio_ia=relatorio_ia)
+        return render_template('admin/projetos/estatisticas.html',
+                             projeto=projeto,
+                             estatisticas_gerais=estatisticas_gerais,
+                             estatisticas_assessments=estatisticas_assessments,
+                             score_medio_projeto=score_medio_projeto,
+                             respondentes=respondentes,
+                             dados_graficos=dados_graficos,
+                             memorial_respostas=memorial_respostas,
+                             relatorio_ia=relatorio_ia)
 
     except Exception as e:
         from flask import flash, redirect, url_for
@@ -634,9 +634,9 @@ def estatisticas(projeto_id):
         flash(f'Erro ao carregar estatísticas: {str(e)}', 'danger')
         return redirect(url_for('projeto.detalhar', projeto_id=projeto_id))
 
-        @projeto_bp.route('/<int:projeto_id>/relatorio-pdf')
-        @login_required
-        @admin_required
+@projeto_bp.route('/<int:projeto_id>/relatorio-pdf')
+@login_required
+@admin_required
 def gerar_relatorio_pdf(projeto_id):
     """Gera relatório PDF completo e formal do projeto"""
     from utils.pdf_relatorio import gerar_relatorio_pdf_completo
