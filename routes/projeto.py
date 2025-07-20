@@ -337,30 +337,281 @@ def detalhar(projeto_id):
                          tipos_assessment=tipos_assessment,
                          progressos_por_tipo=progressos_por_tipo)
 
-@projeto_bp.route('/<int:projeto_id>/stats-test')
-def stats_test(projeto_id):
-    """Função de teste para debug"""
-    return f"TESTE OK - Projeto ID: {projeto_id}"
-
 @projeto_bp.route('/<int:projeto_id>/estatisticas')
 @login_required
 @admin_required
 def estatisticas(projeto_id):
-    """Exibe estatísticas detalhadas do projeto"""
+    """Exibe estatísticas detalhadas do projeto finalizado"""
     projeto = Projeto.query.get_or_404(projeto_id)
     
-    # Dados básicos para template
-    respondentes = []
+    # Verificar se projeto está totalmente finalizado
+    finalizados, total_assessments = projeto.get_assessments_finalizados()
+    totalmente_finalizado = projeto.is_totalmente_finalizado()
+    
+    if not totalmente_finalizado:
+        flash('As estatísticas completas só estão disponíveis quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+    
+    # Dados do projeto
+    respondentes = projeto.get_respondentes_ativos()
+    
+    # Estatísticas gerais do projeto
     estatisticas_gerais = {
-        'total_respondentes': 0,
-        'total_assessments': 0,
+        'total_respondentes': len(respondentes),
+        'total_assessments': total_assessments,
         'data_inicio': projeto.data_criacao,
         'data_finalizacao': None
     }
+    
+    # Encontrar data de finalização mais recente
+    for pa in projeto.assessments:
+        if pa.finalizado and pa.data_finalizacao:
+            if not estatisticas_gerais['data_finalizacao'] or pa.data_finalizacao > estatisticas_gerais['data_finalizacao']:
+                estatisticas_gerais['data_finalizacao'] = pa.data_finalizacao
+    
+    # Estatísticas por assessment
     estatisticas_assessments = []
-    score_medio_projeto = 0
-    dados_graficos = {'radar': {}, 'scores_assessments': {}}
+    scores_gerais = []
+    dados_grafico_radar = {}
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        versao_info = "Sistema Antigo"
+        
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            versao_info = f"Versão {versao.versao}"
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            versao_info = "Sistema Antigo"
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+        
+        # Calcular score geral do assessment
+        if projeto_assessment.versao_assessment_id:
+            # Novo sistema de versionamento
+            score_query = db.session.query(
+                func.avg(Resposta.nota).label('score_medio'),
+                func.count(Resposta.id).label('total_respostas')
+            ).join(
+                Pergunta, Resposta.pergunta_id == Pergunta.id
+            ).join(
+                AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                AssessmentDominio.versao_id == versao.id,
+                AssessmentDominio.ativo == True,
+                Pergunta.ativo == True
+            ).first()
+        else:
+            # Sistema antigo
+            score_query = db.session.query(
+                func.avg(Resposta.nota).label('score_medio'),
+                func.count(Resposta.id).label('total_respostas')
+            ).join(
+                Pergunta, Resposta.pergunta_id == Pergunta.id
+            ).join(
+                Dominio, Pergunta.dominio_id == Dominio.id
+            ).filter(
+                Resposta.projeto_id == projeto.id,
+                Dominio.tipo_assessment_id == tipo.id,
+                Dominio.ativo == True,
+                Pergunta.ativo == True
+            ).first()
+        
+        score_geral = round(float(score_query.score_medio or 0), 2)
+        total_respostas = score_query.total_respostas or 0
+        
+        # Calcular scores por domínio
+        scores_dominios = []
+        dominios_radar = []
+        scores_radar = []
+        
+        for dominio in dominios_query.order_by('ordem'):
+            if projeto_assessment.versao_assessment_id:
+                # Novo sistema
+                dominio_score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio'),
+                    func.count(Resposta.id).label('total_respostas'),
+                    func.count(Pergunta.id.distinct()).label('total_perguntas')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Pergunta.dominio_versao_id == dominio.id,
+                    Pergunta.ativo == True
+                ).first()
+                
+                total_perguntas_dominio = db.session.query(
+                    func.count(Pergunta.id)
+                ).filter(
+                    Pergunta.dominio_versao_id == dominio.id,
+                    Pergunta.ativo == True
+                ).scalar()
+            else:
+                # Sistema antigo
+                dominio_score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio'),
+                    func.count(Resposta.id).label('total_respostas'),
+                    func.count(Pergunta.id.distinct()).label('total_perguntas')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Pergunta.dominio_id == dominio.id,
+                    Pergunta.ativo == True
+                ).first()
+                
+                total_perguntas_dominio = db.session.query(
+                    func.count(Pergunta.id)
+                ).filter(
+                    Pergunta.dominio_id == dominio.id,
+                    Pergunta.ativo == True
+                ).scalar()
+            
+            dominio_score = round(float(dominio_score_query.score_medio or 0), 2)
+            respostas_dominio = dominio_score_query.total_respostas or 0
+            
+            # Calcular nível de maturidade
+            if dominio_score >= 4.5:
+                nivel_maturidade = "Otimizado"
+                classe_css = "success"
+            elif dominio_score >= 3.5:
+                nivel_maturidade = "Avançado"
+                classe_css = "info"
+            elif dominio_score >= 2.5:
+                nivel_maturidade = "Intermediário"
+                classe_css = "warning"
+            elif dominio_score >= 1.5:
+                nivel_maturidade = "Básico"
+                classe_css = "secondary"
+            elif dominio_score >= 0.5:
+                nivel_maturidade = "Inicial"
+                classe_css = "danger"
+            else:
+                nivel_maturidade = "Inexistente"
+                classe_css = "dark"
+            
+            scores_dominios.append({
+                'dominio': dominio,
+                'score': dominio_score,
+                'total_respostas': respostas_dominio,
+                'total_perguntas': total_perguntas_dominio,
+                'nivel_maturidade': nivel_maturidade,
+                'classe_css': classe_css,
+                'percentual_completude': round((respostas_dominio / total_perguntas_dominio * 100) if total_perguntas_dominio > 0 else 0, 1)
+            })
+            
+            # Dados para gráfico radar
+            dominios_radar.append(dominio.nome)
+            scores_radar.append(dominio_score)
+        
+        # Dados do assessment
+        assessment_data = {
+            'tipo': tipo,
+            'versao_info': versao_info,
+            'score_geral': score_geral,
+            'total_respostas': total_respostas,
+            'scores_dominios': scores_dominios,
+            'data_finalizacao': projeto_assessment.data_finalizacao
+        }
+        
+        estatisticas_assessments.append(assessment_data)
+        scores_gerais.append(score_geral)
+        
+        # Dados para gráfico radar
+        dados_grafico_radar[tipo.nome] = {
+            'dominios': dominios_radar,
+            'scores': scores_radar
+        }
+    
+    # Score médio geral do projeto
+    score_medio_projeto = round(sum(scores_gerais) / len(scores_gerais) if scores_gerais else 0, 2)
+    
+    # Coletar memorial de respostas por domínio
     memorial_respostas = {}
+    
+    for projeto_assessment in projeto.assessments:
+        if not projeto_assessment.finalizado:
+            continue
+            
+        # Determinar tipo e versão do assessment
+        tipo = None
+        if projeto_assessment.versao_assessment_id:
+            versao = projeto_assessment.versao_assessment
+            tipo = versao.tipo
+            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+        elif projeto_assessment.tipo_assessment_id:
+            tipo = projeto_assessment.tipo_assessment
+            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+        
+        if not tipo:
+            continue
+            
+        memorial_respostas[tipo.nome] = []
+        
+        for dominio in dominios_query.order_by('ordem'):
+            # Coletar perguntas e respostas do domínio
+            if projeto_assessment.versao_assessment_id:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_versao_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            else:
+                perguntas_dominio = Pergunta.query.filter_by(
+                    dominio_id=dominio.id,
+                    ativo=True
+                ).order_by(Pergunta.ordem).all()
+            
+            respostas_dominio = []
+            for pergunta in perguntas_dominio:
+                # Buscar respostas desta pergunta no projeto
+                respostas_pergunta = Resposta.query.filter_by(
+                    projeto_id=projeto.id,
+                    pergunta_id=pergunta.id
+                ).order_by(Resposta.data_resposta.desc()).all()
+                
+                if respostas_pergunta:
+                    # Pegar a resposta mais recente (colaborativa)
+                    resposta_final = respostas_pergunta[0]
+                    
+                    # Coletar histórico de respostas para mostrar evolução
+                    historico_respostas = []
+                    for resp in respostas_pergunta:
+                        historico_respostas.append({
+                            'nota': resp.nota,
+                            'comentario': resp.comentario,
+                            'respondente': resp.respondente.nome if resp.respondente else 'Sistema',
+                            'data': resp.data_resposta
+                        })
+                    
+                    respostas_dominio.append({
+                        'pergunta': pergunta,
+                        'resposta_final': resposta_final,
+                        'historico': historico_respostas
+                    })
+            
+            if respostas_dominio:
+                memorial_respostas[tipo.nome].append({
+                    'dominio': dominio,
+                    'respostas': respostas_dominio
+                })
+    
+    # Preparar dados para gráficos
+    dados_graficos = {
+        'radar': dados_grafico_radar,
+        'scores_assessments': {assessment['tipo'].nome: assessment['score_geral'] for assessment in estatisticas_assessments}
+    }
+    
+    # Remover referência a relatórios IA
     relatorio_ia = None
     
     return render_template('admin/projetos/estatisticas.html',
@@ -401,3 +652,409 @@ def gerar_relatorio_pdf(projeto_id):
     except Exception as e:
         flash(f'Erro ao gerar o relatório PDF: {str(e)}', 'danger')
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+
+@projeto_bp.route('/<int:projeto_id>/editar-avaliador', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar_avaliador(projeto_id):
+    """Edita dados do avaliador responsável pelo projeto"""
+    from models.projeto import Projeto
+    from forms.projeto_forms import AvaliadorForm
+    from flask import request, render_template, flash, redirect, url_for
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    form = AvaliadorForm()
+    
+    if request.method == 'GET':
+        form.nome_avaliador.data = projeto.nome_avaliador or ''
+        form.email_avaliador.data = projeto.email_avaliador or ''
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        projeto.nome_avaliador = form.nome_avaliador.data
+        projeto.email_avaliador = form.email_avaliador.data
+        db.session.commit()
+        flash('Dados do avaliador atualizados com sucesso!', 'success')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
+    
+    return render_template('admin/projetos/editar_avaliador.html', projeto=projeto, form=form)
+
+@projeto_bp.route('/<int:projeto_id>/respondentes')
+@login_required
+@admin_required
+def gerenciar_respondentes(projeto_id):
+    """Gerencia respondentes do projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    from forms.projeto_forms import AdicionarRespondenteForm
+    form = AdicionarRespondenteForm(cliente_id=projeto.cliente_id, projeto_id=projeto.id)
+    
+    # Respondentes atuais do projeto (objetos ProjetoRespondente)
+    projeto_respondentes = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto.id, 
+        ativo=True
+    ).all()
+    
+    # Extrair os objetos Respondente
+    respondentes_projeto = [pr.respondente for pr in projeto_respondentes]
+    
+    # Respondentes disponíveis do cliente que não estão no projeto
+    respondentes_disponiveis = []
+    for resp in projeto.cliente.get_respondentes_ativos():
+        if resp not in respondentes_projeto:
+            respondentes_disponiveis.append(resp)
+    
+    return render_template('admin/projetos/gerenciar_respondentes.html',
+                         projeto=projeto,
+                         form=form,
+                         respondentes_projeto=respondentes_projeto,
+                         respondentes_disponiveis=respondentes_disponiveis)
+
+@projeto_bp.route('/<int:projeto_id>/adicionar-respondente', methods=['POST'])
+@login_required
+@admin_required
+def adicionar_respondente(projeto_id):
+    """Adiciona um respondente existente ao projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    from forms.projeto_forms import AdicionarRespondenteForm
+    form = AdicionarRespondenteForm(cliente_id=projeto.cliente_id, projeto_id=projeto.id)
+    
+    if form.validate_on_submit():
+        try:
+            respondente_id = int(form.respondente_id.data) if form.respondente_id.data else None
+            
+            if not respondente_id:
+                flash('Selecione um respondente válido.', 'danger')
+                return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+            
+            # Verificar se já está associado
+            associacao_existente = ProjetoRespondente.query.filter_by(
+                projeto_id=projeto.id,
+                respondente_id=respondente_id
+            ).first()
+            
+            if associacao_existente:
+                if not associacao_existente.ativo:
+                    associacao_existente.ativo = True
+                    db.session.commit()
+                    flash('Respondente reativado no projeto!', 'success')
+                else:
+                    flash('Respondente já está no projeto.', 'info')
+            else:
+                # Criar nova associação
+                projeto_respondente = ProjetoRespondente(
+                    projeto_id=projeto.id,
+                    respondente_id=respondente_id,
+                    ativo=True
+                )
+                db.session.add(projeto_respondente)
+                db.session.commit()
+                
+                respondente = Respondente.query.get(respondente_id)
+                flash(f'Respondente "{respondente.nome}" adicionado ao projeto!', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erro ao adicionar respondente: {e}")
+            flash('Erro ao adicionar respondente. Tente novamente.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
+    
+    return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+
+@projeto_bp.route('/<int:projeto_id>/associar-respondente/<int:respondente_id>', methods=['POST'])
+@login_required
+@admin_required
+def associar_respondente_existente(projeto_id, respondente_id):
+    """Associa um respondente existente ao projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    respondente = Respondente.query.get_or_404(respondente_id)
+    
+    # Verificar se respondente pertence ao cliente do projeto
+    if respondente.cliente_id != projeto.cliente_id:
+        flash('Respondente não pertence ao cliente do projeto.', 'danger')
+        return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+    
+    # Verificar se já está associado
+    associacao_existente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto.id,
+        respondente_id=respondente.id
+    ).first()
+    
+    if associacao_existente:
+        if not associacao_existente.ativo:
+            associacao_existente.ativo = True
+            db.session.commit()
+            flash(f'Respondente "{respondente.nome}" reativado no projeto!', 'success')
+        else:
+            flash(f'Respondente "{respondente.nome}" já está no projeto.', 'info')
+    else:
+        try:
+            projeto_respondente = ProjetoRespondente(
+                projeto_id=projeto.id,
+                respondente_id=respondente.id,
+                ativo=True
+            )
+            db.session.add(projeto_respondente)
+            db.session.commit()
+            flash(f'Respondente "{respondente.nome}" adicionado ao projeto!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erro ao associar respondente: {e}")
+            flash('Erro ao associar respondente. Tente novamente.', 'danger')
+    
+    return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+
+@projeto_bp.route('/<int:projeto_id>/remover-respondente/<int:respondente_id>', methods=['POST'])
+@login_required
+@admin_required
+def remover_respondente(projeto_id, respondente_id):
+    """Remove um respondente do projeto"""
+    projeto_respondente = ProjetoRespondente.query.filter_by(
+        projeto_id=projeto_id,
+        respondente_id=respondente_id
+    ).first_or_404()
+    
+    try:
+        projeto_respondente.ativo = False
+        db.session.commit()
+        flash('Respondente removido do projeto.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao remover respondente: {e}")
+        flash('Erro ao remover respondente. Tente novamente.', 'danger')
+    
+    return redirect(url_for('projeto.gerenciar_respondentes', projeto_id=projeto_id))
+
+@projeto_bp.route('/<int:projeto_id>/editar', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def editar(projeto_id):
+    """Edita um projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    form = ProjetoForm(obj=projeto)
+    
+    if form.validate_on_submit():
+        try:
+            projeto.nome = form.nome.data
+            projeto.cliente_id = form.cliente_id.data
+            projeto.descricao = form.descricao.data
+            
+            # Atualizar tipos de assessment
+            # Remover associações atuais
+            ProjetoAssessment.query.filter_by(projeto_id=projeto.id).delete()
+            
+            # Adicionar novas associações
+            for tipo_id in form.tipos_assessment.data:
+                projeto_assessment = ProjetoAssessment(
+                    projeto_id=projeto.id,
+                    tipo_assessment_id=tipo_id
+                )
+                db.session.add(projeto_assessment)
+            
+            db.session.commit()
+            flash(f'Projeto "{projeto.nome}" atualizado com sucesso!', 'success')
+            return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erro ao editar projeto: {e}")
+            flash('Erro ao editar projeto. Tente novamente.', 'danger')
+    
+    # Pré-selecionar tipos de assessment atuais
+    tipos_selecionados = [pa.tipo_assessment_id for pa in projeto.assessments]
+    form.tipos_assessment.data = tipos_selecionados
+    
+    # Criar formulário para novo cliente
+    from forms.cliente_forms import NovoClienteForm
+    novo_cliente_form = NovoClienteForm()
+    
+    return render_template('admin/projetos/editar.html', 
+                         form=form, 
+                         projeto=projeto,
+                         novo_cliente_form=novo_cliente_form)
+
+@projeto_bp.route('/<int:projeto_id>/desativar', methods=['POST'])
+@login_required
+@admin_required
+def desativar(projeto_id):
+    """Desativa um projeto"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    try:
+        projeto.ativo = False
+        db.session.commit()
+        flash(f'Projeto "{projeto.nome}" desativado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao desativar projeto: {e}")
+        flash('Erro ao desativar projeto.', 'danger')
+    
+    return redirect(url_for('projeto.listar'))
+
+@projeto_bp.route('/<int:projeto_id>/excluir', methods=['POST'])
+@login_required
+@admin_required
+def excluir(projeto_id):
+    """Exclui um projeto permanentemente"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    try:
+        nome_projeto = projeto.nome
+        
+        # Remover todas as associações primeiro
+        ProjetoRespondente.query.filter_by(projeto_id=projeto.id).delete()
+        ProjetoAssessment.query.filter_by(projeto_id=projeto.id).delete()
+        
+        # Remover respostas relacionadas (se existirem)
+        from models.resposta import Resposta
+        Resposta.query.filter_by(projeto_id=projeto.id).delete()
+        
+        # Remover o projeto
+        db.session.delete(projeto)
+        db.session.commit()
+        
+        flash(f'Projeto "{nome_projeto}" excluído permanentemente!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao excluir projeto: {e}")
+        flash('Erro ao excluir projeto. Tente novamente.', 'danger')
+    
+    return redirect(url_for('projeto.listar'))
+
+@projeto_bp.route('/<int:projeto_id>/gerar-introducao-ia', methods=['POST'])
+@login_required
+@admin_required
+def gerar_introducao_ia(projeto_id):
+    """Gera introdução do relatório usando ChatGPT"""
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        flash('A introdução IA só pode ser gerada quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+    
+    try:
+        from utils.openai_utils import gerar_introducao_ia
+        
+        # Gerar introdução
+        resultado = gerar_introducao_ia(projeto)
+        
+        if resultado.get('erro'):
+            flash(f'Erro ao gerar introdução: {resultado["erro"]}', 'danger')
+        else:
+            # Salvar no banco
+            projeto.introducao_ia = resultado['introducao']
+            db.session.commit()
+            flash('Introdução inteligente gerada com sucesso!', 'success')
+        
+    except Exception as e:
+        logging.error(f"Erro ao gerar introdução IA: {e}")
+        flash(f'Erro ao gerar introdução: {str(e)}', 'danger')
+    
+    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+
+@projeto_bp.route('/<int:projeto_id>/gerar_analise_dominios_ia', methods=['POST'])
+@login_required
+@admin_required
+def gerar_analise_dominios_ia(projeto_id):
+    """Gera análise dos domínios do projeto usando IA"""
+    from utils.ia_batch_processor import gerar_analise_incremental
+    import json
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    logging.info(f"Requisição para gerar análise IA do projeto {projeto_id}")
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        logging.warning(f"Projeto {projeto_id} não está totalmente finalizado")
+        flash('A análise dos domínios só pode ser gerada quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+    
+    try:
+        # Gerar análise dos domínios com processamento incremental
+        logging.info(f"Iniciando análise incremental IA para projeto {projeto_id}")
+        resultado = gerar_analise_incremental(projeto)
+        
+        if resultado.get('erro'):
+            logging.error(f"Erro na análise IA: {resultado['erro']}")
+            flash(f'{resultado["erro"]}', 'warning')
+        else:
+            # As análises já foram salvas incrementalmente durante o processamento
+            logging.info(f"Análise concluída: {resultado['dominios_processados']} domínios processados")
+            if resultado['dominios_processados'] == resultado['total_dominios']:
+                flash(f'Análise completa de {resultado["dominios_processados"]} domínios gerada com sucesso!', 'success')
+            else:
+                flash(f'Análise parcial: {resultado["dominios_processados"]} de {resultado["total_dominios"]} domínios processados. Alguns domínios podem ter falhado por problemas de conectividade.', 'info')
+        
+    except Exception as e:
+        logging.error(f"Erro crítico ao gerar análise dos domínios IA: {e}", exc_info=True)
+        flash('Erro de conectividade ou timeout. Tente novamente em alguns segundos.', 'warning')
+    
+    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+
+@projeto_bp.route('/projeto/<int:projeto_id>/gerar_consideracoes_finais', methods=['POST'])
+@login_required
+@admin_required  
+def gerar_consideracoes_finais(projeto_id):
+    """Gera considerações finais do projeto usando IA"""
+    from utils.openai_utils import gerar_consideracoes_finais_projeto
+    import json
+    
+    projeto = Projeto.query.get_or_404(projeto_id)
+    
+    logging.info(f"Requisição para gerar considerações finais do projeto {projeto_id}")
+    
+    # Verificar se projeto está totalmente finalizado
+    if not projeto.is_totalmente_finalizado():
+        logging.warning(f"Projeto {projeto_id} não está totalmente finalizado")
+        flash('As considerações finais só podem ser geradas quando todos os assessments estão finalizados.', 'warning')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+    
+    try:
+        # Gerar considerações finais
+        logging.info(f"Iniciando geração de considerações finais para projeto {projeto_id}")
+        resultado = gerar_consideracoes_finais_projeto(projeto)
+        
+        if resultado.get('erro'):
+            logging.error(f"Erro nas considerações finais: {resultado['erro']}")
+            flash(f'{resultado["erro"]}', 'warning')
+        else:
+            # Salvar considerações no projeto como JSON
+            logging.info("Salvando considerações finais no projeto")
+            logging.debug(f"Resultado recebido: {type(resultado)}, keys: {resultado.keys() if isinstance(resultado, dict) else 'N/A'}")
+            
+            consideracoes_data = {
+                'consideracoes': resultado['consideracoes'],
+                'assistant_name': resultado['assistant_name'],
+                'gerado_em': resultado['gerado_em'],
+                'dados_utilizados': resultado['dados_utilizados']
+            }
+            
+            logging.debug(f"Dados a serem salvos: {consideracoes_data}")
+            logging.debug(f"Projeto ID: {projeto.id}, campo antes: {projeto.consideracoes_finais_ia}")
+            
+            projeto.consideracoes_finais_ia = json.dumps(consideracoes_data, ensure_ascii=False)
+            
+            logging.debug(f"Campo após atribuição: {projeto.consideracoes_finais_ia}")
+            
+            try:
+                db.session.commit()
+                logging.info("Commit realizado com sucesso")
+                logging.debug(f"Verificação após commit: {projeto.consideracoes_finais_ia}")
+                flash('Considerações finais geradas com sucesso!', 'success')
+            except Exception as commit_error:
+                logging.error(f"Erro no commit: {commit_error}")
+                db.session.rollback()
+                flash('Erro ao salvar considerações finais.', 'error')
+        
+    except Exception as e:
+        logging.error(f"Erro crítico ao gerar considerações finais: {e}", exc_info=True)
+        flash('Erro interno ao processar considerações finais. Tente novamente em alguns minutos.', 'error')
+    
+    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
+
+

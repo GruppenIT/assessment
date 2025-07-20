@@ -7,7 +7,6 @@ from flask_login import login_required
 from app import db
 from utils.auth_utils import admin_required
 from forms.avaliador_forms import EditarTextoIAForm, LiberarClienteForm
-from forms.melhorias_ia_forms import OrientacaoMelhoriaIAForm
 from models.projeto import Projeto
 import logging
 import json
@@ -130,121 +129,5 @@ def register_projeto_extras_routes(projeto_bp):
                 db.session.rollback()
                 logging.error(f"Erro ao liberar projeto: {e}")
                 flash('Erro ao liberar projeto. Tente novamente.', 'danger')
-        
-        return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-
-    @projeto_bp.route('/<int:projeto_id>/orientacao-melhoria-ia/<tipo>')
-    @login_required
-    @admin_required
-    def orientacao_melhoria_ia(projeto_id, tipo):
-        """Página para orientações de melhoria de textos IA"""
-        projeto = Projeto.query.get_or_404(projeto_id)
-        
-        # Verificar se projeto foi liberado para cliente
-        if projeto.liberado_cliente:
-            flash('Este projeto já foi liberado para o cliente e não pode mais ser editado.', 'warning')
-            return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-        
-        form = OrientacaoMelhoriaIAForm()
-        form.tipo_texto.data = tipo
-        
-        # Definir títulos e verificar se texto existe
-        if tipo == 'introducao':
-            titulo = 'Melhorar Introdução com IA'
-            texto_atual = projeto.introducao_ia or ''
-            descricao = 'Forneça orientações para que o GPT melhore a introdução atual do relatório'
-        elif tipo == 'consideracoes':
-            titulo = 'Melhorar Considerações Finais com IA'
-            # Se é JSON, extrair só o texto
-            if projeto.consideracoes_finais_ia:
-                try:
-                    import json
-                    data = json.loads(projeto.consideracoes_finais_ia)
-                    texto_atual = data.get('consideracoes', '')
-                except:
-                    texto_atual = projeto.consideracoes_finais_ia
-            else:
-                texto_atual = ''
-            descricao = 'Forneça orientações para que o GPT melhore as considerações finais atuais'
-        else:
-            flash('Tipo de texto inválido.', 'error')
-            return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-        
-        # Verificar se existe texto para melhorar
-        if not texto_atual.strip():
-            flash(f'Não há texto atual para melhorar. Primeiro gere o texto usando IA.', 'warning')
-            return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-        
-        return render_template('admin/projetos/orientacao_melhoria_ia.html',
-                             projeto=projeto, form=form, titulo=titulo, 
-                             tipo=tipo, descricao=descricao, texto_atual=texto_atual)
-
-    @projeto_bp.route('/<int:projeto_id>/aplicar-melhoria-ia', methods=['POST'])
-    @login_required
-    @admin_required
-    def aplicar_melhoria_ia(projeto_id):
-        """Aplica melhorias ao texto usando IA com orientações do usuário"""
-        projeto = Projeto.query.get_or_404(projeto_id)
-        
-        # Verificar se projeto foi liberado para cliente
-        if projeto.liberado_cliente:
-            flash('Este projeto já foi liberado para o cliente e não pode mais ser editado.', 'warning')
-            return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-        
-        form = OrientacaoMelhoriaIAForm()
-        
-        if form.validate_on_submit():
-            tipo = form.tipo_texto.data
-            orientacao = form.orientacao.data
-            
-            try:
-                # Obter texto atual
-                if tipo == 'introducao':
-                    texto_atual = projeto.introducao_ia or ''
-                elif tipo == 'consideracoes':
-                    if projeto.consideracoes_finais_ia:
-                        try:
-                            import json
-                            data = json.loads(projeto.consideracoes_finais_ia)
-                            texto_atual = data.get('consideracoes', '')
-                        except:
-                            texto_atual = projeto.consideracoes_finais_ia
-                    else:
-                        texto_atual = ''
-                else:
-                    flash('Tipo de texto inválido.', 'error')
-                    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-                
-                if not texto_atual.strip():
-                    flash('Não há texto atual para melhorar.', 'error')
-                    return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-                
-                # Chamar função de melhoria IA
-                from utils.openai_utils import melhorar_texto_com_orientacao
-                
-                texto_melhorado = melhorar_texto_com_orientacao(
-                    texto_atual=texto_atual,
-                    orientacao=orientacao,
-                    tipo_texto=tipo,
-                    projeto=projeto
-                )
-                
-                if texto_melhorado:
-                    # Salvar texto melhorado
-                    if tipo == 'introducao':
-                        projeto.introducao_ia = texto_melhorado
-                        flash('Introdução melhorada com sucesso usando suas orientações!', 'success')
-                    elif tipo == 'consideracoes':
-                        projeto.consideracoes_finais_ia = texto_melhorado
-                        flash('Considerações finais melhoradas com sucesso usando suas orientações!', 'success')
-                    
-                    db.session.commit()
-                else:
-                    flash('Erro ao aplicar melhorias. Tente novamente com orientações diferentes.', 'error')
-                    
-            except Exception as e:
-                db.session.rollback()
-                logging.error(f"Erro ao aplicar melhoria IA: {e}")
-                flash('Erro interno ao aplicar melhorias. Verifique suas orientações e tente novamente.', 'danger')
         
         return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))

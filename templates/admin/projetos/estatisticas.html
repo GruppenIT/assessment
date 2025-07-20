@@ -76,9 +76,6 @@
                                     <a href="{{ url_for('projeto.editar_texto_ia', projeto_id=projeto.id, tipo='introducao') }}" class="btn btn-light btn-sm me-2">
                                         <i class="fas fa-edit me-1"></i>Editar
                                     </a>
-                                    <a href="{{ url_for('projeto.orientacao_melhoria_ia', projeto_id=projeto.id, tipo='introducao') }}" class="btn btn-info btn-sm me-2">
-                                        <i class="fas fa-magic me-1"></i>Melhorar com IA
-                                    </a>
                                     <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
                                         <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar uma nova introdução? A atual será substituída.');">
                                             <i class="fas fa-sync me-1"></i>Gerar Nova
@@ -557,9 +554,6 @@
                                     <a href="{{ url_for('projeto.editar_texto_ia', projeto_id=projeto.id, tipo='consideracoes') }}" class="btn btn-light btn-sm me-2">
                                         <i class="fas fa-edit me-1"></i>Editar
                                     </a>
-                                    <a href="{{ url_for('projeto.orientacao_melhoria_ia', projeto_id=projeto.id, tipo='consideracoes') }}" class="btn btn-info btn-sm me-2">
-                                        <i class="fas fa-magic me-1"></i>Melhorar com IA
-                                    </a>
                                     <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
                                         <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar novas considerações finais? As atuais serão substituídas.');">
                                             <i class="fas fa-sync me-1"></i>Gerar Novas
@@ -582,12 +576,7 @@
                 </div>
                 <div class="card-body">
                     {% if projeto.consideracoes_finais_ia %}
-                        <!-- Verificar se é JSON ou texto simples -->
-                        {% if projeto.consideracoes_finais_ia.startswith('{') %}
-                            {% set consideracoes_data = projeto.consideracoes_finais_ia | from_json %}
-                        {% else %}
-                            {% set consideracoes_data = {'consideracoes': projeto.consideracoes_finais_ia} %}
-                        {% endif %}
+                        {% set consideracoes_data = projeto.consideracoes_finais_ia | from_json %}
                         
                         <!-- Informações de Geração -->
                         <div class="alert alert-info border-0 mb-4" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
@@ -602,12 +591,7 @@
                                 <div class="col-md-4 text-end">
                                     <small class="text-muted">
                                         <i class="fas fa-calendar me-1"></i>
-                                        <strong>Gerado em:</strong> 
-                                        {% if consideracoes_data.gerado_em %}
-                                            {{ consideracoes_data.gerado_em[:19] | replace('T', ' às ') }}
-                                        {% else %}
-                                            Não disponível
-                                        {% endif %}
+                                        <strong>Gerado em:</strong> {{ consideracoes_data.gerado_em[:19] | replace('T', ' às ') }}
                                     </small>
                                 </div>
                             </div>
@@ -616,12 +600,8 @@
                                     <small class="text-muted">
                                         <i class="fas fa-chart-bar me-1"></i>
                                         <strong>Base para análise:</strong> 
-                                        {% if consideracoes_data.dados_utilizados %}
-                                            {{ consideracoes_data.dados_utilizados.total_assessments or 0 }} assessment(s), 
-                                            {{ consideracoes_data.dados_utilizados.total_respostas or 0 }} respostas coletadas
-                                        {% else %}
-                                            Dados não disponíveis
-                                        {% endif %}
+                                        {{ consideracoes_data.dados_utilizados.total_assessments }} assessment(s), 
+                                        {{ consideracoes_data.dados_utilizados.total_respostas }} respostas coletadas
                                     </small>
                                 </div>
                             </div>

@@ -11,7 +11,7 @@ from flask_login import login_required
 from utils.auth_utils import admin_required
 from models.projeto import Projeto
 from utils.ia_batch_processor import processar_dominio_individual
-# from utils.openai_utils import OpenAIAssistant  # Temporariamente desabilitado
+from utils.openai_utils import OpenAIAssistant
 from app import db
 
 sse_bp = Blueprint('sse', __name__)
