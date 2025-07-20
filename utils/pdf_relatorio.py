@@ -263,9 +263,11 @@ class RelatorioPDF:
         tabela_cliente.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('WORDWRAP', (1, 0), (1, -1), 1),
         ]))
         
         self.story.append(tabela_cliente)
@@ -291,7 +293,7 @@ class RelatorioPDF:
             ])
         
         if respondentes:
-            headers = ['<b>Nome</b>', '<b>Email</b>', '<b>Login</b>', '<b>Respostas</b>']
+            headers = ['Nome', 'Email', 'Login', 'Respostas']
             dados_respondentes = [headers] + respondentes
             
             tabela_respondentes = Table(dados_respondentes, colWidths=[2*inch, 2.5*inch, 1.5*inch, 1*inch])
@@ -306,6 +308,7 @@ class RelatorioPDF:
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
                 ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('WORDWRAP', (0, 1), (-1, -1), 1),
             ]))
             
             self.story.append(tabela_respondentes)
@@ -330,9 +333,11 @@ class RelatorioPDF:
         tabela_projeto.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('WORDWRAP', (1, 0), (1, -1), 1),
         ]))
         
         self.story.append(tabela_projeto)
@@ -366,7 +371,7 @@ class RelatorioPDF:
                 ).filter(Dominio.tipo_assessment_id == tipo.id, Pergunta.ativo == True).scalar()
             
             if tipo:
-                self.story.append(Paragraph(f"<b>{tipo.nome}</b>", self.styles['Subtitulo']))
+                self.story.append(Paragraph(tipo.nome, self.styles['Subtitulo']))
                 
                 dados_assessment = [
                     ['Descrição:', tipo.descricao or 'Não informado'],
@@ -379,9 +384,11 @@ class RelatorioPDF:
                 tabela_assessment.setStyle(TableStyle([
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                    ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                    ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
                     ('FONTSIZE', (0, 0), (-1, -1), 9),
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                    ('WORDWRAP', (1, 0), (1, -1), 1),
                 ]))
                 
                 self.story.append(tabela_assessment)
@@ -393,26 +400,36 @@ class RelatorioPDF:
         """Adiciona seção de introdução"""
         self.story.append(Paragraph("5. INTRODUÇÃO", self.styles['TituloCapitulo']))
         
-        # Verificar se há introdução por IA disponível - usar o campo correto introducao_ia
+        # Usar introdução gerada por IA se disponível
         if hasattr(self.projeto, 'introducao_ia') and self.projeto.introducao_ia:
             try:
-                introducao_data = json.loads(self.projeto.introducao_ia)
-                texto_introducao = introducao_data.get('introducao', '')
-                if texto_introducao:
-                    # Processar texto com quebras de linha apropriadas
-                    paragrafos = texto_introducao.split('\n')
-                    for paragrafo in paragrafos:
-                        paragrafo = paragrafo.strip()
-                        if paragrafo:
-                            self.story.append(Paragraph(paragrafo, self.styles['TextoJustificado']))
-                    self.story.append(Spacer(1, 12))
+                # Se for JSON, extrair o texto
+                if self.projeto.introducao_ia.strip().startswith('{'):
+                    introducao_data = json.loads(self.projeto.introducao_ia)
+                    texto_introducao = introducao_data.get('introducao', '')
                 else:
-                    self.story.append(Paragraph("Este relatório apresenta os resultados de um assessment de maturidade em segurança da informação, desenvolvido para avaliar o nível atual de implementação de controles e práticas de segurança na organização.", self.styles['TextoJustificado']))
+                    # Se for texto simples
+                    texto_introducao = self.projeto.introducao_ia
+                
+                if texto_introducao:
+                    # Remover tags HTML e processar em parágrafos
+                    import re
+                    texto_limpo = re.sub(r'<[^>]+>', '', texto_introducao)
+                    paragrafos = texto_limpo.split('\n\n')
+                    for paragrafo in paragrafos:
+                        if paragrafo.strip():
+                            self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
+                else:
+                    self._adicionar_introducao_padrao()
             except (json.JSONDecodeError, KeyError, TypeError):
-                self.story.append(Paragraph("Este relatório apresenta os resultados de um assessment de maturidade em segurança da informação, desenvolvido para avaliar o nível atual de implementação de controles e práticas de segurança na organização.", self.styles['TextoJustificado']))
+                self._adicionar_introducao_padrao()
         else:
-            # Texto padrão quando não há IA
-            self.story.append(Paragraph("Este relatório apresenta os resultados de um assessment de maturidade em segurança da informação, desenvolvido para avaliar o nível atual de implementação de controles e práticas de segurança na organização.", self.styles['TextoJustificado']))
+            self._adicionar_introducao_padrao()
+    
+    def _adicionar_introducao_padrao(self):
+        """Adiciona introdução padrão quando IA não está disponível"""
+        texto_padrao = "Este relatório apresenta os resultados de um assessment de maturidade em segurança da informação, desenvolvido para avaliar o nível atual de implementação de controles e práticas de segurança na organização."
+        self.story.append(Paragraph(texto_padrao, self.styles['TextoJustificado']))
         
         self.story.append(Spacer(1, 20))
     
@@ -440,7 +457,7 @@ class RelatorioPDF:
             if not tipo:
                 continue
             
-            self.story.append(Paragraph(f"<b>{tipo.nome}</b>", self.styles['Subtitulo']))
+            self.story.append(Paragraph(tipo.nome, self.styles['Subtitulo']))
             
             # Calcular score geral
             todas_respostas = []
@@ -536,7 +553,7 @@ class RelatorioPDF:
             if not tipo:
                 continue
             
-            self.story.append(Paragraph(f"<b>{tipo.nome}</b>", self.styles['Subtitulo']))
+            self.story.append(Paragraph(tipo.nome, self.styles['Subtitulo']))
             
             for dominio in dominios_query.order_by('ordem'):
                 self.story.append(Paragraph(dominio.nome, ParagraphStyle(
