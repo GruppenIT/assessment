@@ -68,7 +68,8 @@ class RelatorioPDF:
             fontSize=10,
             spaceAfter=6,
             alignment=TA_JUSTIFY,
-            fontName='Helvetica'
+            fontName='Helvetica',
+            wordWrap='CJK'
         ))
         
         # Estilo para dados técnicos
@@ -81,12 +82,45 @@ class RelatorioPDF:
             fontName='Helvetica'
         ))
         
+        # Estilo para referências em itálico e azul
+        self.styles.add(ParagraphStyle(
+            name='Referencia',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            fontName='Helvetica-Oblique',
+            textColor=colors.darkblue,
+            leftIndent=10,
+            spaceAfter=4
+        ))
+        
+        # Estilo para comentários em itálico e verde
+        self.styles.add(ParagraphStyle(
+            name='Comentario',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            fontName='Helvetica-Oblique',
+            textColor=colors.darkgreen,
+            leftIndent=10,
+            spaceAfter=4
+        ))
+        
+        # Estilo para recomendações em negrito e laranja
+        self.styles.add(ParagraphStyle(
+            name='Recomendacao',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            fontName='Helvetica-Bold',
+            textColor=colors.darkorange,
+            leftIndent=10,
+            spaceAfter=4
+        ))
+        
         # Estilo para assinatura
         self.styles.add(ParagraphStyle(
             name='Assinatura',
             parent=self.styles['Normal'],
             fontSize=10,
-            alignment=TA_CENTER,
+            alignment=TA_LEFT,
             spaceAfter=8,
             fontName='Helvetica'
         ))
@@ -199,12 +233,11 @@ class RelatorioPDF:
         
         cliente = self.projeto.cliente
         dados_cliente = [
-            ['<b>Razão Social:</b>', cliente.razao_social or 'Não informado'],
-            ['<b>Nome Fantasia:</b>', cliente.nome or 'Não informado'],
-            ['<b>CNPJ:</b>', cliente.cnpj or 'Não informado'],
-            ['<b>Localidade:</b>', cliente.localidade or 'Não informado'],
-            ['<b>Segmento:</b>', cliente.segmento or 'Não informado'],
-            ['<b>Data de Cadastro:</b>', format_date_local(cliente.data_criacao) if cliente.data_criacao else 'Não informado']
+            ['Razão Social:', cliente.razao_social or 'Não informado'],
+            ['Nome Fantasia:', cliente.nome or 'Não informado'],
+            ['CNPJ:', cliente.cnpj or 'Não informado'],
+            ['Localidade:', cliente.localidade or 'Não informado'],
+            ['Segmento:', cliente.segmento or 'Não informado']
         ]
         
         tabela_cliente = Table(dados_cliente, colWidths=[4*inch, 3*inch])
@@ -341,21 +374,26 @@ class RelatorioPDF:
         """Adiciona seção de introdução"""
         self.story.append(Paragraph("5. INTRODUÇÃO", self.styles['TituloCapitulo']))
         
-        if self.projeto.introducao_ia:
+        # Verificar se há introdução por IA disponível
+        if hasattr(self.projeto, 'consideracoes_ia') and self.projeto.consideracoes_ia:
             try:
-                introducao_data = json.loads(self.projeto.introducao_ia)
-                texto_introducao = introducao_data.get('introducao', '')
+                consideracoes_data = json.loads(self.projeto.consideracoes_ia)
+                texto_introducao = consideracoes_data.get('introducao', '')
                 if texto_introducao:
-                    paragrafos = texto_introducao.split('\n\n')
+                    # Processar texto com quebras de linha apropriadas
+                    paragrafos = texto_introducao.split('\n')
                     for paragrafo in paragrafos:
-                        if paragrafo.strip():
-                            self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
+                        paragrafo = paragrafo.strip()
+                        if paragrafo:
+                            self.story.append(Paragraph(paragrafo, self.styles['TextoJustificado']))
+                    self.story.append(Spacer(1, 12))
                 else:
-                    self.story.append(Paragraph("Introdução não disponível.", self.styles['TextoJustificado']))
-            except (json.JSONDecodeError, KeyError):
-                self.story.append(Paragraph("Introdução não disponível.", self.styles['TextoJustificado']))
+                    self.story.append(Paragraph("Este relatório apresenta os resultados de um assessment de maturidade em segurança da informação, desenvolvido para avaliar o nível atual de implementação de controles e práticas de segurança na organização.", self.styles['TextoJustificado']))
+            except (json.JSONDecodeError, KeyError, TypeError):
+                self.story.append(Paragraph("Este relatório apresenta os resultados de um assessment de maturidade em segurança da informação, desenvolvido para avaliar o nível atual de implementação de controles e práticas de segurança na organização.", self.styles['TextoJustificado']))
         else:
-            self.story.append(Paragraph("Introdução não gerada.", self.styles['TextoJustificado']))
+            # Texto padrão quando não há IA
+            self.story.append(Paragraph("Este relatório apresenta os resultados de um assessment de maturidade em segurança da informação, desenvolvido para avaliar o nível atual de implementação de controles e práticas de segurança na organização.", self.styles['TextoJustificado']))
         
         self.story.append(Spacer(1, 20))
     
@@ -482,7 +520,7 @@ class RelatorioPDF:
             self.story.append(Paragraph(f"<b>{tipo.nome}</b>", self.styles['Subtitulo']))
             
             for dominio in dominios_query.order_by('ordem'):
-                self.story.append(Paragraph(f"<b>{dominio.nome}</b>", ParagraphStyle(
+                self.story.append(Paragraph(dominio.nome, ParagraphStyle(
                     name='DominioMemorial',
                     parent=self.styles['Normal'],
                     fontSize=12,
@@ -511,30 +549,47 @@ class RelatorioPDF:
                     ).order_by(Resposta.data_resposta.desc()).first()
                     
                     if resposta:
-                        # Montar dados da resposta
-                        dados_resposta = [
-                            ['<b>Pergunta:</b>', pergunta.texto],
-                            ['<b>Descrição:</b>', pergunta.descricao or 'Não informado'],
-                            ['<b>Referência:</b>', pergunta.referencia or 'Não informado'],
-                            ['<b>Pontuação:</b>', f"{resposta.nota}/5"],
-                            ['<b>Comentário:</b>', resposta.comentario or 'Sem comentários'],
-                            ['<b>Respondente:</b>', resposta.respondente.nome if resposta.respondente else 'Não identificado'],
-                            ['<b>Data:</b>', format_datetime_local(resposta.data_resposta) if resposta.data_resposta else 'Não informado'],
-                            ['<b>Recomendação:</b>', pergunta.recomendacao or 'Não informado']
-                        ]
+                        # Pergunta principal
+                        self.story.append(Paragraph(f"Pergunta: {pergunta.texto}", 
+                                                  ParagraphStyle(name='PerguntaMemorial',
+                                                                parent=self.styles['Normal'],
+                                                                fontSize=10,
+                                                                fontName='Helvetica-Bold',
+                                                                spaceAfter=6)))
                         
-                        tabela_resposta = Table(dados_resposta, colWidths=[2*inch, 5*inch])
-                        tabela_resposta.setStyle(TableStyle([
-                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-                            ('FONTSIZE', (0, 0), (-1, -1), 8),
-                            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                            ('BACKGROUND', (0, 0), (-1, -1), HexColor('#f8f9fa')),
-                            ('BOX', (0, 0), (-1, -1), 0.5, HexColor('#dee2e6')),
-                        ]))
+                        # Descrição
+                        if pergunta.descricao:
+                            self.story.append(Paragraph(f"Descrição: {pergunta.descricao}", self.styles['TextoJustificado']))
                         
-                        self.story.append(tabela_resposta)
+                        # Referência com formatação especial
+                        if pergunta.referencia:
+                            self.story.append(Paragraph(f"Referência: {pergunta.referencia}", self.styles['Referencia']))
+                        
+                        # Pontuação
+                        self.story.append(Paragraph(f"Pontuação: {resposta.nota}/5", 
+                                                  ParagraphStyle(name='PontuacaoMemorial',
+                                                                parent=self.styles['Normal'],
+                                                                fontSize=10,
+                                                                fontName='Helvetica-Bold',
+                                                                textColor=colors.darkred,
+                                                                spaceAfter=4)))
+                        
+                        # Comentário com formatação especial
+                        if resposta.comentario:
+                            self.story.append(Paragraph(f"Comentário: {resposta.comentario}", self.styles['Comentario']))
+                        
+                        # Recomendação com formatação especial
+                        if pergunta.recomendacao:
+                            self.story.append(Paragraph(f"Recomendação: {pergunta.recomendacao}", self.styles['Recomendacao']))
+                        
+                        # Dados técnicos
+                        self.story.append(Paragraph(f"Respondente: {resposta.respondente.nome if resposta.respondente else 'Não identificado'} | Data: {format_datetime_local(resposta.data_resposta) if resposta.data_resposta else 'Não informado'}", 
+                                                  ParagraphStyle(name='DadosTecnicosMemorial',
+                                                                parent=self.styles['Normal'],
+                                                                fontSize=8,
+                                                                textColor=colors.grey,
+                                                                spaceAfter=12)))
+                        
                         self.story.append(Spacer(1, 10))
         
         self.story.append(PageBreak())
@@ -562,37 +617,61 @@ class RelatorioPDF:
         self.story.append(Spacer(1, 30))
     
     def _adicionar_assinatura(self):
-        """Adiciona seção de assinatura"""
-        self.story.append(Paragraph("9. ASSINATURA", self.styles['TituloCapitulo']))
+        """Adiciona seção de assinatura sem título separado"""
+        # Data e local à direita
+        data_atual = datetime.now().strftime("%d de %B de %Y")
+        meses = {
+            'January': 'janeiro', 'February': 'fevereiro', 'March': 'março',
+            'April': 'abril', 'May': 'maio', 'June': 'junho',
+            'July': 'julho', 'August': 'agosto', 'September': 'setembro', 
+            'October': 'outubro', 'November': 'novembro', 'December': 'dezembro'
+        }
+        for en, pt in meses.items():
+            data_atual = data_atual.replace(en, pt)
         
-        # Data e local
-        data_atual = format_datetime_local(datetime.utcnow(), '%d/%m/%Y')
-        local_data = f"São Paulo, {data_atual}"
-        self.story.append(Paragraph(local_data, self.styles['Assinatura']))
-        self.story.append(Spacer(1, 30))
+        self.story.append(Paragraph(f"Porto Alegre, {data_atual}", 
+                                  ParagraphStyle(name='DataLocal',
+                                                parent=self.styles['Normal'],
+                                                fontSize=10,
+                                                alignment=TA_RIGHT,
+                                                spaceAfter=40,
+                                                fontName='Helvetica')))
         
-        # Linha para assinatura
-        linha_assinatura = Drawing(400, 20)
-        linha_assinatura.add(Line(50, 10, 350, 10))
-        self.story.append(linha_assinatura)
-        self.story.append(Spacer(1, 10))
+        # Linha para assinatura à esquerda
+        self.story.append(Paragraph("_" * 60, 
+                                  ParagraphStyle(name='LinhaAssinatura',
+                                                parent=self.styles['Normal'],
+                                                fontSize=10,
+                                                alignment=TA_LEFT,
+                                                spaceAfter=10,
+                                                fontName='Helvetica')))
         
-        # Dados do avaliador
-        if self.projeto.nome_avaliador:
-            nome_avaliador = self.projeto.nome_avaliador
-            email_avaliador = self.projeto.email_avaliador or ""
-            
-            assinatura_texto = f"<b>{nome_avaliador}</b><br/>"
-            if email_avaliador:
-                assinatura_texto += f"{email_avaliador}<br/>"
-            assinatura_texto += "Consultor Especialista<br/>Gruppen IT Security"
-            
-            self.story.append(Paragraph(assinatura_texto, self.styles['Assinatura']))
-        else:
-            self.story.append(Paragraph(
-                "<b>[Nome do Avaliador]</b><br/>Consultor Especialista<br/>Gruppen IT Security",
-                self.styles['Assinatura']
-            ))
+        # Nome e dados do avaliador à esquerda
+        nome_avaliador = self.projeto.nome_avaliador or "Nome do Avaliador"
+        email_avaliador = self.projeto.email_avaliador or "email@avaliador.com"
+        
+        self.story.append(Paragraph(nome_avaliador, 
+                                  ParagraphStyle(name='NomeAvaliador',
+                                                parent=self.styles['Normal'],
+                                                fontSize=11,
+                                                alignment=TA_LEFT,
+                                                fontName='Helvetica-Bold',
+                                                spaceAfter=4)))
+        
+        self.story.append(Paragraph("Consultor em Segurança da Informação", 
+                                  ParagraphStyle(name='CargoAvaliador',
+                                                parent=self.styles['Normal'],
+                                                fontSize=10,
+                                                alignment=TA_LEFT,
+                                                fontName='Helvetica',
+                                                spaceAfter=4)))
+        
+        self.story.append(Paragraph(f"Email: {email_avaliador}", 
+                                  ParagraphStyle(name='EmailAvaliador',
+                                                parent=self.styles['Normal'],
+                                                fontSize=10,
+                                                alignment=TA_LEFT,
+                                                fontName='Helvetica')))
 
 
 def gerar_relatorio_pdf_completo(projeto):
