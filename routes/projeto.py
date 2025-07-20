@@ -653,22 +653,23 @@ def gerar_relatorio_pdf(projeto_id):
 @admin_required
 def editar_avaliador(projeto_id):
     """Edita dados do avaliador responsável pelo projeto"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
+    from models.projeto import Projeto
     from forms.projeto_forms import AvaliadorForm
-    form = AvaliadorForm(obj=projeto)
+    from flask import request, render_template, flash, redirect, url_for
     
-    if form.validate_on_submit():
+    projeto = Projeto.query.get_or_404(projeto_id)
+    form = AvaliadorForm()
+    
+    if request.method == 'GET':
+        form.nome_avaliador.data = projeto.nome_avaliador or ''
+        form.email_avaliador.data = projeto.email_avaliador or ''
+    
+    if request.method == 'POST' and form.validate_on_submit():
         projeto.nome_avaliador = form.nome_avaliador.data
         projeto.email_avaliador = form.email_avaliador.data
-        
-        try:
-            db.session.commit()
-            flash('Dados do avaliador atualizados com sucesso!', 'success')
-            return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro ao salvar dados do avaliador: {str(e)}', 'danger')
+        db.session.commit()
+        flash('Dados do avaliador atualizados com sucesso!', 'success')
+        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
     
     return render_template('admin/projetos/editar_avaliador.html', projeto=projeto, form=form)
 
