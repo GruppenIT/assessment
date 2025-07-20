@@ -341,59 +341,22 @@ def detalhar(projeto_id):
 @login_required
 @admin_required
 def estatisticas(projeto_id):
-    """Exibe estatísticas detalhadas do projeto finalizado"""
+    """Exibe estatísticas detalhadas do projeto"""
     projeto = Projeto.query.get_or_404(projeto_id)
     
-    # Verificar se projeto está totalmente finalizado
-    finalizados, total_assessments = projeto.get_assessments_finalizados()
-    totalmente_finalizado = projeto.is_totalmente_finalizado()
-    
-    if not totalmente_finalizado:
-        flash('As estatísticas completas só estão disponíveis quando todos os assessments estão finalizados.', 'warning')
-        return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
-    
-    # Dados do projeto
-    respondentes = projeto.get_respondentes_ativos()
-    
-    # Estatísticas gerais do projeto
+    # Valores padrão para garantir que render_template funcione
+    respondentes = []
     estatisticas_gerais = {
-        'total_respondentes': len(respondentes),
-        'total_assessments': total_assessments,
+        'total_respondentes': 0,
+        'total_assessments': 0,
         'data_inicio': projeto.data_criacao,
         'data_finalizacao': None
     }
-    
-    # Encontrar data de finalização mais recente
-    for pa in projeto.assessments:
-        if pa.finalizado and pa.data_finalizacao:
-            if not estatisticas_gerais['data_finalizacao'] or pa.data_finalizacao > estatisticas_gerais['data_finalizacao']:
-                estatisticas_gerais['data_finalizacao'] = pa.data_finalizacao
-    
-    # Estatísticas por assessment
     estatisticas_assessments = []
-    scores_gerais = []
-    dados_grafico_radar = {}
-    
-    for projeto_assessment in projeto.assessments:
-        if not projeto_assessment.finalizado:
-            continue
-            
-        # Determinar tipo e versão do assessment
-        tipo = None
-        versao_info = "Sistema Antigo"
-        
-        if projeto_assessment.versao_assessment_id:
-            versao = projeto_assessment.versao_assessment
-            tipo = versao.tipo
-            versao_info = f"Versão {versao.versao}"
-            dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
-        elif projeto_assessment.tipo_assessment_id:
-            tipo = projeto_assessment.tipo_assessment
-            versao_info = "Sistema Antigo"
-            dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
-        
-        if not tipo:
-            continue
+    score_medio_projeto = 0
+    dados_graficos = {'radar': {}, 'scores_assessments': {}}
+    memorial_respostas = {}
+    relatorio_ia = None
         
         # Calcular score geral do assessment
         if projeto_assessment.versao_assessment_id:
@@ -536,8 +499,9 @@ def estatisticas(projeto_id):
     # Score médio geral do projeto
     score_medio_projeto = round(sum(scores_gerais) / len(scores_gerais) if scores_gerais else 0, 2)
     
-    # Coletar memorial de respostas por domínio
-    memorial_respostas = {}
+    # Coletar memorial de respostas por domínio apenas se há assessments
+    if not hasattr(projeto, 'assessments') or not projeto.assessments:
+        memorial_respostas = {}
     
     for projeto_assessment in projeto.assessments:
         if not projeto_assessment.finalizado:

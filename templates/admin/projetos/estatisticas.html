@@ -582,7 +582,12 @@
                 </div>
                 <div class="card-body">
                     {% if projeto.consideracoes_finais_ia %}
-                        {% set consideracoes_data = projeto.consideracoes_finais_ia | from_json %}
+                        <!-- Verificar se é JSON ou texto simples -->
+                        {% if projeto.consideracoes_finais_ia.startswith('{') %}
+                            {% set consideracoes_data = projeto.consideracoes_finais_ia | from_json %}
+                        {% else %}
+                            {% set consideracoes_data = {'consideracoes': projeto.consideracoes_finais_ia} %}
+                        {% endif %}
                         
                         <!-- Informações de Geração -->
                         <div class="alert alert-info border-0 mb-4" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
