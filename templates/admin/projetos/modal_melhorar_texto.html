@@ -1,0 +1,149 @@
+<!-- Modal para Melhorar Texto com Orientações -->
+<div class="modal fade" id="modalMelhorarTexto" tabindex="-1" aria-labelledby="modalMelhorarTextoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalMelhorarTextoLabel">
+                    <i class="fas fa-magic me-2"></i>Melhorar Texto com IA
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formMelhorarTexto" method="POST">
+                <div class="modal-body">
+                    <!-- Tipo de texto (hidden) -->
+                    <input type="hidden" id="tipoTextoMelhoria" name="tipo_texto" value="">
+                    
+                    <!-- Texto atual -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-file-text me-1"></i>Texto Atual
+                        </label>
+                        <div id="textoAtualContainer" class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                            <div id="textoAtualContent" class="text-muted">
+                                Carregando texto atual...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Orientações para melhoria -->
+                    <div class="mb-3">
+                        <label for="orientacoesMelhoria" class="form-label fw-bold">
+                            <i class="fas fa-lightbulb me-1"></i>Orientações para Melhoria
+                        </label>
+                        <textarea 
+                            name="orientacoes" 
+                            id="orientacoesMelhoria" 
+                            class="form-control" 
+                            rows="4" 
+                            placeholder="Digite suas orientações específicas para melhorar o texto. Por exemplo:
+- Tornar mais técnico e detalhado
+- Incluir mais recomendações práticas
+- Focar em aspectos de conformidade
+- Usar linguagem mais executiva"
+                            required
+                        ></textarea>
+                        <small class="form-text text-muted">
+                            Seja específico sobre que tipo de melhoria deseja. O GPT usará estas orientações junto com o texto atual.
+                        </small>
+                    </div>
+                    
+                    <!-- Aviso sobre processamento -->
+                    <div class="alert alert-info border-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Como funciona:</strong> O texto atual será enviado para o GPT junto com suas orientações específicas para gerar uma versão melhorada.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-magic me-1"></i>Melhorar com IA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('modalMelhorarTexto');
+    const form = document.getElementById('formMelhorarTexto');
+    const tipoTextoInput = document.getElementById('tipoTextoMelhoria');
+    const textoAtualContent = document.getElementById('textoAtualContent');
+    const modalTitle = document.getElementById('modalMelhorarTextoLabel');
+    
+    // Função para abrir modal de melhoria
+    window.abrirModalMelhoria = function(tipoTexto, textoAtual, projetoId) {
+        // Definir tipo de texto
+        tipoTextoInput.value = tipoTexto;
+        
+        // Atualizar título do modal
+        if (tipoTexto === 'introducao') {
+            modalTitle.innerHTML = '<i class="fas fa-magic me-2"></i>Melhorar Introdução com IA';
+        } else {
+            modalTitle.innerHTML = '<i class="fas fa-magic me-2"></i>Melhorar Considerações Finais com IA';
+        }
+        
+        // Mostrar texto atual
+        if (textoAtual && textoAtual.trim()) {
+            textoAtualContent.innerHTML = textoAtual.replace(/\n/g, '<br>');
+        } else {
+            textoAtualContent.innerHTML = '<em class="text-muted">Nenhum texto encontrado</em>';
+        }
+        
+        // Configurar ação do formulário
+        form.action = `/admin/projetos/${projetoId}/melhorar_texto_ia`;
+        
+        // Limpar campo de orientações
+        document.getElementById('orientacoesMelhoria').value = '';
+        
+        // Mostrar modal
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+    };
+    
+    // Submissão do formulário
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Mostrar loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processando...';
+        
+        // Submeter formulário
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Fechar modal
+                bootstrap.Modal.getInstance(modal).hide();
+                
+                // Recarregar página para mostrar texto atualizado
+                window.location.reload();
+            } else {
+                alert('Erro ao melhorar texto: ' + (data.message || 'Erro desconhecido'));
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao processar solicitação');
+        })
+        .finally(() => {
+            // Restaurar botão
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+});
+</script>
