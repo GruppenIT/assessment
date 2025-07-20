@@ -585,13 +585,18 @@
                                     <div class="d-flex align-items-center">
                                         <i class="fas fa-robot me-2 text-primary"></i>
                                         <span class="fw-bold">Análise gerada por:</span>
-                                        <span class="ms-2">{{ consideracoes_data.assistant_name }}</span>
+                                        <span class="ms-2">{{ consideracoes_data.assistant_name or 'ChatGPT' }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-4 text-end">
                                     <small class="text-muted">
                                         <i class="fas fa-calendar me-1"></i>
-                                        <strong>Gerado em:</strong> {{ consideracoes_data.gerado_em[:19] | replace('T', ' às ') }}
+                                        <strong>Gerado em:</strong> 
+                                        {% if consideracoes_data.gerado_em %}
+                                            {{ consideracoes_data.gerado_em[:19] | replace('T', ' às ') }}
+                                        {% else %}
+                                            Data não disponível
+                                        {% endif %}
                                     </small>
                                 </div>
                             </div>
@@ -600,8 +605,12 @@
                                     <small class="text-muted">
                                         <i class="fas fa-chart-bar me-1"></i>
                                         <strong>Base para análise:</strong> 
-                                        {{ consideracoes_data.dados_utilizados.total_assessments }} assessment(s), 
-                                        {{ consideracoes_data.dados_utilizados.total_respostas }} respostas coletadas
+                                        {% if consideracoes_data.dados_utilizados %}
+                                            {{ consideracoes_data.dados_utilizados.total_assessments or 0 }} assessment(s), 
+                                            {{ consideracoes_data.dados_utilizados.total_respostas or 0 }} respostas coletadas
+                                        {% else %}
+                                            Dados de base não disponíveis
+                                        {% endif %}
                                     </small>
                                 </div>
                             </div>
