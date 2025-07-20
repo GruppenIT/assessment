@@ -572,75 +572,22 @@
                 </div>
                 <div class="card-body">
                     {% if projeto.consideracoes_finais_ia %}
-                        {% set consideracoes_data = projeto.consideracoes_finais_ia | from_json %}
+                        <!-- Sempre tratar como texto simples para evitar erros -->
+                        <div class="alert alert-info border-0 mb-4" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-robot me-2 text-primary"></i>
+                                <span class="fw-bold">Considerações finais geradas por IA</span>
+                            </div>
+                        </div>
                         
-                        <!-- Verificar se é JSON válido ou texto simples -->
-                        {% if consideracoes_data is mapping and consideracoes_data.consideracoes %}
-                            <!-- É JSON estruturado com metadados -->
-                            <!-- Informações de Geração -->
-                            <div class="alert alert-info border-0 mb-4" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-robot me-2 text-primary"></i>
-                                            <span class="fw-bold">Análise gerada por:</span>
-                                            <span class="ms-2">{{ consideracoes_data.assistant_name or 'ChatGPT' }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <small class="text-muted">
-                                            <i class="fas fa-calendar me-1"></i>
-                                            <strong>Gerado em:</strong> 
-                                            {% if consideracoes_data.gerado_em %}
-                                                {{ consideracoes_data.gerado_em[:19] | replace('T', ' às ') }}
-                                            {% else %}
-                                                Data não disponível
-                                            {% endif %}
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="row mt-2">
-                                    <div class="col-12">
-                                        <small class="text-muted">
-                                            <i class="fas fa-chart-bar me-1"></i>
-                                            <strong>Base para análise:</strong> 
-                                            {% if consideracoes_data.dados_utilizados %}
-                                                {{ consideracoes_data.dados_utilizados.total_assessments or 0 }} assessment(s), 
-                                                {{ consideracoes_data.dados_utilizados.total_respostas or 0 }} respostas coletadas
-                                            {% else %}
-                                                Dados de base não disponíveis
-                                            {% endif %}
-                                        </small>
-                                    </div>
+                        <!-- Texto das Considerações Finais -->
+                        <div class="card border-0" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div class="card-body p-4">
+                                <div class="text-content" style="line-height: 1.8; font-size: 1.1em; text-align: justify; color: #2d3748; white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-wrap: anywhere;">
+                                    {{ projeto.consideracoes_finais_ia.strip() | replace('\n', '<br>') | safe }}
                                 </div>
                             </div>
-                            
-                            <!-- Texto das Considerações Finais -->
-                            <div class="card border-0" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                <div class="card-body p-4">
-                                    <div class="text-content" style="line-height: 1.8; font-size: 1.1em; text-align: justify; color: #2d3748; white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-wrap: anywhere;">
-                                        {{ consideracoes_data.consideracoes | nl2br }}
-                                    </div>
-                                </div>
-                            </div>
-                        {% else %}
-                            <!-- É texto simples -->
-                            <div class="alert alert-info border-0 mb-4" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-robot me-2 text-primary"></i>
-                                    <span class="fw-bold">Considerações finais geradas por IA</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Texto das Considerações Finais -->
-                            <div class="card border-0" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                <div class="card-body p-4">
-                                    <div class="text-content" style="line-height: 1.8; font-size: 1.1em; text-align: justify; color: #2d3748; white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-wrap: anywhere;">
-                                        {{ projeto.consideracoes_finais_ia.strip() | nl2br }}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
+                        </div>
                         
                     {% else %}
                         <!-- Quando não há considerações finais -->
