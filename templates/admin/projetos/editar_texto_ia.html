@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }} - {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('admin.dashboard') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projeto.listar') }}">
+                    <i class="fas fa-project-diagram"></i> Projetos
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}">
+                    {{ projeto.nome }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ titulo }}</li>
+        </ol>
+    </nav>
+
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="fas fa-edit me-2 text-primary"></i>{{ titulo }}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Projeto: {{ projeto.nome }} | Cliente: {{ projeto.cliente.nome }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar às Estatísticas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>Editar Texto Gerado por IA
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('projeto.salvar_texto_ia', projeto_id=projeto.id) }}" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Alerta informativo -->
+                        <div class="alert alert-info border-0 mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-info-circle fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h6 class="alert-heading mb-2">Edição de Texto IA</h6>
+                                    <p class="mb-2">
+                                        Você pode fazer ajustes no texto gerado automaticamente pela inteligência artificial. 
+                                        As alterações serão salvas e aparecerão no relatório final.
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Importante:</strong> Uma vez que o projeto for liberado para o cliente, 
+                                        este texto não poderá mais ser editado.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campo de texto -->
+                        <div class="mb-4">
+                            {{ form.texto_ia.label(class="form-label fw-bold") }}
+                            {{ form.texto_ia(class="form-control" + (" is-invalid" if form.texto_ia.errors else "")) }}
+                            {% if form.texto_ia.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.texto_ia.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-keyboard me-1"></i>
+                                Use este campo para ajustar o texto conforme necessário. Mantenha a formatação profissional.
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ação -->
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-success") }}
+                            <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para contagem de caracteres (opcional) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('texto_ia');
+    if (textarea) {
+        const charCount = textarea.value.length;
+        console.log('Caracteres no texto:', charCount);
+    }
+});
+</script>
+{% endblock %}

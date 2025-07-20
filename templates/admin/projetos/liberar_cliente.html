@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Liberar para Cliente - {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('admin.dashboard') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projeto.listar') }}">
+                    <i class="fas fa-project-diagram"></i> Projetos
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}">
+                    {{ projeto.nome }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Liberar para Cliente</li>
+        </ol>
+    </nav>
+
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <div class="mb-4">
+                <i class="fas fa-unlock fa-4x text-warning mb-3"></i>
+                <h2 class="mb-2">
+                    Liberar Projeto para Cliente
+                </h2>
+                <p class="text-muted lead">
+                    {{ projeto.nome }} - {{ projeto.cliente.nome }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmação -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmação de Liberação
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Alerta de confirmação -->
+                    <div class="alert alert-warning border-0 mb-4">
+                        <h6 class="alert-heading mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Importante - Leia antes de confirmar
+                        </h6>
+                        <p class="mb-2">
+                            Ao liberar este projeto para o cliente, as seguintes ações serão executadas:
+                        </p>
+                        <ul class="mb-3">
+                            <li><strong>Bloqueio de edições:</strong> Você não poderá mais editar textos de introdução e considerações finais</li>
+                            <li><strong>Acesso do cliente:</strong> O cliente poderá visualizar as estatísticas completas do projeto</li>
+                            <li><strong>Geração de relatórios:</strong> O cliente poderá gerar o relatório PDF final</li>
+                            <li><strong>Dados do avaliador:</strong> Suas informações aparecerão na tela do cliente</li>
+                        </ul>
+                        <p class="mb-0 fw-bold">
+                            Esta ação é <span class="text-danger">irreversível</span>. 
+                            Certifique-se de que todos os textos estão finalizados.
+                        </p>
+                    </div>
+                    
+                    <!-- Informações do projeto -->
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">
+                                <i class="fas fa-clipboard-check me-2"></i>Resumo do Projeto
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Cliente:</strong> {{ projeto.cliente.nome }}</p>
+                                    <p class="mb-1"><strong>Projeto:</strong> {{ projeto.nome }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Progresso:</strong> {{ projeto.get_progresso_geral() }}%</p>
+                                    <p class="mb-1">
+                                        <strong>Status:</strong> 
+                                        {% if projeto.is_totalmente_finalizado() %}
+                                            <span class="badge bg-success">Finalizado</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Em andamento</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <p class="mb-1">
+                                    <strong>Avaliador:</strong> 
+                                    {{ projeto.nome_avaliador or 'Não definido' }}
+                                </p>
+                                <p class="mb-0">
+                                    <strong>Email:</strong> 
+                                    {{ projeto.email_avaliador or 'Não definido' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulário de confirmação -->
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Voltar
+                            </a>
+                            {{ form.submit(class="btn btn-warning", onclick="return confirm('Tem certeza? Esta ação não pode ser desfeita!')") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,6 +3,7 @@ from flask_login import login_required
 from app import db
 from utils.auth_utils import admin_required
 from forms.projeto_forms import ProjetoForm, NovoClienteForm, AdicionarRespondenteForm
+from forms.avaliador_forms import EditarAvaliadorForm
 # Alias para compatibilidade
 ProjetoResponenteForm = AdicionarRespondenteForm
 from models.projeto import Projeto, ProjetoRespondente, ProjetoAssessment
@@ -20,6 +21,10 @@ import json
 from datetime import datetime
 
 projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
+
+# Importar funcionalidades extras
+from .projeto_extras import register_projeto_extras_routes
+register_projeto_extras_routes(projeto_bp)
 
 @projeto_bp.route('/auto-login')
 def auto_login():

@@ -191,6 +191,23 @@ class RelatorioPDF:
         canvas.saveState()
         
         # CABEÇALHO
+        # Logo Gruppen à esquerda
+        try:
+            # Tentar vários caminhos possíveis para o logo da Gruppen
+            logo_paths = [
+                os.path.join('static', 'img', 'gruppen_logo.png'),
+                os.path.join('static', 'img', 'logo.png'),
+                os.path.join('static', 'assets', 'gruppen_logo.png'),
+                os.path.join('static', 'assets', 'logo.png')
+            ]
+            
+            for logo_path in logo_paths:
+                if os.path.exists(logo_path):
+                    canvas.drawImage(logo_path, 1*inch, A4[1] - 0.9*inch, width=0.8*inch, height=0.4*inch, preserveAspectRatio=True)
+                    break
+        except:
+            pass
+        
         # Nome cliente e projeto no centro
         canvas.setFont('Helvetica', 9)
         cliente_nome = self.projeto.cliente.nome or 'Cliente'
@@ -241,10 +258,10 @@ class RelatorioPDF:
         """
         self.story.append(Paragraph(dados_cliente, self.styles['Normal']))
         
-        # Logo do cliente (se disponível)
-        if hasattr(self.projeto.cliente, 'logo') and self.projeto.cliente.logo:
+        # Logo do cliente (se disponível)  
+        if hasattr(self.projeto.cliente, 'logo_path') and self.projeto.cliente.logo_path:
             try:
-                logo_path = os.path.join('static', 'uploads', self.projeto.cliente.logo)
+                logo_path = os.path.join('static', 'uploads', self.projeto.cliente.logo_path)
                 if os.path.exists(logo_path):
                     self.story.append(Spacer(1, 20))
                     logo_cliente = Image(logo_path, width=2*inch, height=1*inch, kind='proportional')

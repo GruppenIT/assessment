@@ -29,9 +29,18 @@
                                 <a href="{{ url_for('projeto.gerar_relatorio_pdf', projeto_id=projeto.id) }}" class="btn btn-warning btn-sm" title="Gerar relatório PDF completo com formatação formal">
                                     <i class="fas fa-file-pdf me-1"></i>Relatório Formal
                                 </a>
-                                <a href="{{ url_for('projeto.editar_avaliador', projeto_id=projeto.id) }}" class="btn btn-info btn-sm" title="Configurar dados do avaliador para relatório">
-                                    <i class="fas fa-user-tie me-1"></i>Dados do Avaliador
-                                </a>
+                                {% if not projeto.liberado_cliente %}
+                                    <a href="{{ url_for('projeto.editar_avaliador', projeto_id=projeto.id) }}" class="btn btn-info btn-sm" title="Configurar dados do avaliador para relatório">
+                                        <i class="fas fa-user-tie me-1"></i>Dados do Avaliador
+                                    </a>
+                                    <a href="{{ url_for('projeto.confirmar_liberacao_cliente', projeto_id=projeto.id) }}" class="btn btn-success btn-sm" title="Liberar projeto para acesso do cliente">
+                                        <i class="fas fa-unlock me-1"></i>Liberar para Cliente
+                                    </a>
+                                {% else %}
+                                    <span class="btn btn-outline-light btn-sm disabled">
+                                        <i class="fas fa-check me-1"></i>Liberado para Cliente
+                                    </span>
+                                {% endif %}
                                 <a href="{{ url_for('projeto.detalhar', projeto_id=projeto.id) }}" class="btn btn-light btn-sm">
                                     <i class="fas fa-arrow-left me-1"></i>Voltar aos Detalhes
                                 </a>
@@ -56,18 +65,27 @@
                             <i class="fas fa-robot me-2"></i>Introdução do Relatório (ChatGPT)
                         </h5>
                         <div>
-                            {% if not projeto.introducao_ia %}
-                                <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-light btn-sm">
-                                        <i class="fas fa-magic me-1"></i>Criar Introdução com IA
-                                    </button>
-                                </form>
+                            {% if not projeto.liberado_cliente %}
+                                {% if not projeto.introducao_ia %}
+                                    <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-light btn-sm">
+                                            <i class="fas fa-magic me-1"></i>Criar Introdução com IA
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <a href="{{ url_for('projeto.editar_texto_ia', projeto_id=projeto.id, tipo='introducao') }}" class="btn btn-light btn-sm me-2">
+                                        <i class="fas fa-edit me-1"></i>Editar
+                                    </a>
+                                    <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar uma nova introdução? A atual será substituída.');">
+                                            <i class="fas fa-sync me-1"></i>Gerar Nova
+                                        </button>
+                                    </form>
+                                {% endif %}
                             {% else %}
-                                <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar uma nova introdução? A atual será substituída.');">
-                                        <i class="fas fa-sync me-1"></i>Gerar Nova Introdução
-                                    </button>
-                                </form>
+                                <span class="badge bg-light text-muted">
+                                    <i class="fas fa-lock me-1"></i>Liberado para Cliente
+                                </span>
                             {% endif %}
                         </div>
                     </div>
@@ -355,13 +373,13 @@
                                                 <!-- SEÇÃO 1: PERGUNTA -->
                                                 <div class="p-4 border-bottom" style="background: linear-gradient(90deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 110, 253, 0.03) 100%); border-left: 5px solid #0d6efd;">
                                                     <div class="d-flex align-items-start mb-2">
-                                                        <div class="badge bg-primary text-white me-3 px-3 py-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                                                            <i class="fas fa-question-circle me-1"></i>PERGUNTA
+                                                        <div class="badge bg-primary text-white me-3 px-2 py-1" style="font-size: 0.8rem;">
+                                                            {{ loop.index }}
                                                         </div>
-                                                        <div class="flex-grow-1">
-                                                            <h6 class="mb-2 text-dark fw-semibold">{{ resposta_data.pergunta.texto }}</h6>
+                                                        <div class="flex-grow-1 text-start">
+                                                            <h6 class="mb-2 text-dark fw-semibold text-start">{{ resposta_data.pergunta.texto }}</h6>
                                                             {% if resposta_data.pergunta.descricao %}
-                                                            <p class="mb-0 text-muted small">{{ resposta_data.pergunta.descricao }}</p>
+                                                            <p class="mb-0 text-muted small text-start">{{ resposta_data.pergunta.descricao }}</p>
                                                             {% endif %}
                                                         </div>
                                                     </div>
@@ -531,18 +549,27 @@
                             <i class="fas fa-clipboard-check me-2"></i>Considerações Finais do Relatório
                         </h5>
                         <div>
-                            {% if projeto.consideracoes_finais_ia %}
-                                <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar novas considerações finais? As atuais serão substituídas.');">
-                                        <i class="fas fa-sync me-1"></i>Gerar Novas Considerações
-                                    </button>
-                                </form>
+                            {% if not projeto.liberado_cliente %}
+                                {% if projeto.consideracoes_finais_ia %}
+                                    <a href="{{ url_for('projeto.editar_texto_ia', projeto_id=projeto.id, tipo='consideracoes') }}" class="btn btn-light btn-sm me-2">
+                                        <i class="fas fa-edit me-1"></i>Editar
+                                    </a>
+                                    <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar novas considerações finais? As atuais serão substituídas.');">
+                                            <i class="fas fa-sync me-1"></i>Gerar Novas
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-light btn-sm">
+                                            <i class="fas fa-magic me-1"></i>Gerar Considerações Finais
+                                        </button>
+                                    </form>
+                                {% endif %}
                             {% else %}
-                                <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-light btn-sm">
-                                        <i class="fas fa-magic me-1"></i>Gerar Considerações Finais
-                                    </button>
-                                </form>
+                                <span class="badge bg-light text-muted">
+                                    <i class="fas fa-lock me-1"></i>Liberado para Cliente
+                                </span>
                             {% endif %}
                         </div>
                     </div>

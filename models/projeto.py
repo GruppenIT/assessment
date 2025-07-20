@@ -19,6 +19,7 @@ class Projeto(db.Model):
     data_finalizacao = db.Column(db.DateTime)  # Data de finalização do assessment
     nome_avaliador = db.Column(db.String(255))  # Nome do avaliador responsável
     email_avaliador = db.Column(db.String(255))  # Email do avaliador responsável
+    liberado_cliente = db.Column(db.Boolean, default=False)  # Se foi liberado para o cliente
     
     # Relacionamentos
     cliente = relationship('Cliente', backref='projetos')

@@ -175,6 +175,14 @@ def create_app():
         logging.error(f"Erro ao importar blueprint de parâmetros: {e}")
     except Exception as e:
         logging.error(f"Erro ao registrar blueprint de parâmetros: {e}")
+
+    # Registrar portal do cliente
+    try:
+        from routes.cliente_portal import cliente_portal_bp
+        app.register_blueprint(cliente_portal_bp)
+        logging.info("Portal do cliente registrado com sucesso")
+    except Exception as e:
+        logging.error(f"Erro ao registrar portal do cliente: {e}")
         
     # Rota de projetos temporária sem autenticação
     @app.route('/admin/projetos_temp')
