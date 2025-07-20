@@ -706,3 +706,115 @@ def gerar_consideracoes_finais_projeto(projeto):
         return {
             'erro': f'Erro durante processamento: {str(e)}'
         }
+
+def melhorar_texto_com_orientacao(texto_atual, orientacoes, tipo_texto):
+    """Melhora um texto existente com orientações específicas do usuário"""
+    try:
+        logging.info(f"Iniciando melhoria de texto com orientação para tipo: {tipo_texto}")
+        
+        # Inicializar assistente
+        assistant = OpenAIAssistant()
+        if not assistant.is_configured():
+            return {
+                'erro': 'Integração com ChatGPT não configurada. Configure a API Key e o nome do Assistant em Parâmetros do Sistema.'
+            }
+        
+        # Preparar prompt para melhoria com orientações
+        if tipo_texto == 'introducao':
+            tipo_descricao = "introdução do relatório de assessment"
+            contexto_adicional = "Mantenha o formalismo técnico e a estrutura de dados básicos do projeto (cliente, respondentes, período)."
+        elif tipo_texto == 'consideracoes':
+            tipo_descricao = "considerações finais do relatório de assessment"  
+            contexto_adicional = "Mantenha as recomendações estratégicas e o tom executivo profissional."
+        else:
+            tipo_descricao = "texto do relatório"
+            contexto_adicional = "Mantenha o tom profissional e técnico."
+        
+        prompt = f"""
+        Você deve MELHORAR e REESCREVER o texto fornecido seguindo as orientações específicas do usuário.
+
+        **ORIENTAÇÕES DO USUÁRIO:**
+        {orientacoes}
+
+        **TEXTO ATUAL PARA MELHORAR:**
+        {texto_atual}
+
+        **INSTRUÇÕES PARA MELHORIA:**
+        1. Aplique as orientações fornecidas pelo usuário de forma precisa
+        2. {contexto_adicional}
+        3. Mantenha as informações factuais corretas
+        4. Melhore a clareza, fluência e impacto do texto
+        5. Preserve o tamanho aproximado do texto original (não muito mais longo ou mais curto)
+        6. Use linguagem técnica apropriada para relatórios corporativos
+        7. Garanta que o texto melhorado seja completo e bem estruturado
+        
+        **IMPORTANTE:** Responda APENAS com o texto melhorado, sem comentários ou explicações adicionais.
+        """
+        
+        # Fazer requisição à OpenAI com retry para conectividade
+        max_tentativas = 3
+        for tentativa in range(1, max_tentativas + 1):
+            try:
+                logging.info(f"Tentativa {tentativa} de {max_tentativas} para melhorar {tipo_descricao}")
+                
+                response = assistant.client.chat.completions.create(
+                    model="gpt-4o",  # Latest model
+                    messages=[
+                        {"role": "system", "content": f"Você é {assistant.assistant_name}, especialista em melhorar textos de relatórios técnicos seguindo orientações específicas."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=2000,
+                    temperature=0.3,  # Menos criatividade, mais foco na melhoria
+                    timeout=30
+                )
+                
+                texto_melhorado = response.choices[0].message.content.strip()
+                
+                logging.info(f"Texto melhorado com sucesso (tamanho: {len(texto_melhorado)} caracteres)")
+                
+                # Preparar metadados se for considerações finais (formato JSON)
+                if tipo_texto == 'consideracoes':
+                    resultado_json = {
+                        'consideracoes': texto_melhorado,
+                        'assistant_name': assistant.assistant_name,
+                        'gerado_em': datetime.now().isoformat(),
+                        'orientacoes_aplicadas': orientacoes,
+                        'melhorado_a_partir_de': 'texto_existente'
+                    }
+                    return {
+                        'texto_melhorado': json.dumps(resultado_json, ensure_ascii=False, indent=2)
+                    }
+                else:
+                    # Para introdução, retornar texto simples
+                    return {
+                        'texto_melhorado': texto_melhorado
+                    }
+                
+            except Exception as e:
+                logging.error(f"Erro na tentativa {tentativa}: {e}")
+                
+                # Verificar se é erro de conectividade para retry
+                error_str = str(e).lower()
+                connectivity_errors = ["ssl", "timeout", "recv", "connection", "network", "read timed out"]
+                
+                is_connectivity_error = any(keyword in error_str for keyword in connectivity_errors)
+                
+                if tentativa < max_tentativas and is_connectivity_error:
+                    wait_time = tentativa * 2
+                    logging.info(f"Erro de conectividade detectado. Aguardando {wait_time} segundos...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    return {
+                        'erro': f'Erro ao melhorar texto: {str(e)}'
+                    }
+        
+        return {
+            'erro': 'Todas as tentativas de melhoria falharam'
+        }
+        
+    except Exception as e:
+        logging.error(f"Erro crítico na melhoria de texto: {e}")
+        return {
+            'erro': f'Erro durante processamento: {str(e)}'
+        }
