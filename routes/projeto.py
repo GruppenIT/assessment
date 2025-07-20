@@ -340,132 +340,304 @@ def detalhar(projeto_id):
 @projeto_bp.route('/<int:projeto_id>/estatisticas')
 @login_required
 @admin_required
-from models.assessment import AssessmentTipo, AssessmentVersao, AssessmentDominio
-from models.cliente import Cliente
-from models.respondente import Respondente
-from models.dominio import Dominio
-from models.pergunta import Pergunta
-from models.resposta import Resposta
-from models.tipo_assessment import TipoAssessment
-from models.usuario import Usuario
-
-# Imports dos forms
-from forms.projeto_forms import ProjetoForm, AvaliadorForm
-from forms.cliente_forms import ClienteRespondentForm
-
-# Imports dos utilitários
-from utils.auth_utils import admin_required
-
-# Criar blueprint
-projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
-
-@projeto_bp.route('/<int:projeto_id>/estatisticas')
-@login_required
-@admin_required
 def estatisticas(projeto_id):
     """Exibe estatísticas detalhadas do projeto finalizado"""
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
-    # Verificar se projeto está totalmente finalizado
-    finalizados, total_assessments = projeto.get_assessments_finalizados()
-    totalmente_finalizado = projeto.is_totalmente_finalizado()
-    
-    if not totalmente_finalizado:
-        flash('As estatísticas completas só estão disponíveis quando todos os assessments estão finalizados.', 'warning')
-        return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
-    
-    # Dados do projeto
-    respondentes = projeto.get_respondentes_ativos()
-    
-    # Estatísticas gerais do projeto
-    estatisticas_gerais = {
-        'total_respondentes': len(respondentes),
-        'total_assessments': total_assessments,
-        'data_inicio': projeto.data_criacao,
-        'data_finalizacao': None
-    }
-    
-    # Encontrar data de finalização mais recente
-    for pa in projeto.assessments:
-        if pa.finalizado and pa.data_finalizacao:
-            if not estatisticas_gerais['data_finalizacao'] or pa.data_finalizacao > estatisticas_gerais['data_finalizacao']:
-                estatisticas_gerais['data_finalizacao'] = pa.data_finalizacao
-    
-    # Estatísticas por assessment
-    estatisticas_assessments = []
-    scores_gerais = []
-    dados_grafico_radar = {}
-    
-    # Score médio geral do projeto
-    score_medio_projeto = 0
-    
-    # Preparar dados para gráficos
-    dados_graficos = {
-        'radar': dados_grafico_radar,
-        'scores_assessments': {}
-    }
-    
-    # Memorial de respostas por domínio
-    memorial_respostas = {}
-    
-    # Remover referência a relatórios IA
-    relatorio_ia = None
-    
-    return render_template('admin/projetos/estatisticas.html',
-                         projeto=projeto,
-                         estatisticas_gerais=estatisticas_gerais,
-                         estatisticas_assessments=estatisticas_assessments,
-                         score_medio_projeto=score_medio_projeto,
-                         respondentes=respondentes,
-                         dados_graficos=dados_graficos,
-                         memorial_respostas=memorial_respostas,
-                         relatorio_ia=relatorio_ia)
-
-@projeto_bp.route('/<int:projeto_id>/gerar_texto_com_orientacao', methods=['POST'])
-@login_required
-@admin_required
-def gerar_texto_com_orientacao(projeto_id, tipo):
-    """Gera texto com orientações específicas do usuário usando IA"""
-    from utils.openai_utils import gerar_texto_com_orientacao as gerar_texto_util
-    
-    projeto = Projeto.query.get_or_404(projeto_id)
-    
-    orientacoes = request.form.get('orientacoes', '').strip()
-    
-    if not orientacoes:
-        flash('Por favor, forneça orientações para gerar o texto.', 'warning')
-        return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
-    
     try:
-        # Obter texto atual do projeto
-        if tipo == 'introducao':
-            texto_atual = projeto.introducao_relatorio or ""
-        elif tipo == 'consideracoes':
-            texto_atual = projeto.consideracoes_relatorio or ""
-        else:
-            flash('Tipo de texto inválido.', 'error')
-            return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))
-        
-        # Gerar novo texto com orientações
-        resultado = gerar_texto_util(projeto, tipo, texto_atual, orientacoes)
-        
-        if resultado and resultado.get('texto_melhorado'):
-            # Salvar texto no projeto
-            if tipo == 'introducao':
-                projeto.introducao_relatorio = resultado['texto_melhorado']
-            elif tipo == 'consideracoes':
-                projeto.consideracoes_relatorio = resultado['texto_melhorado']
-            
-            db.session.commit()
-            flash(f'Texto de {tipo} gerado com sucesso seguindo suas orientações!', 'success')
-        else:
-            flash('Erro ao gerar texto. Tente novamente.', 'error')
-            
+            projeto = Projeto.query.get_or_404(projeto_id)
+
+            # Verificar se projeto está totalmente finalizado
+            finalizados, total_assessments = projeto.get_assessments_finalizados()
+            totalmente_finalizado = projeto.is_totalmente_finalizado()
+
+            if not totalmente_finalizado:
+                flash('As estatísticas completas só estão disponíveis quando todos os assessments estão finalizados.', 'warning')
+                return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
+
+            # Dados do projeto
+            respondentes = projeto.get_respondentes_ativos()
+
+            # Estatísticas gerais do projeto
+            estatisticas_gerais = {
+            'total_respondentes': len(respondentes),
+            'total_assessments': total_assessments,
+            'data_inicio': projeto.data_criacao,
+            'data_finalizacao': None
+            }
+
+            # Encontrar data de finalização mais recente
+            for pa in projeto.assessments:
+                if pa.finalizado and pa.data_finalizacao:
+                    if not estatisticas_gerais['data_finalizacao'] or pa.data_finalizacao > estatisticas_gerais['data_finalizacao']:
+                        estatisticas_gerais['data_finalizacao'] = pa.data_finalizacao
+
+            # Estatísticas por assessment
+            estatisticas_assessments = []
+            scores_gerais = []
+            dados_grafico_radar = {}
+
+            for projeto_assessment in projeto.assessments:
+                if not projeto_assessment.finalizado:
+                    continue
+
+                # Determinar tipo e versão do assessment
+                tipo = None
+            versao_info = "Sistema Antigo"
+            dominios_query = None
+
+            if projeto_assessment.versao_assessment_id:
+                versao = projeto_assessment.versao_assessment
+                tipo = versao.tipo
+                versao_info = f"Versão {versao.versao}"
+                dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+            elif projeto_assessment.tipo_assessment_id:
+                tipo = projeto_assessment.tipo_assessment
+                versao_info = "Sistema Antigo"
+                dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+
+            if not tipo or not dominios_query:
+                continue
+
+            # Calcular score geral do assessment
+            if projeto_assessment.versao_assessment_id:
+                # Novo sistema de versionamento
+                score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio'),
+                    func.count(Resposta.id).label('total_respostas')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).join(
+                    AssessmentDominio, Pergunta.dominio_versao_id == AssessmentDominio.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    AssessmentDominio.versao_id == projeto_assessment.versao_assessment_id,
+                    AssessmentDominio.ativo == True,
+                    Pergunta.ativo == True
+                ).first()
+            else:
+                # Sistema antigo
+                score_query = db.session.query(
+                    func.avg(Resposta.nota).label('score_medio'),
+                    func.count(Resposta.id).label('total_respostas')
+                ).join(
+                    Pergunta, Resposta.pergunta_id == Pergunta.id
+                ).join(
+                    Dominio, Pergunta.dominio_id == Dominio.id
+                ).filter(
+                    Resposta.projeto_id == projeto.id,
+                    Dominio.tipo_assessment_id == tipo.id,
+                    Dominio.ativo == True,
+                    Pergunta.ativo == True
+                ).first()
+
+            score_geral = round(float(score_query.score_medio or 0), 2) if score_query else 0
+            total_respostas = score_query.total_respostas or 0 if score_query else 0
+
+            # Calcular scores por domínio
+            scores_dominios = []
+            dominios_radar = []
+            scores_radar = []
+
+            for dominio in dominios_query.order_by('ordem'):
+                if projeto_assessment.versao_assessment_id:
+                    # Novo sistema
+                    dominio_score_query = db.session.query(
+                        func.avg(Resposta.nota).label('score_medio'),
+                        func.count(Resposta.id).label('total_respostas'),
+                        func.count(Pergunta.id.distinct()).label('total_perguntas')
+                    ).join(
+                        Pergunta, Resposta.pergunta_id == Pergunta.id
+                    ).filter(
+                        Resposta.projeto_id == projeto.id,
+                        Pergunta.dominio_versao_id == dominio.id,
+                        Pergunta.ativo == True
+                    ).first()
+
+                    total_perguntas_dominio = db.session.query(
+                        func.count(Pergunta.id)
+                    ).filter(
+                        Pergunta.dominio_versao_id == dominio.id,
+                        Pergunta.ativo == True
+                    ).scalar()
+                else:
+                    # Sistema antigo
+                    dominio_score_query = db.session.query(
+                        func.avg(Resposta.nota).label('score_medio'),
+                        func.count(Resposta.id).label('total_respostas'),
+                        func.count(Pergunta.id.distinct()).label('total_perguntas')
+                    ).join(
+                        Pergunta, Resposta.pergunta_id == Pergunta.id
+                    ).filter(
+                        Resposta.projeto_id == projeto.id,
+                        Pergunta.dominio_id == dominio.id,
+                        Pergunta.ativo == True
+                    ).first()
+
+                    total_perguntas_dominio = db.session.query(
+                        func.count(Pergunta.id)
+                    ).filter(
+                        Pergunta.dominio_id == dominio.id,
+                        Pergunta.ativo == True
+                    ).scalar()
+
+                dominio_score = round(float(dominio_score_query.score_medio or 0), 2) if dominio_score_query else 0
+                respostas_dominio = dominio_score_query.total_respostas or 0 if dominio_score_query else 0
+
+                # Calcular nível de maturidade
+                if dominio_score >= 4.5:
+                    nivel_maturidade = "Otimizado"
+                    classe_css = "success"
+                elif dominio_score >= 3.5:
+                    nivel_maturidade = "Avançado"
+                    classe_css = "info"
+                elif dominio_score >= 2.5:
+                    nivel_maturidade = "Intermediário"
+                    classe_css = "warning"
+                elif dominio_score >= 1.5:
+                    nivel_maturidade = "Básico"
+                    classe_css = "secondary"
+                elif dominio_score >= 0.5:
+                    nivel_maturidade = "Inicial"
+                    classe_css = "danger"
+                else:
+                    nivel_maturidade = "Inexistente"
+                    classe_css = "dark"
+
+                scores_dominios.append({
+                    'dominio': dominio,
+                    'score': dominio_score,
+                    'total_respostas': respostas_dominio,
+                    'total_perguntas': total_perguntas_dominio,
+                    'nivel_maturidade': nivel_maturidade,
+                    'classe_css': classe_css,
+                    'percentual_completude': round((respostas_dominio / total_perguntas_dominio * 100) if total_perguntas_dominio > 0 else 0, 1)
+                })
+
+                # Dados para gráfico radar
+                dominios_radar.append(dominio.nome)
+                scores_radar.append(dominio_score)
+
+            # Dados do assessment
+            assessment_data = {
+                'tipo': tipo,
+                'versao_info': versao_info,
+                'score_geral': score_geral,
+                'total_respostas': total_respostas,
+                'scores_dominios': scores_dominios,
+                'data_finalizacao': projeto_assessment.data_finalizacao
+            }
+
+            estatisticas_assessments.append(assessment_data)
+            scores_gerais.append(score_geral)
+
+            # Dados para gráfico radar
+            dados_grafico_radar[tipo.nome] = {
+                'dominios': dominios_radar,
+                'scores': scores_radar
+            }
+
+        # Score médio geral do projeto
+        score_medio_projeto = round(sum(scores_gerais) / len(scores_gerais) if scores_gerais else 0, 2)
+
+        # Coletar memorial de respostas por domínio
+        memorial_respostas = {}
+
+        for projeto_assessment in projeto.assessments:
+            if not projeto_assessment.finalizado:
+                continue
+
+            # Determinar tipo e versão do assessment
+            tipo = None
+            dominios_query = None
+            if projeto_assessment.versao_assessment_id:
+                versao = projeto_assessment.versao_assessment
+                tipo = versao.tipo
+                dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+            elif projeto_assessment.tipo_assessment_id:
+                tipo = projeto_assessment.tipo_assessment
+                dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+
+            if not tipo or not dominios_query:
+                continue
+
+            memorial_respostas[tipo.nome] = []
+
+            for dominio in dominios_query.order_by('ordem'):
+                # Coletar perguntas e respostas do domínio
+                if projeto_assessment.versao_assessment_id:
+                    perguntas_dominio = Pergunta.query.filter_by(
+                        dominio_versao_id=dominio.id,
+                        ativo=True
+                    ).order_by(Pergunta.ordem).all()
+                else:
+                    perguntas_dominio = Pergunta.query.filter_by(
+                        dominio_id=dominio.id,
+                        ativo=True
+                    ).order_by(Pergunta.ordem).all()
+
+                respostas_dominio = []
+                for pergunta in perguntas_dominio:
+                    # Buscar respostas desta pergunta no projeto
+                    respostas_pergunta = Resposta.query.filter_by(
+                        projeto_id=projeto.id,
+                        pergunta_id=pergunta.id
+                    ).order_by(Resposta.data_resposta.desc()).all()
+
+                    if respostas_pergunta:
+                        # Pegar a resposta mais recente (colaborativa)
+                        resposta_final = respostas_pergunta[0]
+
+                        # Coletar histórico de respostas para mostrar evolução
+                        historico_respostas = []
+                        for resp in respostas_pergunta:
+                            historico_respostas.append({
+                                'nota': resp.nota,
+                                'comentario': resp.comentario,
+                                'respondente': resp.respondente.nome if resp.respondente else 'Sistema',
+                                'data': resp.data_resposta
+                            })
+
+                        respostas_dominio.append({
+                            'pergunta': pergunta,
+                            'resposta_final': resposta_final,
+                            'historico': historico_respostas
+                        })
+
+                if respostas_dominio:
+                    memorial_respostas[tipo.nome].append({
+                        'dominio': dominio,
+                        'respostas': respostas_dominio
+                    })
+
+        # Preparar dados para gráficos
+        dados_graficos = {
+            'radar': dados_grafico_radar,
+            'scores_assessments': {assessment['tipo'].nome: assessment['score_geral'] for assessment in estatisticas_assessments}
+        }
+
+        # Remover referência a relatórios IA
+        relatorio_ia = None
+
+            return render_template('admin/projetos/estatisticas.html',
+                                 projeto=projeto,
+                                 estatisticas_gerais=estatisticas_gerais,
+                                 estatisticas_assessments=estatisticas_assessments,
+                                 score_medio_projeto=score_medio_projeto,
+                                 respondentes=respondentes,
+                                 dados_graficos=dados_graficos,
+                                 memorial_respostas=memorial_respostas,
+                                 relatorio_ia=relatorio_ia)
+
     except Exception as e:
-        current_app.logger.error(f"Erro ao gerar texto com orientação: {str(e)}")
-        flash(f'Erro ao gerar texto: {str(e)}', 'error')
-    
-    return redirect(url_for('projeto.estatisticas', projeto_id=projeto.id))def gerar_relatorio_pdf(projeto_id):
+        from flask import flash, redirect, url_for
+        import logging
+        logging.error(f"Erro na função estatisticas: {str(e)}")
+        flash(f'Erro ao carregar estatísticas: {str(e)}', 'danger')
+        return redirect(url_for('projeto.detalhar', projeto_id=projeto_id))
+
+        @projeto_bp.route('/<int:projeto_id>/relatorio-pdf')
+        @login_required
+        @admin_required
+def gerar_relatorio_pdf(projeto_id):
     """Gera relatório PDF completo e formal do projeto"""
     from utils.pdf_relatorio import gerar_relatorio_pdf_completo
     

@@ -748,9 +748,9 @@ def melhorar_texto_com_orientacao(texto_atual, orientacoes, tipo_texto):
         5. Preserve o tamanho aproximado do texto original (não muito mais longo ou mais curto)
         6. Use linguagem técnica apropriada para relatórios corporativos
         7. Garanta que o texto melhorado seja completo e bem estruturado
-        8. **NÃO USE FORMATAÇÃO MARKDOWN** - retorne texto simples sem asteriscos, hífens para listas, ou qualquer formatação markdown
+        8. IMPORTANTE: Não use formatação markdown (**, ##, _, etc.) - use apenas texto simples
         
-        **IMPORTANTE:** Responda APENAS com o texto melhorado, sem comentários ou explicações adicionais e SEM FORMATAÇÃO MARKDOWN.
+        **IMPORTANTE:** Responda APENAS com o texto melhorado, sem comentários ou explicações adicionais.
         """
         
         # Fazer requisição à OpenAI com retry para conectividade
