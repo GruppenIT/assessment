@@ -191,25 +191,28 @@ class RelatorioPDF:
         canvas.saveState()
         
         # CABEÇALHO
-        # Logo Gruppen à esquerda
+        # Logo do sistema à esquerda
         try:
-            # Tentar vários caminhos possíveis para o logo da Gruppen
-            logo_paths = [
-                os.path.join('static', 'img', 'gruppen_logo.png'),
-                os.path.join('static', 'img', 'logo.png'),
-                os.path.join('static', 'assets', 'gruppen_logo.png'),
-                os.path.join('static', 'assets', 'logo.png'),
-                os.path.join('static', 'img', 'gruppen_logo.svg')
-            ]
+            # Importar modelo Logo aqui para evitar dependências circulares
+            from models.logo import Logo
+            
+            # Buscar logo ativo do sistema
+            logo_sistema = Logo.query.filter_by(ativo=True).first()
             
             logo_encontrado = False
-            for logo_path in logo_paths:
+            if logo_sistema and logo_sistema.caminho_arquivo:
+                logo_path = logo_sistema.caminho_arquivo
+                # O caminho no banco é 'logos/filename.png', mas o real é 'static/uploads/logos/filename.png'
+                if logo_path.startswith('logos/'):
+                    logo_path = os.path.join('static', 'uploads', logo_path)
+                elif not logo_path.startswith('static/'):
+                    logo_path = os.path.join('static', 'uploads', logo_path.lstrip('/'))
+                
                 if os.path.exists(logo_path):
                     canvas.drawImage(logo_path, 1*inch, A4[1] - 0.9*inch, width=0.8*inch, height=0.4*inch, preserveAspectRatio=True)
                     logo_encontrado = True
-                    break
             
-            # Se não encontrou logo, desenhar um simples
+            # Se não encontrou logo do sistema, usar fallback
             if not logo_encontrado:
                 canvas.setFont('Helvetica-Bold', 8)
                 canvas.setFillColor(HexColor('#2c3e50'))
