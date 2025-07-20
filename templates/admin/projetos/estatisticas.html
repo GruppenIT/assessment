@@ -67,16 +67,20 @@
                         <div>
                             {% if not projeto.liberado_cliente %}
                                 {% if not projeto.introducao_ia %}
-                                    <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalGerarIntroducao">
-                                        <i class="fas fa-magic me-1"></i>Criar Introdução com IA
-                                    </button>
+                                    <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-light btn-sm">
+                                            <i class="fas fa-magic me-1"></i>Criar Introdução com IA
+                                        </button>
+                                    </form>
                                 {% else %}
                                     <a href="{{ url_for('projeto.editar_texto_ia', projeto_id=projeto.id, tipo='introducao') }}" class="btn btn-light btn-sm me-2">
                                         <i class="fas fa-edit me-1"></i>Editar
                                     </a>
-                                    <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalGerarIntroducao">
-                                        <i class="fas fa-sync me-1"></i>Melhorar com orientação
-                                    </button>
+                                    <form method="POST" action="{{ url_for('projeto.gerar_introducao_ia', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar uma nova introdução? A atual será substituída.');">
+                                            <i class="fas fa-sync me-1"></i>Gerar Nova
+                                        </button>
+                                    </form>
                                 {% endif %}
                             {% else %}
                                 <span class="badge bg-light text-muted">
@@ -550,13 +554,17 @@
                                     <a href="{{ url_for('projeto.editar_texto_ia', projeto_id=projeto.id, tipo='consideracoes') }}" class="btn btn-light btn-sm me-2">
                                         <i class="fas fa-edit me-1"></i>Editar
                                     </a>
-                                    <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalGerarConsideracoes">
-                                        <i class="fas fa-sync me-1"></i>Melhorar com orientação
-                                    </button>
+                                    <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-light btn-sm" onclick="return confirm('Deseja gerar novas considerações finais? As atuais serão substituídas.');">
+                                            <i class="fas fa-sync me-1"></i>Gerar Novas
+                                        </button>
+                                    </form>
                                 {% else %}
-                                    <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalGerarConsideracoes">
-                                        <i class="fas fa-magic me-1"></i>Gerar Considerações Finais
-                                    </button>
+                                    <form method="POST" action="{{ url_for('projeto.gerar_consideracoes_finais', projeto_id=projeto.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-light btn-sm">
+                                            <i class="fas fa-magic me-1"></i>Gerar Considerações Finais
+                                        </button>
+                                    </form>
                                 {% endif %}
                             {% else %}
                                 <span class="badge bg-light text-muted">
@@ -671,97 +679,6 @@
 
 <!-- Incluir modal de progresso -->
 {% include 'admin/projetos/progress_modal.html' %}
-
-<!-- Modal para Gerar Considerações Finais com Orientações -->
-<div class="modal fade" id="modalGerarConsideracoes" tabindex="-1" aria-labelledby="modalGerarConsideracoesLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%); color: white;">
-                <h5 class="modal-title" id="modalGerarConsideracoesLabel">
-                    <i class="fas fa-magic me-2"></i>Gerar Considerações Finais com IA
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="{{ url_for('projeto.gerar_texto_com_orientacao', projeto_id=projeto.id, tipo='consideracoes') }}">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Orientações para o GPT:</strong> Descreva como você gostaria que as considerações finais fossem melhoradas ou modificadas.
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="orientacoes_consideracoes" class="form-label fw-bold">Suas orientações:</label>
-                        <textarea class="form-control" id="orientacoes_consideracoes" name="orientacoes" rows="4" 
-                                  placeholder="Ex: Torne o texto mais técnico, adicione recomendações específicas de ferramentas, enfoque mais nos aspectos de compliance, etc."></textarea>
-                    </div>
-                    
-                    {% if projeto.consideracoes_finais_ia %}
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Texto atual (será usado como base):</label>
-                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa;">
-                            {% set consideracoes_data = projeto.consideracoes_finais_ia | from_json %}
-                            {% if consideracoes_data is mapping and consideracoes_data.consideracoes %}
-                                {{ consideracoes_data.consideracoes[:500] }}{% if consideracoes_data.consideracoes|length > 500 %}...{% endif %}
-                            {% else %}
-                                {{ projeto.consideracoes_finais_ia[:500] }}{% if projeto.consideracoes_finais_ia|length > 500 %}...{% endif %}
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-robot me-1"></i>Gerar com IA
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Gerar Introdução com Orientações -->
-<div class="modal fade" id="modalGerarIntroducao" tabindex="-1" aria-labelledby="modalGerarIntroducaoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white;">
-                <h5 class="modal-title" id="modalGerarIntroducaoLabel">
-                    <i class="fas fa-magic me-2"></i>Gerar Introdução com IA
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="{{ url_for('projeto.gerar_texto_com_orientacao', projeto_id=projeto.id, tipo='introducao') }}">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Orientações para o GPT:</strong> Descreva como você gostaria que a introdução fosse melhorada ou modificada.
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="orientacoes_introducao" class="form-label fw-bold">Suas orientações:</label>
-                        <textarea class="form-control" id="orientacoes_introducao" name="orientacoes" rows="4" 
-                                  placeholder="Ex: Torne mais formal, adicione contexto sobre metodologia, enfoque nos frameworks utilizados, etc."></textarea>
-                    </div>
-                    
-                    {% if projeto.introducao_ia %}
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Texto atual (será usado como base):</label>
-                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa;">
-                            {{ projeto.introducao_ia[:500] }}{% if projeto.introducao_ia|length > 500 %}...{% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-robot me-1"></i>Gerar com IA
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
