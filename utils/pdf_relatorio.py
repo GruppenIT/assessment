@@ -70,7 +70,19 @@ class RelatorioPDF:
             spaceAfter=6,
             alignment=TA_JUSTIFY,
             fontName='Helvetica',
-            wordWrap='CJK'
+            wordWrap='LTR'
+        ))
+        
+        # Estilo para descrição das perguntas
+        self.styles.add(ParagraphStyle(
+            name='DescricaoPergunta',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            fontName='Helvetica-Oblique',
+            leftIndent=0,
+            spaceAfter=6,
+            alignment=TA_JUSTIFY,
+            wordWrap='LTR'
         ))
         
         # Estilo para dados técnicos
@@ -90,8 +102,10 @@ class RelatorioPDF:
             fontSize=9,
             fontName='Helvetica-Oblique',
             textColor=colors.darkblue,
-            leftIndent=10,
-            spaceAfter=4
+            leftIndent=0,
+            spaceAfter=4,
+            alignment=TA_JUSTIFY,
+            wordWrap='LTR'
         ))
         
         # Estilo para comentários em itálico e verde
@@ -110,10 +124,12 @@ class RelatorioPDF:
             name='Recomendacao',
             parent=self.styles['Normal'],
             fontSize=9,
-            fontName='Helvetica-Bold',
-            textColor=colors.darkorange,
-            leftIndent=10,
-            spaceAfter=4
+            fontName='Helvetica-Oblique',
+            textColor=colors.darkblue,
+            leftIndent=0,
+            spaceAfter=4,
+            alignment=TA_JUSTIFY,
+            wordWrap='LTR'
         ))
         
         # Estilo para assinatura
@@ -128,6 +144,8 @@ class RelatorioPDF:
     
     def gerar_relatorio_completo(self):
         """Gera o relatório PDF completo"""
+        # Inicializar contador de perguntas
+        self._numero_pergunta = 0
         # Criar arquivo temporário
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
         temp_filename = temp_file.name
@@ -301,11 +319,11 @@ class RelatorioPDF:
         self.story.append(Paragraph("3. DADOS DO PROJETO", self.styles['TituloCapitulo']))
         
         dados_projeto = [
-            ['<b>Nome:</b>', self.projeto.nome],
-            ['<b>Descrição:</b>', self.projeto.descricao or 'Não informado'],
-            ['<b>Data de Abertura:</b>', format_date_local(self.projeto.data_criacao) if self.projeto.data_criacao else 'Não informado'],
-            ['<b>Data de Conclusão:</b>', format_date_local(self.projeto.data_finalizacao) if self.projeto.data_finalizacao else 'Em andamento'],
-            ['<b>Progresso Geral:</b>', f"{self.projeto.get_progresso_geral()}%"]
+            ['Nome:', self.projeto.nome],
+            ['Descrição:', self.projeto.descricao or 'Não informado'],
+            ['Data de Abertura:', format_date_local(self.projeto.data_criacao) if self.projeto.data_criacao else 'Não informado'],
+            ['Data de Conclusão:', format_date_local(self.projeto.data_finalizacao) if self.projeto.data_finalizacao else 'Em andamento'],
+            ['Progresso Geral:', f"{self.projeto.get_progresso_geral()}%"]
         ]
         
         tabela_projeto = Table(dados_projeto, colWidths=[3*inch, 4*inch])
@@ -351,10 +369,10 @@ class RelatorioPDF:
                 self.story.append(Paragraph(f"<b>{tipo.nome}</b>", self.styles['Subtitulo']))
                 
                 dados_assessment = [
-                    ['<b>Descrição:</b>', tipo.descricao or 'Não informado'],
-                    ['<b>Domínios:</b>', str(dominios_count)],
-                    ['<b>Perguntas:</b>', str(perguntas_count)],
-                    ['<b>Status:</b>', 'Finalizado' if projeto_assessment.finalizado else 'Em andamento']
+                    ['Descrição:', tipo.descricao or 'Não informado'],
+                    ['Domínios:', str(dominios_count)],
+                    ['Perguntas:', str(perguntas_count)],
+                    ['Status:', 'Finalizado' if projeto_assessment.finalizado else 'Em andamento']
                 ]
                 
                 tabela_assessment = Table(dados_assessment, colWidths=[2*inch, 5*inch])
@@ -375,11 +393,11 @@ class RelatorioPDF:
         """Adiciona seção de introdução"""
         self.story.append(Paragraph("5. INTRODUÇÃO", self.styles['TituloCapitulo']))
         
-        # Verificar se há introdução por IA disponível
-        if hasattr(self.projeto, 'consideracoes_ia') and self.projeto.consideracoes_ia:
+        # Verificar se há introdução por IA disponível - usar o campo correto introducao_ia
+        if hasattr(self.projeto, 'introducao_ia') and self.projeto.introducao_ia:
             try:
-                consideracoes_data = json.loads(self.projeto.consideracoes_ia)
-                texto_introducao = consideracoes_data.get('introducao', '')
+                introducao_data = json.loads(self.projeto.introducao_ia)
+                texto_introducao = introducao_data.get('introducao', '')
                 if texto_introducao:
                     # Processar texto com quebras de linha apropriadas
                     paragrafos = texto_introducao.split('\n')
@@ -550,19 +568,24 @@ class RelatorioPDF:
                     ).order_by(Resposta.data_resposta.desc()).first()
                     
                     if resposta:
-                        # Pergunta principal
-                        self.story.append(Paragraph(f"Pergunta: {pergunta.texto}", 
+                        # Pergunta numerada sem "Pergunta:"
+                        numero_pergunta = getattr(self, '_numero_pergunta', 0) + 1
+                        setattr(self, '_numero_pergunta', numero_pergunta)
+                        
+                        self.story.append(Paragraph(f"{numero_pergunta}. {pergunta.texto}", 
                                                   ParagraphStyle(name='PerguntaMemorial',
                                                                 parent=self.styles['Normal'],
                                                                 fontSize=10,
                                                                 fontName='Helvetica-Bold',
-                                                                spaceAfter=6)))
+                                                                spaceAfter=6,
+                                                                alignment=TA_JUSTIFY,
+                                                                wordWrap='LTR')))
                         
-                        # Descrição
+                        # Descrição em itálico e menor, sem "Descrição:"
                         if pergunta.descricao:
-                            self.story.append(Paragraph(f"Descrição: {pergunta.descricao}", self.styles['TextoJustificado']))
+                            self.story.append(Paragraph(pergunta.descricao, self.styles['DescricaoPergunta']))
                         
-                        # Referência com formatação especial
+                        # Referência sem recuo, cor azul
                         if pergunta.referencia:
                             self.story.append(Paragraph(f"Referência: {pergunta.referencia}", self.styles['Referencia']))
                         
@@ -579,17 +602,17 @@ class RelatorioPDF:
                         if resposta.comentario:
                             self.story.append(Paragraph(f"Comentário: {resposta.comentario}", self.styles['Comentario']))
                         
-                        # Recomendação com formatação especial
-                        if pergunta.recomendacao:
-                            self.story.append(Paragraph(f"Recomendação: {pergunta.recomendacao}", self.styles['Recomendacao']))
-                        
                         # Dados técnicos
                         self.story.append(Paragraph(f"Respondente: {resposta.respondente.nome if resposta.respondente else 'Não identificado'} | Data: {format_datetime_local(resposta.data_resposta) if resposta.data_resposta else 'Não informado'}", 
                                                   ParagraphStyle(name='DadosTecnicosMemorial',
                                                                 parent=self.styles['Normal'],
                                                                 fontSize=8,
                                                                 textColor=colors.grey,
-                                                                spaceAfter=12)))
+                                                                spaceAfter=4)))
+                        
+                        # Recomendação por último, mesma formatação que referência
+                        if pergunta.recomendacao:
+                            self.story.append(Paragraph(f"Recomendação: {pergunta.recomendacao}", self.styles['Recomendacao']))
                         
                         self.story.append(Spacer(1, 10))
         
