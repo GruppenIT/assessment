@@ -343,7 +343,7 @@ def detalhar(projeto_id):
 def estatisticas(projeto_id):
     """Exibe estatísticas detalhadas do projeto finalizado"""
     try:
-            projeto = Projeto.query.get_or_404(projeto_id)
+        projeto = Projeto.query.get_or_404(projeto_id)
 
             # Verificar se projeto está totalmente finalizado
             finalizados, total_assessments = projeto.get_assessments_finalizados()
@@ -381,26 +381,26 @@ def estatisticas(projeto_id):
 
                 # Determinar tipo e versão do assessment
                 tipo = None
-            versao_info = "Sistema Antigo"
-            dominios_query = None
-
-            if projeto_assessment.versao_assessment_id:
-                versao = projeto_assessment.versao_assessment
-                tipo = versao.tipo
-                versao_info = f"Versão {versao.versao}"
-                dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
-            elif projeto_assessment.tipo_assessment_id:
-                tipo = projeto_assessment.tipo_assessment
                 versao_info = "Sistema Antigo"
-                dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
+                dominios_query = None
 
-            if not tipo or not dominios_query:
-                continue
+                if projeto_assessment.versao_assessment_id:
+                    versao = projeto_assessment.versao_assessment
+                    tipo = versao.tipo
+                    versao_info = f"Versão {versao.versao}"
+                    dominios_query = AssessmentDominio.query.filter_by(versao_id=versao.id, ativo=True)
+                elif projeto_assessment.tipo_assessment_id:
+                    tipo = projeto_assessment.tipo_assessment
+                    versao_info = "Sistema Antigo"
+                    dominios_query = Dominio.query.filter_by(tipo_assessment_id=tipo.id, ativo=True)
 
-            # Calcular score geral do assessment
-            if projeto_assessment.versao_assessment_id:
-                # Novo sistema de versionamento
-                score_query = db.session.query(
+                if not tipo or not dominios_query:
+                    continue
+
+                # Calcular score geral do assessment
+                if projeto_assessment.versao_assessment_id:
+                    # Novo sistema de versionamento
+                    score_query = db.session.query(
                     func.avg(Resposta.nota).label('score_medio'),
                     func.count(Resposta.id).label('total_respostas')
                 ).join(
