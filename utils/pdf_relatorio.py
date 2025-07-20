@@ -196,7 +196,8 @@ class RelatorioPDF:
         cliente_nome = self.projeto.cliente.nome or 'Cliente'
         projeto_nome = self.projeto.nome or 'Projeto'
         texto_centro = f"{cliente_nome} - {projeto_nome} - 2025"
-        canvas.drawCentredText(A4[0]/2, A4[1] - 0.7*inch, texto_centro)
+        text_width = canvas.stringWidth(texto_centro, 'Helvetica', 9)
+        canvas.drawString((A4[0] - text_width) / 2, A4[1] - 0.7*inch, texto_centro)
         
         # Número da página à direita
         page_num = canvas.getPageNumber()
@@ -205,7 +206,8 @@ class RelatorioPDF:
         # RODAPÉ
         canvas.setFont('Helvetica-Oblique', 8)
         rodape_texto = "DOCUMENTO CONFIDENCIAL - Este relatório contém informações privilegiadas destinadas exclusivamente ao cliente."
-        canvas.drawCentredText(A4[0]/2, 0.5*inch, rodape_texto)
+        text_width_rodape = canvas.stringWidth(rodape_texto, 'Helvetica-Oblique', 8)
+        canvas.drawString((A4[0] - text_width_rodape) / 2, 0.5*inch, rodape_texto)
         
         canvas.restoreState()
     
