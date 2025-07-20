@@ -748,9 +748,14 @@ def melhorar_texto_com_orientacao(texto_atual, orientacoes, tipo_texto):
         5. Preserve o tamanho aproximado do texto original (não muito mais longo ou mais curto)
         6. Use linguagem técnica apropriada para relatórios corporativos
         7. Garanta que o texto melhorado seja completo e bem estruturado
-        8. IMPORTANTE: Não use formatação markdown (**, ##, _, etc.) - use apenas texto simples
+        8. IMPORTANTE: NUNCA use formatação markdown (**, ##, _, etc.) - use APENAS texto simples
+        9. IMPORTANTE: Se as orientações mencionarem "tópicos", use parágrafos separados, mas sem marcadores ou formatação especial
         
-        **IMPORTANTE:** Responda APENAS com o texto melhorado, sem comentários ou explicações adicionais.
+        **FORMATO DE SAÍDA OBRIGATÓRIO:**
+        - Texto simples, sem formatação markdown
+        - Sem asteriscos, hashtags, underlines ou outros marcadores
+        - Se precisar destacar algo, use apenas pontuação e estrutura de parágrafos
+        - Responda APENAS com o texto melhorado, sem comentários ou explicações adicionais
         """
         
         # Fazer requisição à OpenAI com retry para conectividade
@@ -762,7 +767,7 @@ def melhorar_texto_com_orientacao(texto_atual, orientacoes, tipo_texto):
                 response = assistant.client.chat.completions.create(
                     model="gpt-4o",  # Latest model
                     messages=[
-                        {"role": "system", "content": f"Você é {assistant.assistant_name}, especialista em melhorar textos de relatórios técnicos seguindo orientações específicas."},
+                        {"role": "system", "content": f"Você é {assistant.assistant_name}, especialista em melhorar textos de relatórios técnicos seguindo orientações específicas. REGRA FUNDAMENTAL: NUNCA use formatação markdown (**, ##, _, etc.) - sempre retorne apenas texto simples."},
                         {"role": "user", "content": prompt}
                     ],
                     max_tokens=2000,
