@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }} - {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="card-title mb-2">
+                                <i class="fas fa-robot me-2"></i>{{ titulo }}
+                            </h4>
+                            <p class="card-text mb-2">
+                                <i class="fas fa-building me-2"></i>{{ projeto.cliente.nome }}
+                            </p>
+                            <p class="card-text mb-0">
+                                <i class="fas fa-project-diagram me-2"></i>{{ projeto.nome }}
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-light">
+                                <i class="fas fa-arrow-left me-1"></i>Voltar às Estatísticas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descrição -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info border-0">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-lightbulb me-3 text-warning" style="font-size: 1.5rem;"></i>
+                    <div>
+                        <strong>{{ descricao }}</strong>
+                        <p class="mb-0 mt-2">
+                            Digite suas orientações específicas para que o ChatGPT melhore o texto existente. 
+                            Seja claro sobre o que você quer melhorar, adicionar ou modificar.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Texto Atual -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Texto Atual
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">
+                        <div style="white-space: pre-wrap; line-height: 1.6;">{{ texto_atual }}</div>
+                    </div>
+                    <div class="mt-2 text-muted">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            Tamanho atual: {{ texto_atual | length }} caracteres
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário de Orientações -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>Suas Orientações para Melhoria
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('projeto.aplicar_melhoria_ia', projeto_id=projeto.id) }}">
+                        {{ form.hidden_tag() }}
+                        {{ form.tipo_texto() }}
+                        
+                        <div class="mb-4">
+                            {{ form.orientacao.label(class="form-label fw-bold") }}
+                            {{ form.orientacao(class="form-control") }}
+                            {% if form.orientacao.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.orientacao.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Exemplos de Orientações -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-lightbulb me-2"></i>Exemplos de Orientações:
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <strong>Mais Técnico:</strong>
+                                        <p class="mb-0 small">"Torne o texto mais técnico, incluindo mais detalhes sobre frameworks como NIST CSF, ISO 27001 e CIS Controls"</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <strong>Mais Comercial:</strong>
+                                        <p class="mb-0 small">"Use linguagem mais comercial, focando nos benefícios de negócio e ROI da cibersegurança"</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <strong>Mais Específico:</strong>
+                                        <p class="mb-0 small">"Adicione recomendações específicas de ferramentas e tecnologias para melhorar a maturidade"</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <strong>Mais Executivo:</strong>
+                                        <p class="mb-0 small">"Simplifique a linguagem para executivos, focando em riscos e impactos estratégicos"</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{{ url_for('projeto.estatisticas', projeto_id=projeto.id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>Cancelar
+                                </a>
+                            </div>
+                            <div>
+                                {{ form.submit(class="btn btn-primary btn-lg") }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aviso sobre IA -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning border-0">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-3"></i>
+                    <div>
+                        <strong>Importante:</strong>
+                        <p class="mb-0">
+                            As melhorias serão aplicadas usando ChatGPT. O texto atual será enviado junto com suas orientações 
+                            para gerar uma versão melhorada. O resultado substituirá o texto atual.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

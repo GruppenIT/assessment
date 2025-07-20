@@ -148,8 +148,8 @@ def create_app():
     
     # Registrar blueprint de projetos com prefixo correto
     try:
-        from routes.projeto import projeto_bp
-        app.register_blueprint(projeto_bp)
+        from routes import projeto
+        app.register_blueprint(projeto.projeto_bp)
         logging.info("Blueprint de projetos registrado com sucesso")
     except ImportError as e:
         logging.error(f"Erro ao importar blueprint de projetos: {e}")

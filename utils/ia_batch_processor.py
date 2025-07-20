@@ -6,7 +6,7 @@ Permite processamento incremental com salvamento de progresso
 import json
 import logging
 from datetime import datetime
-from utils.openai_utils import OpenAIAssistant, coletar_dados_dominio_para_ia
+# from utils.openai_utils import OpenAIAssistant, coletar_dados_dominio_para_ia  # Temporariamente desabilitado
 from app import db
 
 def processar_dominio_individual(projeto, dominio, assistant, tipo_nome):
@@ -49,12 +49,10 @@ def gerar_analise_incremental(projeto):
                 'erro': 'O projeto deve estar totalmente finalizado para gerar a análise dos domínios.'
             }
         
-        # Inicializar assistente
-        assistant = OpenAIAssistant()
-        if not assistant.is_configured():
-            return {
-                'erro': 'Integração com ChatGPT não configurada.'
-            }
+        # Função temporariamente desabilitada
+        return {
+            'erro': 'Função de análise incremental temporariamente desabilitada durante refatoração.'
+        }
         
         # Estrutura para armazenar resultados
         dominios_analises = {}
