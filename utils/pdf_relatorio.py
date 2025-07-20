@@ -186,6 +186,16 @@ class RelatorioPDF:
         
         # Gerar PDF com callback para cabeçalho/rodapé
         doc.build(self.story, onFirstPage=self._primeira_pagina, onLaterPages=self._demais_paginas)
+        
+        # Limpar arquivos temporários dos gráficos
+        if hasattr(self, '_temp_files'):
+            for temp_file in self._temp_files:
+                try:
+                    if os.path.exists(temp_file):
+                        os.unlink(temp_file)
+                except:
+                    pass
+        
         return temp_filename
     
     def _primeira_pagina(self, canvas, doc):
@@ -628,11 +638,11 @@ class RelatorioPDF:
                         self.story.append(img)
                         self.story.append(Spacer(1, 20))
                         
-                        # Limpar arquivo temporário
-                        try:
-                            os.unlink(grafico_path)
-                        except:
-                            pass
+                        # Armazenar path para limpeza posterior
+                        if not hasattr(self, '_temp_files'):
+                            self._temp_files = []
+                        self._temp_files.append(grafico_path)
+                        
                 except Exception as e:
                     # Se houver erro na geração do gráfico, continuar sem ele
                     print(f"Erro ao gerar gráfico radar: {e}")
@@ -880,11 +890,15 @@ class RelatorioPDF:
             plt.tight_layout()
             
             # Salvar em arquivo temporário
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
-                plt.savefig(tmp_file.name, format='png', dpi=150, bbox_inches='tight', 
-                           facecolor='white', edgecolor='none')
-                plt.close()
-                return tmp_file.name
+            # Usar diretório temporário do sistema
+            temp_dir = tempfile.gettempdir()
+            temp_filename = f"radar_chart_{os.getpid()}_{int(datetime.now().timestamp())}.png"
+            temp_path = os.path.join(temp_dir, temp_filename)
+            
+            plt.savefig(temp_path, format='png', dpi=150, bbox_inches='tight', 
+                       facecolor='white', edgecolor='none')
+            plt.close()
+            return temp_path
                 
         except Exception as e:
             print(f"Erro na geração do gráfico radar: {e}")
