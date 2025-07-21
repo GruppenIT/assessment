@@ -156,7 +156,7 @@ def upload_logo():
     
     if form.validate_on_submit():
         try:
-            arquivo = form.arquivo.data
+            arquivo = form.logo.data
             if arquivo and arquivo.filename:
                 logo = salvar_logo(arquivo)
                 flash('Logo atualizado com sucesso!', 'success')
