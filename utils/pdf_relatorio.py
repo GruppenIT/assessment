@@ -150,6 +150,16 @@ class RelatorioPDF:
             spaceAfter=8,
             fontName='Helvetica'
         ))
+        
+        # Estilo para texto em itálico
+        self.styles.add(ParagraphStyle(
+            name='TextoItalico',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            fontName='Helvetica-Oblique',
+            spaceAfter=4,
+            alignment=TA_LEFT
+        ))
     
     def gerar_relatorio_completo(self):
         """Gera o relatório PDF completo"""
@@ -759,26 +769,40 @@ class RelatorioPDF:
         """Adiciona considerações finais"""
         self.story.append(Paragraph("8. CONSIDERAÇÕES FINAIS", self.styles['TituloCapitulo']))
         
-        # Debug removido - funcionalidade corrigida
-        
         if self.projeto.consideracoes_finais_ia:
             try:
-                # Sempre usar como texto simples (evitando problemas de JSON)
-                texto_consideracoes = self.projeto.consideracoes_finais_ia.strip()
+                # Tentar processar como JSON primeiro
+                consideracoes_dados = json.loads(self.projeto.consideracoes_finais_ia)
+                texto_consideracoes = consideracoes_dados.get('consideracoes', '')
                 
-                if texto_consideracoes:
-                    # Remover tags HTML se houver
-                    import re
-                    texto_limpo = re.sub(r'<[^>]+>', '', texto_consideracoes)
-                    paragrafos = texto_limpo.split('\n\n')
-                    for paragrafo in paragrafos:
-                        if paragrafo.strip():
-                            self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
-                else:
-                    self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
-            except Exception as e:
-                print(f"DEBUG PDF: Erro ao processar considerações finais: {e}")
-                self.story.append(Paragraph("Erro ao processar considerações finais.", self.styles['TextoJustificado']))
+                # Adicionar metadados se disponíveis
+                if consideracoes_dados.get('assistant_name') or consideracoes_dados.get('gerado_em'):
+                    metadados = []
+                    if consideracoes_dados.get('gerado_em'):
+                        metadados.append(f"Gerado em: {consideracoes_dados['gerado_em']}")
+                    if consideracoes_dados.get('assistant_name'):
+                        metadados.append(f"Assistente: {consideracoes_dados['assistant_name']}")
+                    
+                    self.story.append(Paragraph(
+                        f"<i>{' | '.join(metadados)}</i>",
+                        self.styles['TextoItalico']
+                    ))
+                    self.story.append(Spacer(1, 10))
+                
+            except (json.JSONDecodeError, TypeError):
+                # Se não for JSON, usar como texto simples
+                texto_consideracoes = self.projeto.consideracoes_finais_ia.strip()
+            
+            if texto_consideracoes:
+                # Remover tags HTML se houver
+                import re
+                texto_limpo = re.sub(r'<[^>]+>', '', texto_consideracoes)
+                paragrafos = texto_limpo.split('\n\n')
+                for paragrafo in paragrafos:
+                    if paragrafo.strip():
+                        self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
+            else:
+                self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
         else:
             self.story.append(Paragraph("Considerações finais não geradas.", self.styles['TextoJustificado']))
         
