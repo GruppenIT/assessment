@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
+import logging
 from app import db
 from models.usuario import Usuario
 from models.cliente import Cliente, ClienteAssessment
@@ -34,7 +35,7 @@ def dashboard():
     
     try:
         # Obter fuso horário configurado
-        fuso_horario = Configuracao.get_fuso_horario()
+        fuso_horario = Configuracao.get_fuso_horario() or 'America/Sao_Paulo'
         tz = pytz.timezone(fuso_horario)
         agora_local = datetime.now(tz)
         
@@ -68,11 +69,21 @@ def dashboard():
         projetos_ativos = Projeto.query.filter_by(ativo=True).all()
         if projetos_ativos:
             progressos = [projeto.get_progresso_geral() for projeto in projetos_ativos]
-            stats['progresso_medio'] = sum(progressos) / len(progressos)
+            stats['progresso_medio'] = int(sum(progressos) / len(progressos))
             stats['projetos_pendentes'] = len([p for p in progressos if p < 100])
         else:
             stats['progresso_medio'] = 0
             stats['projetos_pendentes'] = 0
+        
+        # === ATIVIDADES RECENTES (NOVO SISTEMA DE AUDITORIA) ===
+        from models.auditoria import Auditoria
+        
+        # Obter estatísticas de auditoria
+        stats_auditoria = Auditoria.estatisticas_dashboard()
+        stats.update(stats_auditoria)
+        
+        # Obter atividades recentes detalhadas
+        atividades_recentes = Auditoria.obter_atividades_recentes(limite=20)
         
         # === ATIVIDADE RECENTE (últimos 7 dias) ===
         sete_dias_atras = agora_local - timedelta(days=7)
@@ -271,6 +282,7 @@ def dashboard():
                              tipos_stats=tipos_stats,
                              clientes_detalhados=clientes_detalhados,
                              alertas=alertas,
+                             atividades_recentes=atividades_recentes,
                              agora_local=agora_local,
                              fuso_horario=fuso_horario)
                              

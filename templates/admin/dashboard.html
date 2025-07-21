@@ -227,6 +227,140 @@
             </div>
         </div>
     {% endif %}
+    
+    <!-- Seção de Atividades Recentes -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Atividade Recente do Sistema
+                    </h5>
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Últimas 20 ações
+                    </small>
+                </div>
+                <div class="card-body p-0">
+                    {% if atividades_recentes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="15%">Data/Hora</th>
+                                    <th width="15%">Usuário</th>
+                                    <th width="10%">Tipo</th>
+                                    <th width="50%">Atividade</th>
+                                    <th width="10%">Entidade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for atividade in atividades_recentes %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-day me-1"></i>
+                                            {{ atividade.data_hora_formatada }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if atividade.usuario_tipo == 'admin' %}
+                                                <span class="badge bg-primary me-2">
+                                                    <i class="fas fa-user-shield"></i>
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success me-2">
+                                                    <i class="fas fa-user"></i>
+                                                </span>
+                                            {% endif %}
+                                            <div>
+                                                <small class="fw-bold">{{ atividade.usuario_nome }}</small>
+                                                {% if atividade.usuario_email %}
+                                                    <br><small class="text-muted">{{ atividade.usuario_email }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if atividade.acao == 'create' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-plus"></i> Criou
+                                            </span>
+                                        {% elif atividade.acao == 'update' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-edit"></i> Editou
+                                            </span>
+                                        {% elif atividade.acao == 'delete' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-trash"></i> Excluiu
+                                            </span>
+                                        {% elif atividade.acao == 'login' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-sign-in-alt"></i> Login
+                                            </span>
+                                        {% elif atividade.acao == 'response' %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-comment"></i> Resposta
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-question"></i> {{ atividade.acao|title }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span class="fw-medium">{{ atividade.descricao }}</span>
+                                            {% if atividade.entidade_nome %}
+                                                <br><small class="text-muted">
+                                                    <i class="fas fa-tag me-1"></i>
+                                                    {{ atividade.entidade_nome }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if atividade.entidade == 'cliente' %}
+                                            <i class="fas fa-building text-primary"></i>
+                                        {% elif atividade.entidade == 'projeto' %}
+                                            <i class="fas fa-project-diagram text-success"></i>
+                                        {% elif atividade.entidade == 'respondente' %}
+                                            <i class="fas fa-users text-info"></i>
+                                        {% elif atividade.entidade == 'assessment' %}
+                                            <i class="fas fa-clipboard-list text-warning"></i>
+                                        {% elif atividade.entidade == 'sistema' %}
+                                            <i class="fas fa-cog text-secondary"></i>
+                                        {% else %}
+                                            <i class="fas fa-file text-muted"></i>
+                                        {% endif %}
+                                        <small class="ms-1">{{ atividade.entidade|title }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">Nenhuma atividade registrada</h6>
+                        <small class="text-muted">As atividades do sistema aparecerão aqui quando usuários interagirem com o sistema.</small>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if atividades_recentes and atividades_recentes|length >= 20 %}
+                <div class="card-footer text-center">
+                    <a href="#" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>
+                        Ver Histórico Completo
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 

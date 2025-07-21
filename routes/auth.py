@@ -33,6 +33,17 @@ def login():
             # Login como administrador
             login_user(usuario_admin, remember=form.lembrar.data)
             session['user_type'] = 'admin'
+            
+            # Registrar login na auditoria
+            from models.auditoria import registrar_login
+            registrar_login(
+                usuario_tipo='admin',
+                usuario_id=usuario_admin.id,
+                usuario_nome=usuario_admin.nome,
+                usuario_email=usuario_admin.email,
+                ip_address=request.remote_addr
+            )
+            
             flash('Login realizado com sucesso!', 'success')
             
             next_page = request.args.get('next')
@@ -55,6 +66,17 @@ def login():
             
             login_user(respondente, remember=form.lembrar.data)
             session['user_type'] = 'respondente'
+            
+            # Registrar login na auditoria
+            from models.auditoria import registrar_login
+            registrar_login(
+                usuario_tipo='respondente',
+                usuario_id=respondente.id,
+                usuario_nome=respondente.nome,
+                usuario_email=respondente.email,
+                ip_address=request.remote_addr
+            )
+            
             flash('Login realizado com sucesso!', 'success')
             
             next_page = request.args.get('next')
@@ -74,6 +96,21 @@ def login():
 @login_required
 def logout():
     """Logout do usuário"""
+    # Registrar logout na auditoria antes de fazer logout
+    from models.auditoria import registrar_logout
+    
+    if current_user.is_authenticated:
+        usuario_tipo = 'admin' if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' else 'respondente'
+        usuario_nome = getattr(current_user, 'nome', 'Usuário')
+        usuario_email = getattr(current_user, 'email', None)
+        
+        registrar_logout(
+            usuario_tipo=usuario_tipo,
+            usuario_id=current_user.id,
+            usuario_nome=usuario_nome,
+            usuario_email=usuario_email
+        )
+    
     logout_user()
     flash('Logout realizado com sucesso!', 'info')
     return redirect(url_for('auth.login'))
