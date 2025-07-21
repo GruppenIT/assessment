@@ -1,89 +1,55 @@
 #!/usr/bin/env python3
 """
-Script para criar a tabela de auditoria no PostgreSQL (ambiente on-premise)
-Execute este script no diretório da aplicação para resolver o erro
+Script para criar a tabela de auditoria no PostgreSQL com entrada manual de credenciais
+Use quando o .env não estiver configurado corretamente
 """
 
 import os
 import sys
 import psycopg2
+import getpass
 from datetime import datetime
 
-def get_database_config():
-    """Obter configuração do banco PostgreSQL"""
+def get_manual_config():
+    """Obter configuração manual do banco PostgreSQL"""
     
-    # Primeiro tentar extrair do DATABASE_URL
-    database_url = os.environ.get('DATABASE_URL', '')
+    print("📋 Configure as credenciais do PostgreSQL:")
+    print("   (deixe em branco para usar valores padrão)")
+    print()
     
-    if database_url:
-        # Formato: postgresql://user:password@host:port/database
-        try:
-            from urllib.parse import urlparse
-            parsed = urlparse(database_url)
-            return {
-                'host': parsed.hostname or 'localhost',
-                'port': parsed.port or 5432,
-                'database': parsed.path.lstrip('/') or 'assessment_db',
-                'user': parsed.username or 'assessment_user',
-                'password': parsed.password or ''
-            }
-        except:
-            pass
+    host = input("Host [localhost]: ").strip() or 'localhost'
+    port = input("Port [5432]: ").strip() or '5432'
+    database = input("Database [assessment_db]: ").strip() or 'assessment_db'
+    user = input("User [assessment_user]: ").strip() or 'assessment_user'
+    password = getpass.getpass("Password: ")
     
-    # Fallback para variáveis individuais
-    db_config = {
-        'host': os.environ.get('DB_HOST', 'localhost'),
-        'port': os.environ.get('DB_PORT', '5432'),
-        'database': os.environ.get('DB_NAME', 'assessment_db'),
-        'user': os.environ.get('DB_USER', 'assessment_user'),
-        'password': os.environ.get('DB_PASSWORD', '')
+    return {
+        'host': host,
+        'port': int(port),
+        'database': database,
+        'user': user,
+        'password': password
     }
-    
-    # Tentar ler do arquivo .env se existir
-    if os.path.exists('.env'):
-        with open('.env', 'r') as f:
-            for line in f:
-                line = line.strip()
-                if '=' in line and not line.startswith('#'):
-                    key, value = line.split('=', 1)
-                    # Remover aspas se existirem
-                    value = value.strip('\'"')
-                    
-                    if key == 'DATABASE_URL':
-                        try:
-                            from urllib.parse import urlparse
-                            parsed = urlparse(value)
-                            db_config['host'] = parsed.hostname or 'localhost'
-                            db_config['port'] = parsed.port or 5432
-                            db_config['database'] = parsed.path.lstrip('/') or 'assessment_db'
-                            db_config['user'] = parsed.username or 'assessment_user'
-                            db_config['password'] = parsed.password or ''
-                        except:
-                            pass
-                    elif key == 'DB_HOST':
-                        db_config['host'] = value
-                    elif key == 'DB_PORT':
-                        db_config['port'] = value
-                    elif key == 'DB_NAME':
-                        db_config['database'] = value
-                    elif key == 'DB_USER':
-                        db_config['user'] = value
-                    elif key == 'DB_PASSWORD':
-                        db_config['password'] = value
-    
-    return db_config
 
-def create_auditoria_table():
-    """Criar tabela de auditoria no PostgreSQL"""
-    
-    db_config = get_database_config()
-    print(f"📂 Conectando no PostgreSQL: {db_config['user']}@{db_config['host']}:{db_config['port']}/{db_config['database']}")
-    
-    if not db_config['password']:
-        print("⚠️  AVISO: Senha do banco não encontrada!")
-        print("   Verifique se DATABASE_URL está configurado no .env")
-        print("   Formato: postgresql://usuario:senha@localhost/assessment_db")
+def test_connection(db_config):
+    """Testar conexão com PostgreSQL"""
+    try:
+        conn = psycopg2.connect(
+            host=db_config['host'],
+            port=db_config['port'],
+            database=db_config['database'],
+            user=db_config['user'],
+            password=db_config['password']
+        )
+        conn.close()
+        print("✓ Conexão PostgreSQL testada com sucesso!")
+        return True
+    except Exception as e:
+        print(f"✗ Erro na conexão: {e}")
         return False
+
+def create_auditoria_table(db_config):
+    """Criar tabela de auditoria no PostgreSQL"""
     
     try:
         conn = psycopg2.connect(
@@ -163,10 +129,8 @@ def create_auditoria_table():
     
     return True
 
-def create_configuracoes_table():
+def create_configuracoes_table(db_config):
     """Criar tabela de configurações se não existir"""
-    
-    db_config = get_database_config()
     
     try:
         conn = psycopg2.connect(
@@ -220,20 +184,31 @@ def create_configuracoes_table():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🔄 MIGRAÇÃO ON-PREMISE POSTGRESQL - TABELAS AUDITORIA")
+    print("🔄 MIGRAÇÃO POSTGRESQL MANUAL - TABELAS AUDITORIA")
     print("=" * 60)
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"📂 Diretório atual: {os.getcwd()}")
+    print()
+    
+    # Obter configurações manualmente
+    db_config = get_manual_config()
+    
+    print()
+    print(f"📂 Testando conexão com: {db_config['user']}@{db_config['host']}:{db_config['port']}/{db_config['database']}")
+    
+    if not test_connection(db_config):
+        print("❌ Não foi possível conectar ao PostgreSQL")
+        sys.exit(1)
+    
     print()
     
     success = True
     
-    if not create_auditoria_table():
+    if not create_auditoria_table(db_config):
         success = False
     
     print()
     
-    if not create_configuracoes_table():
+    if not create_configuracoes_table(db_config):
         success = False
     
     print()

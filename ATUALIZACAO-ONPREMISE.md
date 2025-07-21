@@ -19,11 +19,17 @@ Foi criado o arquivo `fix_auditoria_postgresql.py` que:
 
 ### 2. EXECUTAR AGORA (POSTGRESQL ON-PREMISE)
 
-No servidor on-premise, execute:
-
+**Opção 1: Script Automático (requer .env configurado)**
 ```bash
 cd /var/www/assessment
 sudo bash -c "source venv/bin/activate && python fix_auditoria_postgresql.py"
+sudo supervisorctl restart assessment
+```
+
+**Opção 2: Script Manual (se .env não estiver configurado)**
+```bash
+cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python fix_auditoria_postgresql_manual.py"
 sudo supervisorctl restart assessment
 ```
 
