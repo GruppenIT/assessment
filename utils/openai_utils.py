@@ -159,7 +159,11 @@ class OpenAIAssistant:
         """Gera considerações finais para o projeto baseado em todas as respostas"""
         if not self.is_configured():
             logging.error("Assistente OpenAI não configurado para gerar considerações finais")
-            return None
+            logging.error(f"Cliente OpenAI: {self.client}, API Key configurada: {bool(self.client)}")
+            # Forçar reinicialização do cliente
+            self._initialize_client()
+            if not self.is_configured():
+                return None
         
         import time
         
@@ -170,6 +174,9 @@ class OpenAIAssistant:
             try:
                 tentativa += 1
                 logging.info(f"Gerando considerações finais para projeto (tentativa {tentativa})")
+                logging.debug(f"Dados recebidos: {type(dados_projeto)}")
+                if isinstance(dados_projeto, dict):
+                    logging.debug(f"Keys dos dados: {list(dados_projeto.keys())}")
                 
                 # Preparar prompt específico para considerações finais
                 prompt = f"""
