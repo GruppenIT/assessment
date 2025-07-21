@@ -271,11 +271,27 @@ def visualizar_estatisticas(projeto_id):
             'total_respostas': len(todas_respostas)
         }
     
+    # Processar considerações finais se existirem
+    import json
+    consideracoes_finais_dados = None
+    consideracoes_finais_texto = None
+    
+    if projeto.consideracoes_finais_ia:
+        try:
+            # Tentar fazer parse do JSON
+            consideracoes_finais_dados = json.loads(projeto.consideracoes_finais_ia)
+            consideracoes_finais_texto = consideracoes_finais_dados.get('consideracoes', '')
+        except (json.JSONDecodeError, TypeError):
+            # Se falhar, usar como texto simples
+            consideracoes_finais_texto = projeto.consideracoes_finais_ia
+    
     return render_template('respondente/estatisticas.html',
                          projeto=projeto,
                          respondente=current_user,
                          respondentes_projeto=respondentes_projeto,
-                         estatisticas_assessments=estatisticas_assessments)
+                         estatisticas_assessments=estatisticas_assessments,
+                         consideracoes_finais_dados=consideracoes_finais_dados,
+                         consideracoes_finais_texto=consideracoes_finais_texto)
 
 @respondente_bp.route('/projeto/<int:projeto_id>/relatorio-pdf')
 @login_required

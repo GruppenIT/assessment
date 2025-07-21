@@ -192,19 +192,49 @@
     {% endfor %}
 
     <!-- Considerações Finais -->
-    {% if projeto.consideracoes_finais_ia %}
+    {% if consideracoes_finais_texto %}
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);">
                     <h5 class="text-white mb-0">
                         <i class="fas fa-clipboard-check me-2"></i>Considerações Finais
+                        {% if consideracoes_finais_dados and consideracoes_finais_dados.assistant_name %}
+                            <small class="ms-2 opacity-75">por {{ consideracoes_finais_dados.assistant_name }}</small>
+                        {% endif %}
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="bg-light p-4 rounded">
-                        {{ projeto.consideracoes_finais_ia.strip() | replace('\n', '<br>') | safe }}
+                    <!-- Informação sobre geração IA -->
+                    <div class="alert alert-info border-0 mb-3" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-robot me-2 text-primary"></i>
+                                <span class="fw-bold">Análise gerada por Inteligência Artificial</span>
+                            </div>
+                            {% if consideracoes_finais_dados and consideracoes_finais_dados.gerado_em %}
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ consideracoes_finais_dados.gerado_em }}
+                            </small>
+                            {% endif %}
+                        </div>
                     </div>
+                    
+                    <!-- Texto das considerações -->
+                    <div class="bg-light p-4 rounded" style="line-height: 1.7;">
+                        {{ consideracoes_finais_texto.strip() | replace('\n', '<br>') | safe }}
+                    </div>
+                    
+                    {% if consideracoes_finais_dados and consideracoes_finais_dados.dados_utilizados %}
+                    <!-- Metadados da análise -->
+                    <div class="mt-3 text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Análise baseada em {{ consideracoes_finais_dados.dados_utilizados.total_assessments }} assessment(s) 
+                            e {{ consideracoes_finais_dados.dados_utilizados.total_respostas }} respostas
+                        </small>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
