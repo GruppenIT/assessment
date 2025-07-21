@@ -552,7 +552,7 @@
                                     <a href="{{ url_for('projeto.editar_texto_ia', projeto_id=projeto.id, tipo='consideracoes') }}" class="btn btn-light btn-sm me-2">
                                         <i class="fas fa-edit me-1"></i>Editar
                                     </a>
-                                    <button type="button" class="btn btn-outline-light btn-sm" onclick="abrirModalMelhoria('consideracoes', `{{ projeto.consideracoes_finais_ia | replace('`', '\\`') | replace('\n', '\\n') | replace('\\', '\\\\') }}`, {{ projeto.id }})">
+                                    <button type="button" class="btn btn-outline-light btn-sm" onclick="abrirModalMelhoria('consideracoes', `{{ consideracoes_finais_texto | replace('`', '\\`') | replace('\n', '\\n') | replace('\\', '\\\\') if consideracoes_finais_texto else '' }}`, {{ projeto.id }})">
                                         <i class="fas fa-magic me-1"></i>Melhorar com IA
                                     </button>
                                 {% else %}
@@ -571,12 +571,24 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    {% if projeto.consideracoes_finais_ia %}
-                        <!-- Sempre tratar como texto simples para evitar erros -->
+                    {% if consideracoes_finais_texto %}
+                        <!-- Informações sobre geração da IA -->
                         <div class="alert alert-info border-0 mb-4" style="background: linear-gradient(90deg, rgba(111, 66, 193, 0.1) 0%, rgba(111, 66, 193, 0.05) 100%);">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-robot me-2 text-primary"></i>
-                                <span class="fw-bold">Considerações finais geradas por IA</span>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-robot me-2 text-primary"></i>
+                                    <span class="fw-bold">Considerações finais geradas por IA</span>
+                                </div>
+                                {% if consideracoes_finais_dados %}
+                                <div class="d-flex align-items-center text-muted">
+                                    <small>
+                                        <i class="fas fa-clock me-1"></i>{{ consideracoes_finais_dados.gerado_em }}
+                                        {% if consideracoes_finais_dados.assistant_name %}
+                                        | <i class="fas fa-robot me-1"></i>{{ consideracoes_finais_dados.assistant_name }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         
@@ -584,10 +596,21 @@
                         <div class="card border-0" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             <div class="card-body p-4">
                                 <div class="text-content" style="line-height: 1.8; font-size: 1.1em; text-align: justify; color: #2d3748; white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-wrap: anywhere;">
-                                    {{ projeto.consideracoes_finais_ia.strip() | replace('\n', '<br>') | safe }}
+                                    {{ consideracoes_finais_texto.strip() | replace('\n', '<br>') | safe }}
                                 </div>
                             </div>
                         </div>
+                        
+                        {% if consideracoes_finais_dados and consideracoes_finais_dados.dados_utilizados %}
+                        <!-- Metadados da geração -->
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Análise baseada em {{ consideracoes_finais_dados.dados_utilizados.total_assessments }} assessment(s) 
+                                e {{ consideracoes_finais_dados.dados_utilizados.total_respostas }} respostas
+                            </small>
+                        </div>
+                        {% endif %}
                         
                     {% else %}
                         <!-- Quando não há considerações finais -->

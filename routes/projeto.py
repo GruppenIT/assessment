@@ -626,6 +626,20 @@ def estatisticas(projeto_id):
         'scores_assessments': {assessment['tipo'].nome: assessment['score_geral'] for assessment in estatisticas_assessments}
     }
     
+    # Processar considerações finais se existirem
+    import json
+    consideracoes_finais_dados = None
+    consideracoes_finais_texto = None
+    
+    if projeto.consideracoes_finais_ia:
+        try:
+            # Tentar fazer parse do JSON
+            consideracoes_finais_dados = json.loads(projeto.consideracoes_finais_ia)
+            consideracoes_finais_texto = consideracoes_finais_dados.get('consideracoes', '')
+        except (json.JSONDecodeError, TypeError):
+            # Se falhar, usar como texto simples
+            consideracoes_finais_texto = projeto.consideracoes_finais_ia
+    
     # Remover referência a relatórios IA
     relatorio_ia = None
     
@@ -637,7 +651,9 @@ def estatisticas(projeto_id):
                          respondentes=respondentes,
                          dados_graficos=dados_graficos,
                          memorial_respostas=memorial_respostas,
-                         relatorio_ia=relatorio_ia)
+                         relatorio_ia=relatorio_ia,
+                         consideracoes_finais_dados=consideracoes_finais_dados,
+                         consideracoes_finais_texto=consideracoes_finais_texto)
 
 @projeto_bp.route('/<int:projeto_id>/relatorio-pdf')
 @login_required
