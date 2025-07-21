@@ -33,7 +33,21 @@ sudo bash -c "source venv/bin/activate && python fix_auditoria_postgresql_manual
 sudo supervisorctl restart assessment
 ```
 
-### 3. Verificar Conexão PostgreSQL
+### 3. DIAGNÓSTICO COMPLETO (se ainda houver problemas)
+
+**Primeiro, execute o diagnóstico para identificar o problema:**
+```bash
+cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python verify_env_config.py"
+```
+
+Este script vai verificar:
+- Se arquivo .env existe e está configurado corretamente
+- Se DATABASE_URL aponta para PostgreSQL ou SQLite
+- Se as variáveis de ambiente estão carregadas
+- Se a conexão PostgreSQL funciona
+
+### 4. Verificar Conexão PostgreSQL (se necessário)
 
 Se der erro de conexão, verifique:
 
