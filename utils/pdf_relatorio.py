@@ -775,20 +775,6 @@ class RelatorioPDF:
                 consideracoes_dados = json.loads(self.projeto.consideracoes_finais_ia)
                 texto_consideracoes = consideracoes_dados.get('consideracoes', '')
                 
-                # Adicionar metadados se disponíveis
-                if consideracoes_dados.get('assistant_name') or consideracoes_dados.get('gerado_em'):
-                    metadados = []
-                    if consideracoes_dados.get('gerado_em'):
-                        metadados.append(f"Gerado em: {consideracoes_dados['gerado_em']}")
-                    if consideracoes_dados.get('assistant_name'):
-                        metadados.append(f"Assistente: {consideracoes_dados['assistant_name']}")
-                    
-                    self.story.append(Paragraph(
-                        f"<i>{' | '.join(metadados)}</i>",
-                        self.styles['TextoItalico']
-                    ))
-                    self.story.append(Spacer(1, 10))
-                
             except (json.JSONDecodeError, TypeError):
                 # Se não for JSON, usar como texto simples
                 texto_consideracoes = self.projeto.consideracoes_finais_ia.strip()
