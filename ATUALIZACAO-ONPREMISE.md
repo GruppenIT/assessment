@@ -7,30 +7,48 @@ O sistema on-premise está apresentando erro devido à falta da tabela `auditori
 ERROR:root:Erro no dashboard: (sqlite3.OperationalError) no such table: auditoria
 ```
 
-## SOLUÇÃO DEFINITIVA
+## SOLUÇÃO DEFINITIVA POSTGRESQL
 
-### 1. Script de Correção Específico
-Foi criado o arquivo `fix_auditoria_onpremise.py` que:
-- Detecta automaticamente o caminho correto do banco SQLite
+### 1. Script Específico para PostgreSQL
+Foi criado o arquivo `fix_auditoria_postgresql.py` que:
+- Conecta no PostgreSQL usando as configurações do .env
 - Cria a tabela `auditoria` com todos os campos necessários
-- Cria a tabela `configuracoes` se não existir
+- Cria a tabela `configuracoes` se não existir  
 - Adiciona índices para melhor performance
 - Verifica se as tabelas foram criadas corretamente
 
-### 2. EXECUTAR AGORA (SOLUÇÃO IMEDIATA)
+### 2. EXECUTAR AGORA (POSTGRESQL ON-PREMISE)
 
 No servidor on-premise, execute:
 
 ```bash
 cd /var/www/assessment
-sudo bash -c "source venv/bin/activate && python fix_auditoria_onpremise.py"
+sudo bash -c "source venv/bin/activate && python fix_auditoria_postgresql.py"
 sudo supervisorctl restart assessment
 ```
 
-### 3. Script Alternativo (se o acima não funcionar)
+### 3. Verificar Conexão PostgreSQL
 
-Se ainda houver problemas, use o script original:
+Se der erro de conexão, verifique:
 
+```bash
+# Verificar se PostgreSQL está rodando
+sudo systemctl status postgresql
+
+# Verificar se usuário e banco existem
+sudo -u postgres psql -c "\l" | grep assessment
+sudo -u postgres psql -c "\du" | grep assessment
+```
+
+### 4. Scripts Alternativos
+
+Para SQLite (desenvolvimento):
+```bash
+cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python fix_auditoria_onpremise.py"
+```
+
+Para migração genérica:
 ```bash
 cd /var/www/assessment
 sudo bash -c "source venv/bin/activate && python migration_auditoria.py"
