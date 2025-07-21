@@ -562,6 +562,26 @@ def salvar_resposta():
         
         db.session.commit()
         
+        # Registrar resposta na auditoria
+        from models.auditoria import registrar_resposta
+        try:
+            projeto = projeto_respondente.projeto
+            valor_anterior = None
+            if hasattr(resposta, 'nota'):
+                valor_anterior = getattr(resposta, 'nota', None)
+            
+            registrar_resposta(
+                projeto_id=projeto_id,
+                projeto_nome=projeto.nome,
+                pergunta_id=pergunta_id,
+                pergunta_texto=pergunta.texto,
+                valor_anterior=valor_anterior,
+                valor_novo=nota
+            )
+        except Exception as audit_error:
+            # Se houver erro na auditoria, logar mas não falhar a operação principal
+            print(f"Erro ao registrar auditoria: {audit_error}")
+        
         return jsonify({'success': True, 'message': 'Resposta salva com sucesso', 'action': 'saved'})
         
     except Exception as e:

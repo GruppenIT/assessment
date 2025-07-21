@@ -186,6 +186,21 @@ def criar():
                             db.session.add(projeto_assessment)
                 
                 db.session.commit()
+                
+                # Registrar criação na auditoria
+                from models.auditoria import registrar_criacao
+                registrar_criacao(
+                    entidade='projeto',
+                    entidade_id=projeto.id,
+                    entidade_nome=projeto.nome,
+                    detalhes={
+                        'cliente_id': projeto.cliente_id,
+                        'cliente_nome': projeto.cliente.nome,
+                        'descricao': projeto.descricao,
+                        'tipos_assessment': len(tipos_ids)
+                    }
+                )
+                
                 flash(f'Projeto "{projeto.nome}" criado com sucesso!', 'success')
                 return redirect(url_for('projeto.detalhar', projeto_id=projeto.id))
             except Exception as e:

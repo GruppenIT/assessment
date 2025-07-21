@@ -40,6 +40,20 @@ def criar():
             db.session.add(cliente)
             db.session.commit()
             
+            # Registrar criação na auditoria
+            from models.auditoria import registrar_criacao
+            registrar_criacao(
+                entidade='cliente',
+                entidade_id=cliente.id,
+                entidade_nome=cliente.nome,
+                detalhes={
+                    'razao_social': cliente.razao_social,
+                    'cnpj': cliente.cnpj,
+                    'localidade': cliente.localidade,
+                    'segmento': cliente.segmento
+                }
+            )
+            
             flash(f'Cliente "{cliente.nome}" criado com sucesso!', 'success')
             return redirect(url_for('admin.clientes'))
             

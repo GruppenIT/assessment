@@ -49,6 +49,15 @@ def novo_tipo():
         db.session.add(versao)
         db.session.commit()
         
+        # Registrar criação na auditoria
+        from models.auditoria import registrar_criacao
+        registrar_criacao(
+            entidade='assessment_tipo',
+            entidade_id=tipo.id,
+            entidade_nome=nome,
+            detalhes={'versao_inicial': versao.versao}
+        )
+        
         flash(f'Tipo "{nome}" criado com sucesso!', 'success')
         return redirect(url_for('assessment_admin.editar_versao', versao_id=versao.id))
     
@@ -81,6 +90,23 @@ def publicar_versao(versao_id):
     
     try:
         versao.publicar()
+        
+        # Registrar publicação na auditoria
+        from models.auditoria import Auditoria
+        Auditoria.registrar(
+            acao='publish',
+            entidade='assessment_versao',
+            entidade_id=versao.id,
+            entidade_nome=f'{versao.tipo.nome} v{versao.versao}',
+            descricao=f'Publicou versão {versao.versao} do assessment "{versao.tipo.nome}"',
+            detalhes={
+                'tipo_id': versao.tipo_id,
+                'versao': versao.versao,
+                'total_dominios': versao.get_total_dominios(),
+                'total_perguntas': versao.get_total_perguntas()
+            }
+        )
+        
         flash(f'Versão {versao.versao} publicada com sucesso!', 'success')
     except ValueError as e:
         flash(str(e), 'error')
@@ -547,6 +573,22 @@ def importar_csv_versao(versao_id):
             perguntas_criadas += 1
         
         db.session.commit()
+        
+        # Registrar importação CSV na auditoria
+        from models.auditoria import Auditoria
+        Auditoria.registrar(
+            acao='import_csv',
+            entidade='assessment_versao',
+            entidade_id=versao_id,
+            entidade_nome=f'{versao.tipo.nome} v{versao.versao}',
+            descricao=f'Importou CSV para "{versao.tipo.nome}" v{versao.versao}',
+            detalhes={
+                'dominios_criados': len(dominios_criados),
+                'perguntas_criadas': perguntas_criadas,
+                'arquivo_nome': arquivo.filename
+            }
+        )
+        
         flash(f'Importação concluída! {len(dominios_criados)} domínios e {perguntas_criadas} perguntas criadas.', 'success')
         
     except Exception as e:
@@ -657,6 +699,23 @@ def processar_importacao_csv():
             perguntas_criadas += 1
         
         db.session.commit()
+        
+        # Registrar criação de nova versão e importação CSV na auditoria
+        from models.auditoria import Auditoria
+        Auditoria.registrar(
+            acao='create',
+            entidade='assessment_versao',
+            entidade_id=nova_versao.id,
+            entidade_nome=f'{tipo.nome} v{nova_versao_num}',
+            descricao=f'Criou nova versão {nova_versao_num} para "{tipo.nome}" via importação CSV',
+            detalhes={
+                'tipo_id': tipo.id,
+                'versao': nova_versao_num,
+                'dominios_criados': len(dominios_criados),
+                'perguntas_criadas': perguntas_criadas,
+                'arquivo_nome': arquivo.filename
+            }
+        )
         
         flash(f'Importação concluída! Criados {len(dominios_criados)} domínios e {perguntas_criadas} perguntas na versão {nova_versao_num}', 'success')
         return redirect(url_for('assessment_admin.editar_versao', versao_id=nova_versao.id))
