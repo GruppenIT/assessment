@@ -173,3 +173,23 @@ class Configuracao(db.Model):
     def get_fuso_horario():
         """Retorna o fuso horário configurado do sistema"""
         return Configuracao.get_valor('fuso_horario', 'America/Sao_Paulo')
+    
+    @staticmethod
+    def set_cores_sistema(cores):
+        """Define as cores do sistema"""
+        try:
+            for chave, valor in cores.items():
+                Configuracao.set_valor(f'cor_{chave}', valor, f'Cor {chave} do sistema', 'color')
+        except Exception as e:
+            db.session.rollback()
+            raise e
+    
+    @staticmethod
+    def set_logo_sistema(logo_path):
+        """Define o logo do sistema"""
+        return Configuracao.set_valor('logo_sistema', logo_path, 'Logo do sistema', 'file')
+    
+    @staticmethod
+    def get_logo_sistema():
+        """Retorna o logo do sistema configurado"""
+        return Configuracao.get_valor('logo_sistema', None)

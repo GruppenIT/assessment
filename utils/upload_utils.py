@@ -51,3 +51,19 @@ def get_file_size(file_path):
         return os.path.getsize(file_path)
     except Exception:
         return 0
+
+def salvar_logo(file):
+    """Salva logo do sistema"""
+    if not file or not allowed_file(file.filename):
+        raise ValueError("Arquivo de imagem inválido")
+    
+    from models.configuracao import Configuracao
+    from app import db
+    
+    # Salvar arquivo
+    logo_path = save_uploaded_file(file, 'logos')
+    
+    # Atualizar configuração do sistema
+    Configuracao.set_logo_sistema(logo_path)
+    
+    return logo_path
