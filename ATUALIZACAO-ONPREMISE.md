@@ -74,6 +74,29 @@ cd /var/www/assessment
 sudo bash -c "source venv/bin/activate && python migration_auditoria.py"
 ```
 
+## PROBLEMA IDENTIFICADO: .ENV NÃO CARREGADO
+
+O diagnóstico mostrou que:
+- ✓ Arquivo .env existe e está correto  
+- ✗ Variáveis de ambiente não estão sendo carregadas
+- ✗ Aplicação usa SQLite como fallback
+
+**CAUSA**: Supervisor não está carregando o arquivo .env
+
+### 5. CORREÇÃO DEFINITIVA - CARREGAR .ENV
+
+Execute o script de correção:
+```bash
+cd /var/www/assessment
+sudo python fix_env_loading.py
+```
+
+Este script vai:
+- Carregar todas as variáveis do .env
+- Atualizar configuração do supervisor
+- Reiniciar os serviços automaticamente
+- Aplicar as variáveis de ambiente corretamente
+
 ### 4. Verificar Resultado
 
 Após executar, você deve ver:
