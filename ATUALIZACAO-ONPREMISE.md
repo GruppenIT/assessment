@@ -7,23 +7,29 @@ O sistema on-premise está apresentando erro devido à falta da tabela `auditori
 ERROR:root:Erro no dashboard: (sqlite3.OperationalError) no such table: auditoria
 ```
 
-## Solução
+## SOLUÇÃO DEFINITIVA
 
-### 1. Script de Migração Criado
-Foi criado o arquivo `migration_auditoria.py` que:
+### 1. Script de Correção Específico
+Foi criado o arquivo `fix_auditoria_onpremise.py` que:
+- Detecta automaticamente o caminho correto do banco SQLite
 - Cria a tabela `auditoria` com todos os campos necessários
 - Cria a tabela `configuracoes` se não existir
 - Adiciona índices para melhor performance
-- Funciona com SQLite (ambiente on-premise)
+- Verifica se as tabelas foram criadas corretamente
 
-### 2. Deploy Atualizado
-O arquivo `deploy-updated.sh` foi atualizado para:
-- Executar automaticamente a migração após instalar dependências
-- Verificar se as tabelas foram criadas corretamente
+### 2. EXECUTAR AGORA (SOLUÇÃO IMEDIATA)
 
-### 3. Executar Manualmente (se necessário)
+No servidor on-premise, execute:
 
-Se você já rodou o deploy e ainda tem o erro, execute apenas:
+```bash
+cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python fix_auditoria_onpremise.py"
+sudo supervisorctl restart assessment
+```
+
+### 3. Script Alternativo (se o acima não funcionar)
+
+Se ainda houver problemas, use o script original:
 
 ```bash
 cd /var/www/assessment
