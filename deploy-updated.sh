@@ -143,6 +143,10 @@ setup_python_env() {
     sudo bash -c "source venv/bin/activate && python -c 'import openai; print(\"✓ OpenAI instalado:\", openai.__version__)'" || warning "Problema com openai"
     sudo bash -c "source venv/bin/activate && python -c 'import pytz; print(\"✓ PyTZ instalado:\", pytz.__version__)'" || warning "Problema com pytz"
     
+    # Executar migração das tabelas
+    log "Executando migração das tabelas..."
+    sudo bash -c "source venv/bin/activate && python migration_auditoria.py" || warning "Problema na migração de tabelas"
+    
     log "Ambiente Python configurado com TODAS as novas dependências!"
 }
 
