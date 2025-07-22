@@ -264,6 +264,16 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - Successfully integrated monitoring into gerar_introducao_projeto and gerar_consideracoes_finais methods
   - Added JavaScript interface that intercepts OpenAI button clicks and shows processing status
   - System now handles assessments with 200+ questions efficiently with payload optimization
+- July 22, 2025. Line Break Preservation Fix in Manual Text Editing:
+  - **TEXT FORMATTING BUG FIX**: Resolved issue where manual editing of introduction and final considerations removed line breaks in PDF reports
+  - **ROOT CAUSE**: PDF generation was using .strip() which removed single line breaks (\n) while preserving only paragraph breaks (\n\n)
+  - **SOLUTION IMPLEMENTED**: Modified utils/pdf_relatorio.py to preserve single line breaks by converting them to <br/> tags for ReportLab
+  - **ENHANCED TEMPLATE**: Updated editar_texto_ia.html with white-space: pre-wrap CSS to preserve formatting in textarea
+  - **AI TEXT PRESERVATION**: AI-generated improvements already preserved formatting correctly, now manual edits do too
+  - **USER EXPERIENCE**: Added clear indication that line breaks will be preserved in PDF reports
+  - **DEBUGGING TOOLS**: Created debug_linebreaks.py to demonstrate the fix and explain the processing difference
+  - Successfully fixed both introduction and final considerations text processing
+  - Manual edits now preserve all formatting including single line breaks within paragraphs
 - July 22, 2025. Complete On-Premise Documentation Overhaul:
   - **DEFINITIVE ON-PREMISE SOLUTION**: Resolved critical deployment issue where Flask application was using SQLite instead of PostgreSQL
   - Created env_loader.py module that automatically loads .env variables at application startup

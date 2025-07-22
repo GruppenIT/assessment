@@ -519,13 +519,20 @@ class RelatorioPDF:
                     texto_introducao = self.projeto.introducao_ia
                 
                 if texto_introducao:
-                    # Remover tags HTML e processar em parágrafos
+                    # Remover tags HTML e processar preservando quebras de linha
                     import re
                     texto_limpo = re.sub(r'<[^>]+>', '', texto_introducao)
+                    
+                    # Processar parágrafos preservando quebras de linha simples
+                    # Dividir por dupla quebra de linha (parágrafos)
                     paragrafos = texto_limpo.split('\n\n')
+                    
                     for paragrafo in paragrafos:
                         if paragrafo.strip():
-                            self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
+                            # Preservar quebras de linha simples dentro do parágrafo
+                            # Substituir quebras simples por <br/> para ReportLab
+                            paragrafo_formatado = paragrafo.strip().replace('\n', '<br/>')
+                            self.story.append(Paragraph(paragrafo_formatado, self.styles['TextoJustificado']))
                 else:
                     self._adicionar_introducao_padrao()
             except (json.JSONDecodeError, KeyError, TypeError):
@@ -780,13 +787,20 @@ class RelatorioPDF:
                 texto_consideracoes = self.projeto.consideracoes_finais_ia.strip()
             
             if texto_consideracoes:
-                # Remover tags HTML se houver
+                # Remover tags HTML se houver e preservar quebras de linha
                 import re
                 texto_limpo = re.sub(r'<[^>]+>', '', texto_consideracoes)
+                
+                # Processar parágrafos preservando quebras de linha simples
+                # Dividir por dupla quebra de linha (parágrafos)
                 paragrafos = texto_limpo.split('\n\n')
+                
                 for paragrafo in paragrafos:
                     if paragrafo.strip():
-                        self.story.append(Paragraph(paragrafo.strip(), self.styles['TextoJustificado']))
+                        # Preservar quebras de linha simples dentro do parágrafo
+                        # Substituir quebras simples por <br/> para ReportLab
+                        paragrafo_formatado = paragrafo.strip().replace('\n', '<br/>')
+                        self.story.append(Paragraph(paragrafo_formatado, self.styles['TextoJustificado']))
             else:
                 self.story.append(Paragraph("Considerações finais não disponíveis.", self.styles['TextoJustificado']))
         else:

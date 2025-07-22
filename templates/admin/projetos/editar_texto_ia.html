@@ -83,7 +83,7 @@
                         <!-- Campo de texto -->
                         <div class="mb-4">
                             {{ form.texto_ia.label(class="form-label fw-bold") }}
-                            {{ form.texto_ia(class="form-control" + (" is-invalid" if form.texto_ia.errors else "")) }}
+                            {{ form.texto_ia(class="form-control" + (" is-invalid" if form.texto_ia.errors else ""), style="white-space: pre-wrap;") }}
                             {% if form.texto_ia.errors %}
                                 <div class="invalid-feedback">
                                     {{ form.texto_ia.errors[0] }}
@@ -91,7 +91,7 @@
                             {% endif %}
                             <div class="form-text">
                                 <i class="fas fa-keyboard me-1"></i>
-                                Use este campo para ajustar o texto conforme necessário. Mantenha a formatação profissional.
+                                Use este campo para ajustar o texto conforme necessário. As quebras de linha serão preservadas no relatório PDF.
                             </div>
                         </div>
                         

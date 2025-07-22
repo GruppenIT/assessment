@@ -1,0 +1,8 @@
+Teste de quebras de linha:
+
+Este é o primeiro parágrafo.
+
+Este é o segundo parágrafo.
+E esta é uma segunda linha do parágrafo.
+
+Fim do teste.
