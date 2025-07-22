@@ -25,15 +25,27 @@ class OpenAIAssistant:
             api_key = config.get('api_key')
             self.assistant_name = config.get('assistant_name', 'Assessment Assistant')
             
-            if api_key:
+            logging.debug(f"OpenAI config: api_key_configured={config.get('api_key_configured')}, assistant_name={self.assistant_name}")
+            
+            if api_key and api_key.strip():
+                # Validar formato da chave
+                if not api_key.startswith('sk-'):
+                    logging.error(f"OpenAI API key tem formato inválido. Deve começar com 'sk-'")
+                    return
+                
+                if len(api_key) < 40:
+                    logging.error(f"OpenAI API key muito curta. Tamanho: {len(api_key)}")
+                    return
+                
                 self.client = OpenAI(
                     api_key=api_key,
                     timeout=60,  # 60 segundos timeout
                     max_retries=3  # 3 tentativas
                 )
                 logging.info(f"Cliente OpenAI inicializado com assistant: {self.assistant_name}")
+                logging.debug(f"API key válida: {api_key[:10]}...{api_key[-6:]}")
             else:
-                logging.warning("API Key OpenAI não configurada")
+                logging.warning("API Key OpenAI não configurada ou vazia")
         except Exception as e:
             logging.error(f"Erro ao inicializar cliente OpenAI: {e}")
     

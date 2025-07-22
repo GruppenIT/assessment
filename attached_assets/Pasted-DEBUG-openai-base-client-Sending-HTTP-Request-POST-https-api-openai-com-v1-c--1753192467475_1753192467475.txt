@@ -1,0 +1,29 @@
+DEBUG:openai._base_client:Sending HTTP Request: POST https://api.openai.com/v1/c                        hat/completions
+DEBUG:httpcore.connection:connect_tcp.started host='api.openai.com' port=443 loc                        al_address=None timeout=60 socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.                        sync.SyncStream object at 0x741fa69897f0>
+DEBUG:httpcore.connection:start_tls.started ssl_context=<ssl.SSLContext object a                        t 0x741fa7d24450> server_hostname='api.openai.com' timeout=60
+DEBUG:httpcore.connection:start_tls.complete return_value=<httpcore._backends.sy                        nc.SyncStream object at 0x741fa6b7ecf0>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'POST'                        ]>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1                        ', 401, b'Unauthorized', [(b'Date', b'Tue, 22 Jul 2025 13:52:34 GMT'), (b'Conten                        t-Type', b'application/json; charset=utf-8'), (b'Content-Length', b'414'), (b'Co                        nnection', b'keep-alive'), (b'vary', b'Origin'), (b'x-request-id', b'req_cbe7952                        78e1ca0fabfe381c60a393f27'), (b'strict-transport-security', b'max-age=31536000;                         includeSubDomains; preload'), (b'cf-cache-status', b'DYNAMIC'), (b'Set-Cookie',                         b'__cf_bm=qZlaruuhuOOf4nSc4lol0Q6_bJXQAXJbmhR3.UDERlA-1753192354-1.0.1.1-zm963Ah                        jtLpcv_talkfz0XpIY0ctZqgzpPxOT__ksGbeHXvvB_tX1MarK0CjbUE4TelDxr8l7Jt9tcKv_8oVPQ_                        TTTRE9.6TtIgGaPsSdfI; path=/; expires=Tue, 22-Jul-25 14:22:34 GMT; domain=.api.o                        penai.com; HttpOnly; Secure; SameSite=None'), (b'X-Content-Type-Options', b'nosn                        iff'), (b'Set-Cookie', b'_cfuvid=7cD5AyDqgTh4dglCHvu5DiA2AW1qnA_ZxsoRoxp6UQI-175                        3192354619-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure;                         SameSite=None'), (b'Server', b'cloudflare'), (b'CF-RAY', b'96336b566da6521b-UDI'                        ), (b'alt-svc', b'h3=":443"; ma=86400')])
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1                        .1 401 Unauthorized"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+DEBUG:openai._base_client:HTTP Response: POST https://api.openai.com/v1/chat/com                        pletions "401 Unauthorized" Headers([('date', 'Tue, 22 Jul 2025 13:52:34 GMT'),                         ('content-type', 'application/json; charset=utf-8'), ('content-length', '414'),                         ('connection', 'keep-alive'), ('vary', 'Origin'), ('x-request-id', 'req_cbe79527                        8e1ca0fabfe381c60a393f27'), ('strict-transport-security', 'max-age=31536000; inc                        ludeSubDomains; preload'), ('cf-cache-status', 'DYNAMIC'), ('set-cookie', '__cf_                        bm=qZlaruuhuOOf4nSc4lol0Q6_bJXQAXJbmhR3.UDERlA-1753192354-1.0.1.1-zm963AhjtLpcv_                        talkfz0XpIY0ctZqgzpPxOT__ksGbeHXvvB_tX1MarK0CjbUE4TelDxr8l7Jt9tcKv_8oVPQ_TTTRE9.                        6TtIgGaPsSdfI; path=/; expires=Tue, 22-Jul-25 14:22:34 GMT; domain=.api.openai.c                        om; HttpOnly; Secure; SameSite=None'), ('x-content-type-options', 'nosniff'), ('                        set-cookie', '_cfuvid=7cD5AyDqgTh4dglCHvu5DiA2AW1qnA_ZxsoRoxp6UQI-1753192354619-                        0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=No                        ne'), ('server', 'cloudflare'), ('cf-ray', '96336b566da6521b-UDI'), ('alt-svc',                         'h3=":443"; ma=86400')])
+DEBUG:openai._base_client:request_id: req_cbe795278e1ca0fabfe381c60a393f27
+DEBUG:openai._base_client:Encountered httpx.HTTPStatusError
+Traceback (most recent call last):
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/openai/_base_clien                        t.py", line 1024, in request
+    response.raise_for_status()
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/httpx/_models.py",                         line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '401 Unauthorized' for url 'https://api.open                        ai.com/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St                        atus/401
+DEBUG:openai._base_client:Not retrying
+DEBUG:openai._base_client:Re-raising status error
+ERROR:root:Erro ao gerar introdução do projeto: Error code: 401 - {'error': {'me                        ssage': 'Incorrect API key provided: sk-proj-***********************************                        ********************************************************************************                        *************************************H6IA. You can find your API key at https://                        platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param'                        : None, 'code': 'invalid_api_key'}}

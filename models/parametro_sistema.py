@@ -37,8 +37,11 @@ class ParametroSistema(db.Model):
     @staticmethod
     def get_valor(chave, valor_padrao=None):
         """Recupera um valor do sistema"""
+        import logging
+        
         parametro = ParametroSistema.query.filter_by(chave=chave).first()
         if not parametro:
+            logging.debug(f"Parâmetro '{chave}' não encontrado no banco")
             return valor_padrao
         
         if parametro.tipo == 'encrypted' and parametro.valor_criptografado:
@@ -46,15 +49,21 @@ class ParametroSistema(db.Model):
                 fernet = Fernet(ParametroSistema.get_chave_criptografia())
                 valor_descriptografado = fernet.decrypt(parametro.valor_criptografado.encode())
                 resultado = valor_descriptografado.decode()
-                # Log para debug
+                
+                # Log detalhado para debugging OpenAI
+                if chave == 'openai_api_key':
+                    logging.debug(f"OpenAI API key descriptografada com sucesso. Tamanho: {len(resultado)}")
+                    logging.debug(f"OpenAI API key format check: starts_with_sk={resultado.startswith('sk-')}")
+                
                 return resultado
             except Exception as e:
-                # Silenciar erro de descriptografia
+                logging.error(f"Erro ao descriptografar parâmetro '{chave}': {e}")
                 return valor_padrao
         elif parametro.tipo == 'json' and parametro.valor:
             try:
                 return json.loads(parametro.valor)
-            except:
+            except Exception as e:
+                logging.error(f"Erro ao parsing JSON do parâmetro '{chave}': {e}")
                 return valor_padrao
         else:
             return parametro.valor or valor_padrao
