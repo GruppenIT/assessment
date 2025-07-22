@@ -312,39 +312,6 @@ def dashboard():
                              agora_local=datetime.now(),
                              fuso_horario="UTC")
 
-@admin_bp.route('/respondentes')
-@login_required
-@admin_required
-def listar_respondentes():
-    """Lista todos os respondentes do sistema"""
-    from models.respondente import Respondente
-    from models.cliente import Cliente
-    from models.projeto import ProjetoRespondente
-    from models.resposta import Resposta
-    from sqlalchemy import func
-    
-    # Buscar respondentes com estatísticas
-    respondentes = db.session.query(
-        Respondente,
-        Cliente.razao_social.label('cliente_nome'),
-        func.count(func.distinct(ProjetoRespondente.projeto_id)).label('total_projetos'),
-        func.count(Resposta.id).label('total_respostas')
-    ).join(
-        Cliente, Respondente.cliente_id == Cliente.id
-    ).outerjoin(
-        ProjetoRespondente, Respondente.id == ProjetoRespondente.respondente_id
-    ).outerjoin(
-        Resposta, Respondente.id == Resposta.respondente_id
-    ).filter(
-        Respondente.ativo == True
-    ).group_by(
-        Respondente.id, Cliente.razao_social
-    ).order_by(
-        Cliente.razao_social, Respondente.nome
-    ).all()
-    
-    return render_template('admin/respondentes.html', respondentes=respondentes)
-
 @admin_bp.route('/clientes')
 @login_required
 @admin_required

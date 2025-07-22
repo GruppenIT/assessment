@@ -254,11 +254,6 @@ class RelatorioPDF:
         canvas.setFont('Helvetica', 9)
         cliente_nome = self.projeto.cliente.nome or 'Cliente'
         projeto_nome = self.projeto.nome or 'Projeto'
-        
-        # Limitar o nome do projeto a 70 caracteres para evitar sobreposição
-        if len(projeto_nome) > 70:
-            projeto_nome = projeto_nome[:67] + '...'
-        
         texto_centro = f"{cliente_nome} - {projeto_nome} - 2025"
         text_width = canvas.stringWidth(texto_centro, 'Helvetica', 9)
         canvas.drawString((A4[0] - text_width) / 2, A4[1] - 0.7*inch, texto_centro)
@@ -306,36 +301,16 @@ class RelatorioPDF:
         self.story.append(Paragraph(dados_cliente, self.styles['Normal']))
         
         # Logo do cliente (se disponível)  
-        try:
-            if hasattr(self.projeto.cliente, 'logo_path') and self.projeto.cliente.logo_path:
-                logo_path = self.projeto.cliente.logo_path
-                # Tentar diferentes caminhos possíveis
-                possible_paths = [
-                    os.path.join('static', 'uploads', logo_path),
-                    os.path.join('static', 'uploads', 'logos', logo_path),
-                    logo_path if logo_path.startswith('static/') else os.path.join('static', 'uploads', logo_path.lstrip('/'))
-                ]
-                
-                logo_encontrado = False
-                for path in possible_paths:
-                    if os.path.exists(path):
-                        self.story.append(Spacer(1, 20))
-                        logo_cliente = Image(path, width=2*inch, height=1*inch, kind='proportional')
-                        logo_cliente.hAlign = 'CENTER'
-                        self.story.append(logo_cliente)
-                        logo_encontrado = True
-                        break
-                        
-                if not logo_encontrado:
-                    # Debug: adicionar informação sobre o caminho esperado
-                    self.story.append(Spacer(1, 10))
-                    self.story.append(Paragraph(f"(Logo do cliente não encontrado: {logo_path})", 
-                                              ParagraphStyle(name='Debug', parent=self.styles['Normal'], fontSize=8, textColor=HexColor('#999999'))))
-        except Exception as e:
-            # Debug: mostrar erro se necessário
-            self.story.append(Spacer(1, 10))
-            self.story.append(Paragraph(f"(Erro ao carregar logo: {str(e)})", 
-                                      ParagraphStyle(name='Debug', parent=self.styles['Normal'], fontSize=8, textColor=HexColor('#999999'))))
+        if hasattr(self.projeto.cliente, 'logo_path') and self.projeto.cliente.logo_path:
+            try:
+                logo_path = os.path.join('static', 'uploads', self.projeto.cliente.logo_path)
+                if os.path.exists(logo_path):
+                    self.story.append(Spacer(1, 20))
+                    logo_cliente = Image(logo_path, width=2*inch, height=1*inch, kind='proportional')
+                    logo_cliente.hAlign = 'CENTER'
+                    self.story.append(logo_cliente)
+            except Exception:
+                pass
         self.story.append(Spacer(1, 100))
         
         # Rodapé da capa
@@ -449,19 +424,15 @@ class RelatorioPDF:
         """Adiciona seção com dados do projeto"""
         self.story.append(Paragraph("3. DADOS DO PROJETO", self.styles['TituloCapitulo']))
         
-        # Criar dados do projeto com melhor formatação para texto longo
-        nome_projeto = self.projeto.nome or 'Não informado'
-        descricao_projeto = self.projeto.descricao or 'Não informado'
-        
         dados_projeto = [
-            ['Nome:', Paragraph(nome_projeto, self.styles['TextoJustificado'])],
-            ['Descrição:', Paragraph(descricao_projeto, self.styles['TextoJustificado'])],
+            ['Nome:', self.projeto.nome],
+            ['Descrição:', self.projeto.descricao or 'Não informado'],
             ['Data de Abertura:', format_date_local(self.projeto.data_criacao) if self.projeto.data_criacao else 'Não informado'],
             ['Data de Conclusão:', format_date_local(self.projeto.data_finalizacao) if self.projeto.data_finalizacao else 'Em andamento'],
             ['Progresso Geral:', f"{self.projeto.get_progresso_geral()}%"]
         ]
         
-        tabela_projeto = Table(dados_projeto, colWidths=[3*inch, 4*inch], rowHeights=[None]*len(dados_projeto))
+        tabela_projeto = Table(dados_projeto, colWidths=[3*inch, 4*inch])
         tabela_projeto.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),

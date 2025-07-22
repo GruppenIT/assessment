@@ -1,153 +1,194 @@
 {% extends "base.html" %}
 
-{% block title %}Todos os Respondentes - {{ super() }}{% endblock %}
+{% block title %}Respondentes - {{ cliente.nome }}{% endblock %}
 
 {% block content %}
-<div class="container my-4">
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('cliente.dashboard') }}">Clientes</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Respondentes - {{ cliente.nome }}</li>
+        </ol>
+    </nav>
+
+    <!-- Cabeçalho -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="text-primary mb-1">
-                <i class="fas fa-users me-2"></i>
-                Todos os Respondentes
-            </h2>
-            <p class="text-muted mb-0">
-                Visão geral de todos os respondentes do sistema
-            </p>
+            <h2><i class="fas fa-users"></i> Respondentes do Cliente</h2>
+            <p class="text-muted mb-0">{{ cliente.nome }} - {{ cliente.razao_social }}</p>
+            <small class="text-muted">Gerencie os respondentes que participarão dos assessments</small>
         </div>
-        <div>
-            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i>Voltar ao Dashboard
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoResponenteModal">
+                <i class="fas fa-plus"></i> Novo Respondente
+            </button>
+            <a href="{{ url_for('cliente.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar aos Clientes
             </a>
         </div>
     </div>
 
-    {% if respondentes %}
-        <!-- Estatísticas rápidas -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body text-center">
-                        <h3 class="mb-1">{{ respondentes|length }}</h3>
-                        <small>Total de Respondentes</small>
-                    </div>
+    <!-- Alertas de Feedback -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body text-center">
-                        <h3 class="mb-1">{{ respondentes|map(attribute=2)|sum }}</h3>
-                        <small>Projetos Associados</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body text-center">
-                        <h3 class="mb-1">{{ respondentes|map(attribute=3)|sum }}</h3>
-                        <small>Respostas Registradas</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-dark">
-                    <div class="card-body text-center">
-                        <h3 class="mb-1">{{ respondentes|selectattr(2, 'equalto', 0)|list|length }}</h3>
-                        <small>Sem Projetos</small>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ respondentes|length }}</h4>
+                            <p class="card-text">Total de Respondentes</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Tabela de respondentes -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-table me-2"></i>
-                    Lista Completa de Respondentes
-                </h5>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ respondentes|selectattr('ativo')|list|length }}</h4>
+                            <p class="card-text">Ativos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-0">
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ (respondentes|length - respondentes|selectattr('ativo')|list|length) }}</h4>
+                            <p class="card-text">Inativos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-times fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ cliente.get_tipos_assessment()|length }}</h4>
+                            <p class="card-text">Assessments Disponíveis</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clipboard-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Respondentes -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list"></i> Lista de Respondentes
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if respondentes %}
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
                             <tr>
                                 <th>Nome</th>
                                 <th>Email</th>
                                 <th>Login</th>
-                                <th>Cliente</th>
-                                <th class="text-center">Projetos</th>
-                                <th class="text-center">Respostas</th>
-                                <th class="text-center">Status</th>
-                                <th class="text-center">Ações</th>
+                                <th>Cargo</th>
+                                <th>Setor</th>
+                                <th>Status</th>
+                                <th>Projetos</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for respondente_data in respondentes %}
-                                {% set respondente = respondente_data[0] %}
-                                {% set cliente_nome = respondente_data[1] %}
-                                {% set total_projetos = respondente_data[2] %}
-                                {% set total_respostas = respondente_data[3] %}
+                            {% for respondente in respondentes %}
                                 <tr>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
-                                                <i class="fas fa-user text-primary"></i>
-                                            </div>
-                                            <div>
-                                                <strong>{{ respondente.nome }}</strong>
-                                                {% if respondente.cargo %}
-                                                    <br><small class="text-muted">{{ respondente.cargo }}</small>
+                                        <strong>{{ respondente.nome }}</strong>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-envelope text-muted"></i>
+                                        {{ respondente.email }}
+                                    </td>
+                                    <td>
+                                        <code>{{ respondente.login }}</code>
+                                    </td>
+                                    <td>
+                                        {{ respondente.cargo or '-' }}
+                                    </td>
+                                    <td>
+                                        {{ respondente.setor or '-' }}
+                                    </td>
+                                    <td>
+                                        {% if respondente.ativo %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set projetos_respondente = respondente.projeto_respondentes %}
+                                        {% if projetos_respondente %}
+                                            <span class="badge bg-primary">{{ projetos_respondente|length }} projeto{{ 's' if projetos_respondente|length != 1 else '' }}</span>
+                                            <div class="small text-muted mt-1">
+                                                {% for projeto_resp in projetos_respondente[:2] %}
+                                                    <div>• {{ projeto_resp.projeto.nome[:30] }}{{ '...' if projeto_resp.projeto.nome|length > 30 else '' }}</div>
+                                                {% endfor %}
+                                                {% if projetos_respondente|length > 2 %}
+                                                    <div class="text-muted">+ {{ projetos_respondente|length - 2 }} mais</div>
                                                 {% endif %}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="text-muted">{{ respondente.email }}</span>
-                                    </td>
-                                    <td>
-                                        <code class="bg-light px-2 py-1 rounded">{{ respondente.login }}</code>
-                                    </td>
-                                    <td>
-                                        <a href="{{ url_for('cliente.visualizar', cliente_id=respondente.cliente_id) }}" 
-                                           class="text-decoration-none">
-                                            <i class="fas fa-building me-1"></i>{{ cliente_nome }}
-                                        </a>
-                                    </td>
-                                    <td class="text-center">
-                                        {% if total_projetos > 0 %}
-                                            <span class="badge bg-success">{{ total_projetos }}</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">0</span>
+                                            <span class="text-muted">Nenhum projeto</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center">
-                                        {% if total_respostas > 0 %}
-                                            <span class="badge bg-info">{{ total_respostas }}</span>
-                                        {% else %}
-                                            <span class="badge bg-light text-dark">0</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        {% if respondente.ativo %}
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check me-1"></i>Ativo
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-danger">
-                                                <i class="fas fa-times me-1"></i>Inativo
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('admin.editar_respondente', respondente_id=respondente.id) }}" 
-                                               class="btn btn-outline-primary" title="Editar">
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editarResponenteModal{{ respondente.id }}"
+                                                    title="Editar">
                                                 <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="{{ url_for('admin.respondente_projetos', respondente_id=respondente.id) }}" 
+                                               class="btn btn-outline-info btn-sm" 
+                                               title="Gerenciar Projetos">
+                                                <i class="fas fa-project-diagram"></i>
                                             </a>
-                                            <a href="{{ url_for('cliente.visualizar', cliente_id=respondente.cliente_id) }}" 
-                                               class="btn btn-outline-info" title="Ver Cliente">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                    onclick="confirmarExclusao({{ respondente.id }}, '{{ respondente.nome }}')"
+                                                    title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -155,44 +196,198 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum respondente cadastrado</h5>
+                    <p class="text-muted">Clique no botão "Novo Respondente" para começar.</p>
+                </div>
+            {% endif %}
         </div>
-    {% else %}
-        <!-- Estado vazio -->
-        <div class="card">
-            <div class="card-body text-center py-5">
-                <i class="fas fa-users fa-4x text-muted mb-3"></i>
-                <h4 class="text-muted">Nenhum respondente encontrado</h4>
-                <p class="text-muted">
-                    Não há respondentes cadastrados no sistema ainda.
-                </p>
-                <a href="{{ url_for('cliente.dashboard') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Gerenciar Clientes e Respondentes
-                </a>
-            </div>
-        </div>
-    {% endif %}
+    </div>
 </div>
 
-{% endblock %}
+<!-- Modal Novo Respondente -->
+<div class="modal fade" id="novoResponenteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.criar_respondente', cliente_id=cliente.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus"></i> Novo Respondente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            {{ form.nome.label(class="form-label") }}
+                            {{ form.nome(class="form-control") }}
+                            {% if form.nome.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.nome.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.email.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Pode ser o mesmo email em diferentes clientes</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.login.label(class="form-label") }}
+                            {{ form.login(class="form-control", required=True) }}
+                            {% if form.login.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.login.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Login único (ex: rodrigo.{{ cliente.nome.lower().replace(' ', '') }})</small>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            {{ form.senha.label(class="form-label") }}
+                            {{ form.senha(class="form-control", required=True) }}
+                            {% if form.senha.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.senha.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.cargo.label(class="form-label") }}
+                            {{ form.cargo(class="form-control") }}
+                            {% if form.cargo.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.cargo.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.setor.label(class="form-label") }}
+                            {{ form.setor(class="form-control") }}
+                            {% if form.setor.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.setor.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                {{ form.ativo(class="form-check-input") }}
+                                {{ form.ativo.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-{% block extra_css %}
-<style>
-.card:hover {
-    transform: translateY(-2px);
-    transition: transform 0.2s ease-in-out;
-}
+<!-- Modais de Edição para cada Respondente -->
+{% for respondente in respondentes %}
+<div class="modal fade" id="editarResponenteModal{{ respondente.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.editar_respondente', respondente_id=respondente.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-edit"></i> Editar Respondente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nome do Respondente</label>
+                            <input type="text" name="nome" class="form-control" value="{{ respondente.nome }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ respondente.email }}" required>
+                            <small class="form-text text-muted">Pode ser o mesmo email em diferentes clientes</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Login</label>
+                            <input type="text" name="login" class="form-control" value="{{ respondente.login }}" required>
+                            <small class="form-text text-muted">Login único para autenticação</small>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nova Senha (deixe vazio para manter atual)</label>
+                            <input type="password" name="senha" class="form-control" placeholder="Digite uma nova senha ou deixe vazio">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cargo</label>
+                            <input type="text" name="cargo" class="form-control" value="{{ respondente.cargo or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Setor</label>
+                            <input type="text" name="setor" class="form-control" value="{{ respondente.setor or '' }}">
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="ativo" class="form-check-input" {{ 'checked' if respondente.ativo else '' }}>
+                                <label class="form-check-label">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
-.table td {
-    vertical-align: middle;
+<script>
+function confirmarExclusao(id, nome) {
+    if (confirm(`Tem certeza que deseja excluir o respondente "${nome}"? Esta ação não pode ser desfeita.`)) {
+        // Implementar exclusão via AJAX ou form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/respondentes/${id}/excluir`;
+        
+        const csrfToken = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
-
-.badge {
-    font-size: 0.75rem;
-}
-
-code {
-    font-size: 0.85rem;
-}
-</style>
+</script>
 {% endblock %}
