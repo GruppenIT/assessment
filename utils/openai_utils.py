@@ -120,17 +120,28 @@ class OpenAIAssistant:
                 **DADOS DO DOMÍNIO (JSON):**
                 {json.dumps(dominio_data, indent=2, ensure_ascii=False)}
 
-                **INSTRUÇÕES PARA ANÁLISE:**
+                **INSTRUÇÕES CRÍTICAS PARA ANÁLISE:**
                 1. Escreva um parágrafo técnico como se você fosse o analista que avaliou pessoalmente as respostas
                 2. Mencione o nome do domínio e sua importância no contexto do assessment
-                3. Identifique os principais pontos fortes baseado nas respostas com notas altas
-                4. Identifique os pontos fracos ou áreas de melhoria baseado nas respostas com notas baixas
-                5. Faça considerações sobre a consistência das respostas e comentários fornecidos
-                6. Forneça uma avaliação geral da maturidade do cliente neste domínio
+                3. **ANÁLISE INTEGRADA DE NOTAS E COMENTÁRIOS:**
+                   - Para cada questão, considere TANTO a nota quanto o comentário do respondente
+                   - Se um comentário menciona planos futuros, iniciativas em andamento, ou contexto adicional, INCLUA essas informações na análise
+                   - Use frases como "embora o cliente tenha mencionado que...", "conforme relatado pelo respondente...", "considerando que a organização planeja..."
+                   - Identifique contradições entre notas baixas e comentários que indicam melhorias planejadas
+                4. **CONTEXTUALIZAÇÃO BASEADA EM COMENTÁRIOS:**
+                   - Se comentários mencionam cronogramas (ex: "planejado para 2025"), incorpore isso nas recomendações
+                   - Se comentários explicam limitações atuais mas indicam progressos futuros, reconheça isso
+                   - Se comentários fornecem detalhes sobre implementações parciais, considere na avaliação
+                5. Identifique os principais pontos fortes baseado nas respostas com notas altas E comentários positivos
+                6. Identifique pontos fracos considerando notas baixas MAS também o contexto dos comentários
+                7. **RECOMENDAÇÕES CONTEXTUALIZADAS:**
+                   - Se um comentário indica que algo já está sendo planejado/implementado, ajuste a recomendação
+                   - Exemplo: "embora a política esteja planejada para conclusão em 2025, recomendamos acelerar o processo devido à criticidade..."
+                8. Forneça uma avaliação geral que INTEGRE notas numéricas com insights dos comentários
 
                 **FORMATO DE SAÍDA:**
                 Retorne apenas o parágrafo de análise, sem explicações adicionais ou formatação markdown.
-                Use linguagem técnica, objetiva e profissional, como um consultor especializado.
+                Use linguagem técnica, objetiva e profissional, como um consultor especializado que leu e analisou cada comentário individual.
                 """
                 
                 logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
@@ -226,9 +237,12 @@ class OpenAIAssistant:
 
                 **DIRETRIZES TÉCNICAS:**
                 - Use dados específicos dos assessments (scores, percentuais, números)
+                - **INTEGRE COMENTÁRIOS DOS RESPONDENTES:** Sempre que um comentário fornecer contexto adicional, planos futuros, ou explicações, incorpore essas informações na análise
+                - **CONSIDERAÇÕES CONTEXTUAIS:** Se comentários mencionam cronogramas, limitações, ou iniciativas em andamento, reflita isso nas recomendações
+                - Use frases como "embora o cliente tenha relatado que...", "conforme mencionado pelo respondente...", "considerando os planos informados..."
                 - Seja técnico mas acessível para gestores
                 - Mencione frameworks relevantes quando aplicável (ISO 27001, NIST, etc.)
-                - Priorize recomendações por criticidade e viabilidade
+                - Priorize recomendações por criticidade e viabilidade, considerando o contexto dos comentários
 
                 **FORMATO DE SAÍDA:**
                 Retorne apenas o texto das considerações finais, sem formatação markdown ou títulos.

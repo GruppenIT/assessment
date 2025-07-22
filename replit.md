@@ -275,6 +275,8 @@ This is a Flask-based web application for multi-type maturity assessments. The s
     * Configure via GUI: Configurações > Parâmetros do Sistema > Integração ChatGPT
     * Created comprehensive validation tools (validate_openai_key.py) for troubleshooting API key issues
     * AI features (introduction generation, final considerations) now working correctly in production
+    * Enhanced AI analysis to integrate respondent comments with numerical scores for more contextual considerations
+    * Improved domain analysis prompts to recognize plans, initiatives, and future implementations mentioned in comments
 - July 18, 2025. Question Management Enhancement:
   - **QUESTION ENHANCEMENT**: Added three new fields to assessment questions:
     * Referência: theoretical/compliance references (ISO 27001, NIST CSF, CIS, etc.)
