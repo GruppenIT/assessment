@@ -1,0 +1,79 @@
+root@templateubuntu:/home/suporte# cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python debug_environment.py"
+============================================================
+🔍 DEBUG COMPLETO DE ENVIRONMENT
+============================================================
+📅 2025-07-22 13:31:48
+🔍 Verificando variáveis de ambiente em diferentes contextos...
+
+1. Variáveis do processo Python atual:
+   ✗ DATABASE_URL=None
+   ✗ SESSION_SECRET=None
+   ✗ FLASK_SECRET_KEY=None
+
+2. Conteúdo do arquivo .env:
+   📄 Tamanho: 574 bytes
+   📝 FLASK_SECRET_KEY=***
+   📝 DATABASE_URL=postgresql:***@localhost/assessment_db
+   📝 SESSION_SECRET=***
+
+3. Simulação da configuração Flask:
+   🔗 DATABASE_URL do environment: sqlite:///assessment.db
+   📁 Diretório atual: /var/www/assessment
+
+5. Teste Flask após carregamento manual:
+
+4. Carregamento manual do .env:
+   📝 DATABASE_URL do .env: postgresql:***@localhost/assessment_db
+   ✓ DATABASE_URL aplicada no environment
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Usuário admin padrão criado: admin@sistema.com / admin123
+INFO:root:Tipo de assessment padrão 'Cibersegurança' criado
+INFO:root:Configurações padrão inicializadas
+INFO:root:Configurações padrão inicializadas
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+   🔗 Flask DATABASE_URI: postgresql://assessment_user:P%40ssw0rd%40.!@localhost/assessment_db
+   ✅ Flask agora configurado para PostgreSQL!
+   ✅ PostgreSQL conectado: PostgreSQL 16.9 (Ubuntu 16.9-0ubuntu0.24.04.1) on ...
+
+============================================================
+✅ PROBLEMA RESOLVIDO COM CARREGAMENTO MANUAL!
+📝 Próximo passo: aplicar correção permanente
+============================================================
+root@templateubuntu:/var/www/assessment# cd /var/www/assessment
+sudo python apply_env_permanently.py
+sudo: python: command not found
+root@templateubuntu:/var/www/assessment# sudo bash -c "source venv/bin/activate && python apply_env_permanently.py"
+============================================================
+🔧 APLICAÇÃO PERMANENTE DO .ENV
+============================================================
+📅 2025-07-22 13:32:13
+
+✓ Módulo env_loader.py criado
+💾 Backup: main.py.backup.20250722_133213
+✓ main.py modificado para carregar .env
+💾 Backup: app.py.backup.20250722_133213
+✓ app.py modificado para carregar .env
+
+🧪 Testando aplicação modificada...
+   ✗ Erro no teste: unterminated string literal (detected at line 22) (env_loader.py, line 22)
+⚠️  Teste local com problemas
+
+🔄 Reiniciando supervisor...
+assessment: stopped
+assessment: ERROR (spawn error)
+   ⚠️  Código de saída: 1792
+
+============================================================
+✅ CORREÇÃO PERMANENTE APLICADA
+📝 Agora a aplicação sempre carregará o .env automaticamente
+🔄 Aguarde alguns segundos e teste novamente
+============================================================
+root@templateubuntu:/var/www/assessment#

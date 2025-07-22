@@ -1,3 +1,6 @@
+# Carregar variáveis de ambiente do .env
+import env_loader
+
 from app import create_app
 
 # Criar a aplicação usando o factory pattern

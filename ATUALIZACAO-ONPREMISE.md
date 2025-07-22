@@ -134,6 +134,19 @@ Este script vai:
 - Modificar main.py e app.py para importar o carregador
 - Garantir que DATABASE_URL seja sempre carregada
 
+### 9. TESTE FINAL
+
+Após aplicar todas as correções, execute o teste final:
+```bash
+cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python final_test_onpremise.py"
+```
+
+Este teste vai confirmar se:
+- PostgreSQL está conectado
+- Tabela auditoria existe
+- Sistema está totalmente operacional
+
 ### 4. Verificar Resultado
 
 Após executar, você deve ver:

@@ -1,3 +1,6 @@
+# Carregar variáveis de ambiente do .env
+import env_loader
+
 import os
 import logging
 from flask import Flask, g
