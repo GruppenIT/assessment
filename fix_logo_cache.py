@@ -27,13 +27,13 @@ def atualizar_logo_cache():
             print(f"Total de logos no banco: {len(logos)}")
             
             for logo in logos:
-                print(f"  ID: {logo.id}, Nome: {logo.nome_arquivo}, Ativo: {logo.ativo}, Caminho: {logo.caminho_arquivo}")
+                print(f"  ID: {logo.id}, Nome: {logo.nome_original}, Ativo: {logo.ativo}, Caminho: {logo.caminho_arquivo}")
             
             # Encontrar logo ativo
             logo_ativo = Logo.query.filter_by(ativo=True).first()
             
             if logo_ativo:
-                print(f"\n✅ Logo ativo encontrado: {logo_ativo.nome_arquivo}")
+                print(f"\n✅ Logo ativo encontrado: {logo_ativo.nome_original}")
                 print(f"   Caminho: {logo_ativo.caminho_arquivo}")
                 
                 # Sincronizar com configuração se necessário
@@ -49,7 +49,7 @@ def atualizar_logo_cache():
                 # Se há logos mas nenhum ativo, ativar o mais recente
                 logo_recente = Logo.query.order_by(Logo.id.desc()).first()
                 if logo_recente:
-                    print(f"🔄 Ativando logo mais recente: {logo_recente.nome_arquivo}")
+                    print(f"🔄 Ativando logo mais recente: {logo_recente.nome_original}")
                     
                     # Desativar todos
                     Logo.query.update({'ativo': False})
@@ -69,7 +69,7 @@ def atualizar_logo_cache():
             print("🎉 VERIFICAÇÃO CONCLUÍDA")
             print("="*50)
             print("📝 Status final:")
-            print(f"   Logo ativo: {Logo.query.filter_by(ativo=True).first().nome_arquivo if Logo.query.filter_by(ativo=True).first() else 'Nenhum'}")
+            print(f"   Logo ativo: {Logo.query.filter_by(ativo=True).first().nome_original if Logo.query.filter_by(ativo=True).first() else 'Nenhum'}")
             print(f"   Configuração: {Configuracao.get_logo_sistema()}")
             print("\n🔄 Reinicie a aplicação web para ver as mudanças")
             

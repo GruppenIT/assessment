@@ -76,7 +76,7 @@ def salvar_logo(file):
         
         # 3. Criar novo registro no modelo Logo
         novo_logo = Logo(
-            nome_arquivo=file.filename,
+            nome_original=file.filename,
             caminho_arquivo=logo_path,
             ativo=True
         )
