@@ -261,8 +261,9 @@ This is a Flask-based web application for multi-type maturity assessments. The s
     * verificar_instalacao.py: Comprehensive verification of all system components and dependencies
     * atualizar_sistema.sh: Full system update script with backup, rollback, and service management
     * migrar_banco.py: Database migration script for schema updates and data integrity
-    * debug_openai_onpremise.py: Debug tool for OpenAI integration issues
+    * debug_openai_onpremise.py: Debug tool for OpenAI integration issues  
     * test_openai_simple.py: Simple test for OpenAI using existing database configuration
+    * validate_openai_key.py: Comprehensive OpenAI key validation and troubleshooting tool
   - Removed all outdated installation documents and scripts (ATUALIZACAO-ONPREMISE.md, deploy.sh, etc.)
   - **ENVIRONMENT LOADING FIX**: Solved the core issue where supervisor configuration wasn't sufficient for Flask to read .env
   - env_loader module automatically loads environment variables from .env files at multiple locations

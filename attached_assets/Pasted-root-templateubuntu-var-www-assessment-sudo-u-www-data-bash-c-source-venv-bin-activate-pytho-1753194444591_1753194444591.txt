@@ -1,0 +1,62 @@
+root@templateubuntu:/var/www/assessment# sudo -u www-data bash -c "source venv/bin/activate && python test_openai_simple.py"
+ENV_LOADER: Carregadas variáveis de .env
+============================================================
+🧪 TESTE SIMPLES OPENAI
+============================================================
+🧪 Testando OpenAI com configuração do banco...
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+📋 Inicializando OpenAI Assistant...
+DEBUG:root:OpenAI API key descriptografada com sucesso. Tamanho: 164
+DEBUG:root:OpenAI API key format check: starts_with_sk=True
+DEBUG:root:OpenAI config: api_key_configured=True, assistant_name=asst_HMYchoc6I6hHowb8UUqssl4l
+INFO:root:Cliente OpenAI inicializado com assistant: asst_HMYchoc6I6hHowb8UUqssl4l
+DEBUG:root:API key válida: sk-proj-qj...tuH6IA
+✅ Assistant configurado: asst_HMYchoc6I6hHowb8UUqssl4l
+🚀 Fazendo chamada de teste...
+DEBUG:openai._base_client:Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'idempotency_key': 'stainless-python-retry-2257d15c-6871-4a6c-af93-7f14fb9929d4', 'json_data': {'messages': [{'role': 'user', 'content': 'Responda apenas com: TESTE FUNCIONOU'}], 'model': 'gpt-4o', 'max_tokens': 10, 'temperature': 0}}
+DEBUG:openai._base_client:Sending HTTP Request: POST https://api.openai.com/v1/chat/completions
+DEBUG:httpcore.connection:connect_tcp.started host='api.openai.com' port=443 local_address=None timeout=60 socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x708e4d1c0a70>
+DEBUG:httpcore.connection:start_tls.started ssl_context=<ssl.SSLContext object at 0x708e4e868750> server_hostname='api.openai.com' timeout=60
+DEBUG:httpcore.connection:start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x708e4ddfbce0>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 401, b'Unauthorized', [(b'Date', b'Tue, 22 Jul 2025 14:27:32 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Content-Length', b'414'), (b'Connection', b'keep-alive'), (b'vary', b'Origin'), (b'x-request-id', b'req_f6bc18df5d6a1cb31b14f2689fe7bbdc'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'cf-cache-status', b'DYNAMIC'), (b'Set-Cookie', b'__cf_bm=1rt7m0yDfK7gPZYc_Kka3UjJJuRGOVdmjOF5A3iLxAo-1753194452-1.0.1.1-A8ZhHimxoYqkvGoFaJM5G8J4Dn0hLw35r5TovYhneEVWveDurJExXd20EVGuV5_RxT7HCXWYjlgwllEFqlAQetYKTdD4PHNiTJxbLazUgxw; path=/; expires=Tue, 22-Jul-25 14:57:32 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), (b'X-Content-Type-Options', b'nosniff'), (b'Set-Cookie', b'_cfuvid=iQn71I0O.Zm_ONyDodbrD49w3iDIoW9WZrMZRdibR5U-1753194452624-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), (b'Server', b'cloudflare'), (b'CF-RAY', b'96339e8f6ca65218-UDI'), (b'alt-svc', b'h3=":443"; ma=86400')])
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+DEBUG:openai._base_client:HTTP Response: POST https://api.openai.com/v1/chat/completions "401 Unauthorized" Headers([('date', 'Tue, 22 Jul 2025 14:27:32 GMT'), ('content-type', 'application/json; charset=utf-8'), ('content-length', '414'), ('connection', 'keep-alive'), ('vary', 'Origin'), ('x-request-id', 'req_f6bc18df5d6a1cb31b14f2689fe7bbdc'), ('strict-transport-security', 'max-age=31536000; includeSubDomains; preload'), ('cf-cache-status', 'DYNAMIC'), ('set-cookie', '__cf_bm=1rt7m0yDfK7gPZYc_Kka3UjJJuRGOVdmjOF5A3iLxAo-1753194452-1.0.1.1-A8ZhHimxoYqkvGoFaJM5G8J4Dn0hLw35r5TovYhneEVWveDurJExXd20EVGuV5_RxT7HCXWYjlgwllEFqlAQetYKTdD4PHNiTJxbLazUgxw; path=/; expires=Tue, 22-Jul-25 14:57:32 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), ('x-content-type-options', 'nosniff'), ('set-cookie', '_cfuvid=iQn71I0O.Zm_ONyDodbrD49w3iDIoW9WZrMZRdibR5U-1753194452624-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), ('server', 'cloudflare'), ('cf-ray', '96339e8f6ca65218-UDI'), ('alt-svc', 'h3=":443"; ma=86400')])
+DEBUG:openai._base_client:request_id: req_f6bc18df5d6a1cb31b14f2689fe7bbdc
+DEBUG:openai._base_client:Encountered httpx.HTTPStatusError
+Traceback (most recent call last):
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/openai/_base_client.py", line 1024, in request
+    response.raise_for_status()
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '401 Unauthorized' for url 'https://api.openai.com/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+DEBUG:openai._base_client:Not retrying
+DEBUG:openai._base_client:Re-raising status error
+❌ Erro no teste: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************************************************************************************************************************H6IA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}
+🔍 Análise: Erro 401 - Chave API inválida
+   Verifique se a chave no banco está correta
+   Teste a chave em: https://platform.openai.com/playground
+
+❌ TESTE FALHOU! Verifique a configuração.
+DEBUG:httpcore.connection:close.started
+DEBUG:httpcore.connection:close.complete
+root@templateubuntu:/var/www/assessment#
