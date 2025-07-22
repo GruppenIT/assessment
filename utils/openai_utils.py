@@ -4,11 +4,13 @@ Utilitários para integração com OpenAI
 
 import json
 import logging
+import time
 from datetime import datetime
 from openai import OpenAI
 from app import db
 from models.parametro_sistema import ParametroSistema
 from utils.timezone_utils import format_date_local, format_datetime_local
+from utils.openai_monitor import payload_monitor, monitor_openai_request
 
 class OpenAIAssistant:
     """Classe para gerenciar a integração com OpenAI Assistant"""
@@ -59,6 +61,18 @@ class OpenAIAssistant:
             return None
         
         try:
+            # Analisar payload antes do envio
+            analysis = payload_monitor.analyze_project_payload(projeto_data)
+            
+            # Log warnings críticos
+            for warning in analysis.get('warnings', []):
+                if 'CRÍTICO' in warning:
+                    logging.error(f"PAYLOAD INTRODUÇÃO: {warning}")
+                elif 'ATENÇÃO' in warning:
+                    logging.warning(f"PAYLOAD INTRODUÇÃO: {warning}")
+            
+            start_time = time.time()
+            
             # Preparar prompt com as instruções específicas
             prompt = f"""
             Siga exatamente as instruções para gerar a introdução do relatório de assessment:
@@ -91,9 +105,33 @@ class OpenAIAssistant:
                 temperature=0.7
             )
             
+            response_time = time.time() - start_time
+            
+            # Log métricas de sucesso
+            payload_monitor.log_request(
+                operation='gerar_introducao',
+                payload_analysis=analysis,
+                response_time=response_time,
+                success=True
+            )
+            
+            logging.info(f"Introdução gerada com sucesso: "
+                        f"{analysis['payload_size']['estimated_tokens']:,} tokens enviados, "
+                        f"{response_time:.2f}s de resposta")
+            
             return response.choices[0].message.content.strip()
             
         except Exception as e:
+            # Log erro com análise do payload
+            if 'analysis' in locals():
+                payload_monitor.log_request(
+                    operation='gerar_introducao',
+                    payload_analysis=analysis,
+                    response_time=time.time() - start_time if 'start_time' in locals() else 0,
+                    success=False,
+                    error=str(e)
+                )
+            
             logging.error(f"Erro ao gerar introdução do projeto: {e}")
             return None
     
@@ -188,7 +226,23 @@ class OpenAIAssistant:
             if not self.is_configured():
                 return None
         
-        import time
+        # Analisar payload antes do processamento
+        analysis = payload_monitor.analyze_project_payload(dados_projeto)
+        
+        # Log crítico para payloads muito grandes
+        for warning in analysis.get('warnings', []):
+            if 'CRÍTICO' in warning:
+                logging.error(f"PAYLOAD CONSIDERAÇÕES FINAIS: {warning}")
+            elif 'ATENÇÃO' in warning:
+                logging.warning(f"PAYLOAD CONSIDERAÇÕES FINAIS: {warning}")
+        
+        # Se payload for muito grande, tentar otimizar
+        payload_size = analysis['payload_size']['estimated_tokens']
+        if payload_size > 80000:  # Se muito grande, reduzir dados
+            logging.warning(f"Payload muito grande ({payload_size:,} tokens). Tentando otimizar...")
+            dados_projeto = self._otimizar_payload_consideracoes(dados_projeto)
+            analysis = payload_monitor.analyze_project_payload(dados_projeto)
+            logging.info(f"Payload otimizado para {analysis['payload_size']['estimated_tokens']:,} tokens")
         
         max_tentativas = 3
         tentativa = 0
@@ -196,10 +250,11 @@ class OpenAIAssistant:
         while tentativa < max_tentativas:
             try:
                 tentativa += 1
+                start_time = time.time()
+                
                 logging.info(f"Gerando considerações finais para projeto (tentativa {tentativa})")
-                logging.debug(f"Dados recebidos: {type(dados_projeto)}")
-                if isinstance(dados_projeto, dict):
-                    logging.debug(f"Keys dos dados: {list(dados_projeto.keys())}")
+                logging.info(f"Payload: {analysis['payload_size']['estimated_tokens']:,} tokens, "
+                           f"{analysis['payload_size']['bytes']:,} bytes")
                 
                 # Preparar prompt específico para considerações finais
                 prompt = f"""
@@ -268,16 +323,36 @@ class OpenAIAssistant:
                 # Verificar se o texto está completo (termina com ponto)
                 termina_completo = consideracoes.endswith('.') or consideracoes.endswith('!') or consideracoes.endswith('?')
                 
-                logging.info(f"Considerações finais geradas (tamanho: {len(consideracoes)} caracteres, completo: {termina_completo})")
-                logging.info(f"Últimos 100 caracteres: ...{consideracoes[-100:]}")
+                response_time = time.time() - start_time
                 
-                if not termina_completo:
-                    logging.warning("ATENÇÃO: Texto pode ter sido truncado - não termina com pontuação final")
+                # Log métricas de sucesso
+                payload_monitor.log_request(
+                    operation='gerar_consideracoes_finais',
+                    payload_analysis=analysis,
+                    response_time=response_time,
+                    success=True
+                )
+                
+                logging.info(f"Considerações finais geradas com sucesso: "
+                           f"{analysis['payload_size']['estimated_tokens']:,} tokens enviados, "
+                           f"{response_time:.2f}s de resposta, "
+                           f"Completo: {termina_completo}")
                 
                 return consideracoes
                 
             except Exception as e:
+                response_time = time.time() - start_time if 'start_time' in locals() else 0
                 logging.error(f"Erro na tentativa {tentativa}: {e}")
+                
+                # Log erro se for a última tentativa
+                if tentativa >= max_tentativas:
+                    payload_monitor.log_request(
+                        operation='gerar_consideracoes_finais',
+                        payload_analysis=analysis,
+                        response_time=response_time,
+                        success=False,
+                        error=str(e)
+                    )
                 
                 # Verificar se é erro de conectividade para retry
                 error_str = str(e).lower()
@@ -296,6 +371,41 @@ class OpenAIAssistant:
         
         logging.error("Todas as tentativas falharam")
         return None
+    
+    def _otimizar_payload_consideracoes(self, dados_projeto):
+        """Otimiza payload para considerações finais removendo dados desnecessários"""
+        try:
+            # Criar cópia dos dados
+            dados_otimizados = dados_projeto.copy()
+            
+            # Reduzir detalhes de perguntas muito longas
+            if 'dominios' in dados_otimizados:
+                for dominio in dados_otimizados['dominios']:
+                    if 'perguntas' in dominio:
+                        for pergunta in dominio['perguntas']:
+                            # Manter apenas campos essenciais para análise
+                            campos_essenciais = ['id', 'texto', 'respostas']
+                            pergunta_otimizada = {k: v for k, v in pergunta.items() if k in campos_essenciais}
+                            
+                            # Limitar texto da pergunta se muito longo
+                            if 'texto' in pergunta_otimizada and len(pergunta_otimizada['texto']) > 300:
+                                pergunta_otimizada['texto'] = pergunta_otimizada['texto'][:300] + '...'
+                            
+                            # Limitar comentários das respostas
+                            if 'respostas' in pergunta_otimizada:
+                                for resposta in pergunta_otimizada['respostas']:
+                                    if 'comentario' in resposta and resposta['comentario'] and len(resposta['comentario']) > 200:
+                                        resposta['comentario'] = resposta['comentario'][:200] + '...'
+                            
+                            pergunta.clear()
+                            pergunta.update(pergunta_otimizada)
+            
+            logging.info("Payload otimizado para considerações finais")
+            return dados_otimizados
+            
+        except Exception as e:
+            logging.error(f"Erro ao otimizar payload: {e}")
+            return dados_projeto  # Retornar original se falhar
 
 def coletar_dados_projeto_para_ia(projeto):
     """Coleta dados do projeto para envio à IA"""
