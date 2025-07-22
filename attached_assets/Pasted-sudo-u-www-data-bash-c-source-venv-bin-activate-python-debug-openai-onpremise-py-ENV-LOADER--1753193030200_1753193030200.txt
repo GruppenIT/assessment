@@ -1,0 +1,136 @@
+sudo -u www-data bash -c "source venv/bin/activate && python debug_openai_onpremise.py"
+ENV_LOADER: Carregadas variáveis de .env
+============================================================
+🔍 DEBUG OPENAI ON-PREMISE
+============================================================
+📅 22/07/2025 14:01:01
+
+📋 Variáveis de ambiente...
+🌍 Debugando variáveis de ambiente...
+⚠️ OPENAI_API_KEY não encontrada no ambiente
+✅ DATABASE_URL: configurada
+✅ SESSION_SECRET: configurada
+⚠️ CRYPTO_KEY: não configurada
+
+📋 Sistema de criptografia...
+🔐 Debugando sistema de criptografia...
+❌ Erro no sistema de criptografia: cannot import name 'Usuario' from partially initialized module 'models.usuario' (most likely due to a circular import) (/var/www/assessment/models/usuario.py)
+
+📋 Sistema de parâmetros...
+🔍 Debugando sistema de parâmetros...
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+✅ Parâmetro 'openai_api_key' encontrado no banco
+   Tipo: encrypted
+   Tem valor criptografado: True
+   Tem valor normal: False
+   Data atualização: 2025-07-22 13:41:42.392372
+DEBUG:root:OpenAI API key descriptografada com sucesso. Tamanho: 164
+DEBUG:root:OpenAI API key format check: starts_with_sk=True
+   Valor descriptografado: sk-proj-qj...tuH6IA (tamanho: 164)
+   ✅ Chave tem formato correto (sk-)
+   ✅ Chave tem tamanho adequado
+
+📋 Configuração OpenAI...
+🤖 Debugando configuração OpenAI...
+❌ Erro ao verificar configuração OpenAI: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+
+📋 Cliente OpenAI...
+🔗 Debugando cliente OpenAI...
+ERROR:root:Erro ao inicializar cliente OpenAI: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+❌ OpenAI Assistant NÃO configurado
+
+============================================================
+📊 RELATÓRIO FINAL
+============================================================
+✅ Verificações OK: 1/5
+   ❌ Variáveis de ambiente
+   ❌ Sistema de criptografia
+   ✅ Sistema de parâmetros
+   ❌ Configuração OpenAI
+   ❌ Cliente OpenAI
+
+🔧 PROBLEMAS IDENTIFICADOS:
+   📝 Verificar se a chave OpenAI é válida e ativa
+   📝 Testar a chave em: https://platform.openai.com/playground
+============================================================
+root@templateubuntu:/var/www/assessment# cd /var/www/assessment
+sudo -u www-data bash -c "source venv/bin/activate && python fix_openai_key_onpremise.py"
+ENV_LOADER: Carregadas variáveis de .env
+============================================================
+🔧 CORREÇÃO DA CHAVE OPENAI ON-PREMISE
+============================================================
+📅 22/07/2025 14:01:11
+
+Este script vai:
+1. Limpar configuração OpenAI atual
+2. Reconfigurar com nova chave
+3. Testar a configuração
+
+Continuar? (s/N): s
+
+🧹 Limpando configuração OpenAI atual...
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+✅ Removido parâmetro: openai_api_key
+✅ Removido parâmetro: openai_assistant_name
+✅ Configuração OpenAI limpa
+
+🔧 Reconfigurando OpenAI...
+📝 Cole sua chave OpenAI aqui (deve começar com sk-)
+💡 Você pode obter uma em: https://platform.openai.com/api-keys
+
+Chave OpenAI: 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
+Nome do Assistant (opcional, pressione Enter para padrão): asst_HMYchoc6I6hHowb8UUqssl4l
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+✅ Configuração OpenAI salva no banco
+DEBUG:root:OpenAI API key descriptografada com sucesso. Tamanho: 164
+DEBUG:root:OpenAI API key format check: starts_with_sk=True
+✅ Verificação: chave carregada corretamente
+✅ Verificação: chave matches
+
+🧪 Testando chave OpenAI...
+ERROR:root:Erro ao inicializar cliente OpenAI: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+❌ Assistant não configurado
+
+============================================================
+❌ CONFIGURAÇÃO SALVA MAS TESTE FALHOU
+============================================================
+📝 Verifique se:
+   - A chave está correta
+   - A conta OpenAI está ativa
+   - Há créditos/billing configurado
+   - Não há problemas de rede
+============================================================

@@ -77,29 +77,32 @@ def debug_criptografia():
     print("🔐 Debugando sistema de criptografia...")
     
     try:
+        from app import create_app
         from models.parametro_sistema import ParametroSistema
         from cryptography.fernet import Fernet
         
-        # Verificar chave de criptografia
-        chave = ParametroSistema.get_chave_criptografia()
-        print(f"✅ Chave de criptografia obtida (tamanho: {len(chave)} bytes)")
-        
-        # Testar criptografia
-        teste_valor = "sk-test123456789"
-        fernet = Fernet(chave)
-        
-        # Criptografar
-        valor_criptografado = fernet.encrypt(teste_valor.encode())
-        print("✅ Teste de criptografia funcionou")
-        
-        # Descriptografar
-        valor_descriptografado = fernet.decrypt(valor_criptografado).decode()
-        if valor_descriptografado == teste_valor:
-            print("✅ Teste de descriptografia funcionou")
-        else:
-            print("❌ Erro na descriptografia")
+        app = create_app()
+        with app.app_context():
+            # Verificar chave de criptografia
+            chave = ParametroSistema.get_chave_criptografia()
+            print(f"✅ Chave de criptografia obtida (tamanho: {len(chave)} bytes)")
             
-        return True
+            # Testar criptografia
+            teste_valor = "sk-test123456789"
+            fernet = Fernet(chave)
+            
+            # Criptografar
+            valor_criptografado = fernet.encrypt(teste_valor.encode())
+            print("✅ Teste de criptografia funcionou")
+            
+            # Descriptografar
+            valor_descriptografado = fernet.decrypt(valor_criptografado).decode()
+            if valor_descriptografado == teste_valor:
+                print("✅ Teste de descriptografia funcionou")
+            else:
+                print("❌ Erro na descriptografia")
+                
+            return True
         
     except Exception as e:
         print(f"❌ Erro no sistema de criptografia: {e}")
@@ -111,33 +114,36 @@ def debug_openai_config():
     print("🤖 Debugando configuração OpenAI...")
     
     try:
+        from app import create_app
         from models.parametro_sistema import ParametroSistema
         
-        config = ParametroSistema.get_openai_config()
-        
-        print(f"📋 Configuração OpenAI:")
-        print(f"   API Key configurada: {config.get('api_key_configured')}")
-        print(f"   Assistant name: {config.get('assistant_name')}")
-        
-        api_key = config.get('api_key')
-        if api_key:
-            print(f"   API Key: {api_key[:10]}...{api_key[-6:]} (tamanho: {len(api_key)})")
+        app = create_app()
+        with app.app_context():
+            config = ParametroSistema.get_openai_config()
             
-            # Validações básicas
-            if api_key.startswith('sk-'):
-                print("   ✅ Formato da chave correto")
-            else:
-                print("   ❌ Formato da chave incorreto")
-                
-            if len(api_key) >= 40:
-                print("   ✅ Tamanho da chave adequado")  
-            else:
-                print("   ❌ Tamanho da chave inadequado")
-                
-        else:
-            print("   ❌ API Key não encontrada")
+            print(f"📋 Configuração OpenAI:")
+            print(f"   API Key configurada: {config.get('api_key_configured')}")
+            print(f"   Assistant name: {config.get('assistant_name')}")
             
-        return bool(api_key)
+            api_key = config.get('api_key')
+            if api_key:
+                print(f"   API Key: {api_key[:10]}...{api_key[-6:]} (tamanho: {len(api_key)})")
+                
+                # Validações básicas
+                if api_key.startswith('sk-'):
+                    print("   ✅ Formato da chave correto")
+                else:
+                    print("   ❌ Formato da chave incorreto")
+                    
+                if len(api_key) >= 40:
+                    print("   ✅ Tamanho da chave adequado")  
+                else:
+                    print("   ❌ Tamanho da chave inadequado")
+                    
+            else:
+                print("   ❌ API Key não encontrada")
+                
+            return bool(api_key)
         
     except Exception as e:
         print(f"❌ Erro ao verificar configuração OpenAI: {e}")
@@ -149,47 +155,50 @@ def debug_openai_client():
     print("🔗 Debugando cliente OpenAI...")
     
     try:
+        from app import create_app
         from utils.openai_utils import OpenAIAssistant
         
-        assistant = OpenAIAssistant()
-        
-        if assistant.is_configured():
-            print("✅ OpenAI Assistant configurado")
-            print(f"   Assistant name: {assistant.assistant_name}")
+        app = create_app()
+        with app.app_context():
+            assistant = OpenAIAssistant()
             
-            # Testar chamada simples
-            print("🧪 Testando chamada à API OpenAI...")
-            
-            try:
-                response = assistant.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "user", "content": "Responda apenas: OK"}
-                    ],
-                    max_tokens=5
-                )
+            if assistant.is_configured():
+                print("✅ OpenAI Assistant configurado")
+                print(f"   Assistant name: {assistant.assistant_name}")
                 
-                resultado = response.choices[0].message.content.strip()
-                print(f"   ✅ API respondeu: '{resultado}'")
-                return True
+                # Testar chamada simples
+                print("🧪 Testando chamada à API OpenAI...")
                 
-            except Exception as e:
-                print(f"   ❌ Erro na chamada da API: {e}")
-                
-                # Verificar se é erro 401
-                if "401" in str(e) or "Unauthorized" in str(e):
-                    print("   🔍 Erro 401: Chave API inválida ou expirada")
-                elif "quota" in str(e).lower():
-                    print("   🔍 Erro de quota: Limite da API excedido")
-                elif "network" in str(e).lower() or "connection" in str(e).lower():
-                    print("   🔍 Erro de rede: Problema de conectividade")
-                else:
-                    print("   🔍 Erro desconhecido")
+                try:
+                    response = assistant.client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "user", "content": "Responda apenas: OK"}
+                        ],
+                        max_tokens=5
+                    )
                     
+                    resultado = response.choices[0].message.content.strip()
+                    print(f"   ✅ API respondeu: '{resultado}'")
+                    return True
+                    
+                except Exception as e:
+                    print(f"   ❌ Erro na chamada da API: {e}")
+                    
+                    # Verificar se é erro 401
+                    if "401" in str(e) or "Unauthorized" in str(e):
+                        print("   🔍 Erro 401: Chave API inválida ou expirada")
+                    elif "quota" in str(e).lower():
+                        print("   🔍 Erro de quota: Limite da API excedido")
+                    elif "network" in str(e).lower() or "connection" in str(e).lower():
+                        print("   🔍 Erro de rede: Problema de conectividade")
+                    else:
+                        print("   🔍 Erro desconhecido")
+                        
+                    return False
+            else:
+                print("❌ OpenAI Assistant NÃO configurado")
                 return False
-        else:
-            print("❌ OpenAI Assistant NÃO configurado")
-            return False
             
     except Exception as e:
         print(f"❌ Erro ao debugar cliente OpenAI: {e}")
