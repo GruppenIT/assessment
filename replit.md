@@ -269,6 +269,12 @@ This is a Flask-based web application for multi-type maturity assessments. The s
   - env_loader module automatically loads environment variables from .env files at multiple locations
   - System now correctly uses PostgreSQL in production environment without manual intervention
   - **DEPLOYMENT READY**: Single authoritative source for on-premise deployment with proven working solution
+  - **OPENAI INTEGRATION FIX**: Resolved 401 Unauthorized errors in AI features
+    * Issue was caused by using development environment OpenAI key in production
+    * Solution: Generate new production-specific OpenAI API key at https://platform.openai.com/api-keys
+    * Configure via GUI: Configurações > Parâmetros do Sistema > Integração ChatGPT
+    * Created comprehensive validation tools (validate_openai_key.py) for troubleshooting API key issues
+    * AI features (introduction generation, final considerations) now working correctly in production
 - July 18, 2025. Question Management Enhancement:
   - **QUESTION ENHANCEMENT**: Added three new fields to assessment questions:
     * Referência: theoretical/compliance references (ISO 27001, NIST CSF, CIS, etc.)
