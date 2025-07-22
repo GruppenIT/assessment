@@ -113,6 +113,27 @@ cd /var/www/assessment
 sudo bash -c "source venv/bin/activate && python test_database_connection.py"
 ```
 
+### 8. SOLUÇÃO DEFINITIVA - MODIFICAR CÓDIGO
+
+Se o problema persistir (aplicação ainda usando SQLite), execute:
+
+**Debug completo:**
+```bash
+cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python debug_environment.py"
+```
+
+**Aplicar correção permanente:**
+```bash
+cd /var/www/assessment
+sudo python apply_env_permanently.py
+```
+
+Este script vai:
+- Criar módulo que carrega .env automaticamente
+- Modificar main.py e app.py para importar o carregador
+- Garantir que DATABASE_URL seja sempre carregada
+
 ### 4. Verificar Resultado
 
 Após executar, você deve ver:

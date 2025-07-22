@@ -1,0 +1,79 @@
+root@templateubuntu:/var/www/assessment# sudo bash -c "source venv/bin/activate && python fix_supervisor_config.py"
+============================================================
+🔧 CORREÇÃO CONFIGURAÇÃO SUPERVISOR
+============================================================
+📅 2025-07-22 13:27:35
+
+📝 Corrigindo /etc/supervisor/conf.d/assessment.conf
+📄 Conteúdo atual:
+[program:assessment]
+command=/var/www/assessment/venv/bin/gunicorn --bind 127.0.0.1:5000 --workers 3 --timeout 300 --worker-class sync main:app
+directory=/var/www/assessment
+user=www-data
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/supervisor/assessment.log
+stderr_logfile=/var/log/supervisor/assessment_error.log
+environment=DATABASE_URL="postgresql://assessment_user:P%40ssw0rd%40.!@localhost/assessment_db",SESSION_SECRET="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_SECRET_KEY="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_ENV="production"
+
+
+==================================================
+
+💾 Backup criado: /etc/supervisor/conf.d/assessment.conf.backup_fix.20250722_132735
+📝 Nova configuração:
+[program:assessment]
+command=/var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 main:app
+directory=/var/www/assessment
+user=www-data
+autostart=true
+autorestart=true
+environment=DATABASE_URL="postgresql://assessment_user:P%40ssw0rd%40.!@localhost/assessment_db",SESSION_SECRET="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_SECRET_KEY="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_ENV="production",TZ="America/Sao_Paulo"
+stdout_logfile=/var/log/assessment.log
+stderr_logfile=/var/log/assessment_error.log
+redirect_stderr=true
+
+
+==================================================
+
+✅ Configuração corrigida!
+
+🔄 Reiniciando supervisor...
+   📡 sudo supervisorctl reread
+ERROR: CANT_REREAD: Format string 'DATABASE_URL="postgresql://assessment_user:P%40ssw0rd%40.!@localhost/assessment_db",SESSION_SECRET="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_SECRET_KEY="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_ENV="production",TZ="America/Sao_Paulo"' for 'environment' is badly formatted: not enough arguments for format string in section 'program:assessment' (file: '/etc/supervisor/conf.d/assessment.conf')
+   ⚠️  Código de saída: 256
+   📡 sudo supervisorctl update
+error: <class 'xmlrpc.client.Fault'>, <Fault 92: 'CANT_REREAD: Format string \'DATABASE_URL="postgresql://assessment_user:P%40ssw0rd%40.!@localhost/assessment_db",SESSION_SECRET="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_SECRET_KEY="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_ENV="production",TZ="America/Sao_Paulo"\' for \'environment\' is badly formatted: not enough arguments for format string in section \'program:assessment\' (file: \'/etc/supervisor/conf.d/assessment.conf\')'>: file: /usr/lib/python3.12/xmlrpc/client.py line: 668
+   ⚠️  Código de saída: 256
+   📡 sudo supervisorctl restart assessment
+assessment: stopped
+assessment: started
+   ✅ Sucesso
+
+============================================================
+✅ CONFIGURAÇÃO CORRIGIDA
+🔄 Aguarde alguns segundos para o serviço inicializar
+============================================================
+root@templateubuntu:/var/www/assessment# sudo bash -c "source venv/bin/activate && python fix_supervisor_config.py"^C
+root@templateubuntu:/var/www/assessment# sudo bash -c "source venv/bin/activate && python test_database_connection.py"
+============================================================
+🧪 TESTE DE CONEXÃO COM BANCO
+============================================================
+🧪 Testando configuração da aplicação...
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+   🔗 DATABASE_URI: sqlite:///assessment.db
+   ❌ Aplicação ainda usando SQLite: sqlite:///assessment.db
+
+============================================================
+❌ AINDA HÁ PROBLEMAS NA CONFIGURAÇÃO
+============================================================
+root@templateubuntu:/var/www/assessment#
