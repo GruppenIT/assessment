@@ -89,14 +89,25 @@ def create_app():
         from models.logo import Logo
         from models.configuracao import Configuracao
         from utils.timezone_utils import get_timezone_display_name, now_local
+        import logging
         
-        logo = Logo.query.filter_by(ativo=True).first()
+        # Tentar pegar logo do sistema via Configuração primeiro (mais confiável)
+        logo_path = Configuracao.get_logo_sistema()
+        
+        # Se não encontrar na configuração, tentar pelo modelo Logo
+        if not logo_path:
+            logo = Logo.query.filter_by(ativo=True).first()
+            logo_path = logo.caminho_arquivo if logo else None
+        
         cores_sistema = Configuracao.get_cores_sistema()
         escala_pontuacao = Configuracao.get_escala_pontuacao()
         
+        # Log para debug do logo
+        logging.debug(f"Logo path encontrado: {logo_path}")
+        
         return {
             'nome_sistema': app.config["NOME_SISTEMA"],
-            'logo_path': logo.caminho_arquivo if logo else None,
+            'logo_path': logo_path,
             'cores_sistema': cores_sistema,
             'escala_pontuacao': escala_pontuacao,
             'timezone_display': get_timezone_display_name(),

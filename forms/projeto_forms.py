@@ -28,8 +28,8 @@ class ProjetoForm(FlaskForm):
     """Formulário para criação/edição de projetos"""
     nome = StringField('Nome do Projeto', validators=[
         DataRequired(message='Nome do projeto é obrigatório'),
-        Length(min=2, max=200, message='Nome deve ter entre 2 e 200 caracteres')
-    ], render_kw={'placeholder': 'Digite o nome do projeto'})
+        Length(min=2, max=70, message='Nome deve ter entre 2 e 70 caracteres')
+    ], render_kw={'placeholder': 'Digite o nome do projeto', 'maxlength': '70'})
     
     cliente_id = SelectField('Cliente', validators=[
         DataRequired(message='Cliente é obrigatório')

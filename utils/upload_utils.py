@@ -58,12 +58,37 @@ def salvar_logo(file):
         raise ValueError("Arquivo de imagem inválido")
     
     from models.configuracao import Configuracao
+    from models.logo import Logo
     from app import db
+    import logging
     
-    # Salvar arquivo
-    logo_path = save_uploaded_file(file, 'logos')
-    
-    # Atualizar configuração do sistema
-    Configuracao.set_logo_sistema(logo_path)
-    
-    return logo_path
+    try:
+        # Salvar arquivo
+        logo_path = save_uploaded_file(file, 'logos')
+        logging.info(f"Arquivo de logo salvo em: {logo_path}")
+        
+        # 1. Atualizar configuração do sistema (método principal)
+        Configuracao.set_logo_sistema(logo_path)
+        logging.info("Logo atualizado na configuração do sistema")
+        
+        # 2. Desativar todos os logos antigos no modelo Logo
+        Logo.query.update({'ativo': False})
+        
+        # 3. Criar novo registro no modelo Logo
+        novo_logo = Logo(
+            nome_arquivo=file.filename,
+            caminho_arquivo=logo_path,
+            ativo=True
+        )
+        db.session.add(novo_logo)
+        
+        # 4. Commit das mudanças
+        db.session.commit()
+        logging.info("Logo salvo com sucesso no banco de dados")
+        
+        return logo_path
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao salvar logo: {e}")
+        raise e

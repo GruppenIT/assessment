@@ -277,6 +277,12 @@ This is a Flask-based web application for multi-type maturity assessments. The s
     * AI features (introduction generation, final considerations) now working correctly in production
     * Enhanced AI analysis to integrate respondent comments with numerical scores for more contextual considerations
     * Improved domain analysis prompts to recognize plans, initiatives, and future implementations mentioned in comments
+  - **SYSTEM IMPROVEMENTS**: Fixed logo display issues and project name validation
+    * Resolved logo cache inconsistency between Logo model and Configuracao system
+    * Created fix_logo_cache.py script for troubleshooting logo display issues
+    * Enhanced logo upload process to update both Logo model and system configuration
+    * Reduced project name limit from 200 to 70 characters with database schema update
+    * Added maxlength attribute to project name input field for better UX
 - July 18, 2025. Question Management Enhancement:
   - **QUESTION ENHANCEMENT**: Added three new fields to assessment questions:
     * Referência: theoretical/compliance references (ISO 27001, NIST CSF, CIS, etc.)
