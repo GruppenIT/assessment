@@ -97,6 +97,22 @@ Este script vai:
 - Reiniciar os serviços automaticamente
 - Aplicar as variáveis de ambiente corretamente
 
+### 6. CORREÇÃO SUPERVISOR (se houver erro de formatação)
+
+Se o supervisor apresentar erro de formato, execute:
+```bash
+cd /var/www/assessment
+sudo python fix_supervisor_config.py
+```
+
+### 7. TESTAR CONEXÃO
+
+Para verificar se tudo está funcionando:
+```bash
+cd /var/www/assessment
+sudo bash -c "source venv/bin/activate && python test_database_connection.py"
+```
+
 ### 4. Verificar Resultado
 
 Após executar, você deve ver:

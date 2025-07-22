@@ -1,0 +1,46 @@
+root@templateubuntu:/var/www/assessment# sudo bash -c "source venv/bin/activate && python fix_env_loading.py"
+============================================================
+🔧 CORREÇÃO DE CARREGAMENTO DO .ENV
+============================================================
+📅 2025-07-22 13:23:19
+
+📄 Carregando .env
+✓ Carregadas 8 variáveis do .env
+
+📋 Variáveis carregadas:
+   🔑 FLASK_SECRET_KEY=***
+   🔧 FLASK_ENV=production
+   🔧 FLASK_DEBUG=False
+   🔗 DATABASE_URL=postgresql:***@localhost/assessment_db
+   🔧 TZ=America/Sao_Paulo
+   🔧 TIMEZONE=America/Sao_Paulo
+   🔑 SESSION_SECRET=***
+   🔧 MPLCONFIGDIR=/tmp/matplotlib
+
+📝 Atualizando /etc/supervisor/conf.d/assessment.conf
+   ✓ Atualizou linha environment existente
+   💾 Backup criado: /etc/supervisor/conf.d/assessment.conf.backup.20250722_132319
+   ✓ Configuração do supervisor atualizada
+✅ Configuração do supervisor atualizada
+
+📝 Criando /etc/systemd/system/assessment.env
+   ✓ Arquivo criado: /etc/systemd/system/assessment.env
+
+🔄 Reiniciando serviços...
+   📡 sudo supervisorctl reread
+ERROR: CANT_REREAD: Format string 'DATABASE_URL="postgresql://assessment_user:P%40ssw0rd%40.!@localhost/assessment_db",SESSION_SECRET="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_SECRET_KEY="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_ENV="production"' for 'environment' is badly formatted: not enough arguments for format string in section 'program:assessment' (file: '/etc/supervisor/conf.d/assessment.conf')
+   ⚠️  Código de saída: 256
+   📡 sudo supervisorctl update
+error: <class 'xmlrpc.client.Fault'>, <Fault 92: 'CANT_REREAD: Format string \'DATABASE_URL="postgresql://assessment_user:P%40ssw0rd%40.!@localhost/assessment_db",SESSION_SECRET="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_SECRET_KEY="9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=",FLASK_ENV="production"\' for \'environment\' is badly formatted: not enough arguments for format string in section \'program:assessment\' (file: \'/etc/supervisor/conf.d/assessment.conf\')'>: file: /usr/lib/python3.12/xmlrpc/client.py line: 668
+   ⚠️  Código de saída: 256
+   📡 sudo supervisorctl restart assessment
+assessment: stopped
+assessment: started
+   ✓ Sucesso
+
+============================================================
+✅ CORREÇÃO CONCLUÍDA
+📝 As variáveis do .env agora devem estar disponíveis
+🔄 Aguarde alguns segundos e teste novamente o sistema
+============================================================
+root@templateubuntu:/var/www/assessment#
