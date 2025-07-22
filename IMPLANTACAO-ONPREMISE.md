@@ -243,6 +243,18 @@ sudo bash atualizar_sistema.sh
 ### Problema: Erro de banco de dados
 1. Verificar PostgreSQL: `sudo systemctl status postgresql`
 2. Testar conexão: `psql -h localhost -U assessment_user assessment_db`
+
+### Problema: Limpar considerações finais de um projeto
+```bash
+# Usar script automatizado
+cd /var/www/assessment
+sudo -u www-data bash -c "source venv/bin/activate && python limpar_consideracoes_projeto.py"
+
+# Ou via SQL direto:
+psql -h localhost -U assessment_user assessment_db
+# Listar projetos: SELECT id, nome FROM projetos;
+# Limpar projeto ID=X: UPDATE projetos SET consideracoes_finais_ia = NULL WHERE id = X;
+```
 3. Executar migrations: `sudo -u www-data bash -c "source venv/bin/activate && python migrar_banco.py"`
 
 ### Problema: Erro 502 (Bad Gateway)
