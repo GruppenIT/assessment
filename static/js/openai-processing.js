@@ -295,17 +295,63 @@ window.openaiProcessing = new OpenAIProcessingUI();
 
 // Interceptar cliques em botões OpenAI
 document.addEventListener('DOMContentLoaded', function() {
-    // Botões de IA
-    const aiButtons = [
+    console.log('OpenAI Processing Interface carregado');
+    
+    // Interceptar formulários de IA
+    const aiFormSelectors = [
+        { selector: 'form[action*="gerar_introducao_ia"]', operation: 'introducao' },
+        { selector: 'form[action*="gerar_consideracoes_finais"]', operation: 'consideracoes_finais' },
+        { selector: 'form[action*="gerar_analise_dominios_ia"]', operation: 'analise_dominios' }
+    ];
+    
+    aiFormSelectors.forEach(({ selector, operation }) => {
+        document.addEventListener('submit', function(e) {
+            const form = e.target.closest(selector);
+            if (form) {
+                e.preventDefault();
+                console.log(`Interceptando formulário ${operation}`);
+                
+                const formData = new FormData(form);
+                const actionUrl = form.action;
+                
+                // Mostrar interface de processamento
+                window.openaiProcessing.show(operation);
+                
+                // Fazer requisição
+                fetch(actionUrl, { 
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Processamento concluído com sucesso');
+                        window.openaiProcessing.hide(true);
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                        throw new Error(`Erro HTTP: ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro no processamento:', error);
+                    window.openaiProcessing.hide(false, error.message);
+                    setTimeout(() => window.location.reload(), 3000);
+                });
+            }
+        });
+    });
+    
+    // Também interceptar links diretos (botões de melhoria)
+    const aiLinkSelectors = [
         { selector: 'a[href*="gerar_introducao_ia"]', operation: 'introducao' },
         { selector: 'a[href*="gerar_analise_dominios_ia"]', operation: 'analise_dominios' },
         { selector: 'a[href*="gerar_consideracoes_finais"]', operation: 'consideracoes_finais' }
     ];
     
-    aiButtons.forEach(({ selector, operation }) => {
+    aiLinkSelectors.forEach(({ selector, operation }) => {
         document.addEventListener('click', function(e) {
             if (e.target.matches(selector) || e.target.closest(selector)) {
                 e.preventDefault();
+                console.log(`Interceptando link ${operation}`);
                 
                 const button = e.target.matches(selector) ? e.target : e.target.closest(selector);
                 const href = button.href;
@@ -317,17 +363,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(href, { method: 'POST' })
                     .then(response => {
                         if (response.ok) {
+                            console.log('Processamento concluído com sucesso');
                             window.openaiProcessing.hide(true);
                             setTimeout(() => window.location.reload(), 2000);
                         } else {
-                            throw new Error('Erro na requisição');
+                            throw new Error(`Erro HTTP: ${response.status}`);
                         }
                     })
                     .catch(error => {
+                        console.error('Erro no processamento:', error);
                         window.openaiProcessing.hide(false, error.message);
                         setTimeout(() => window.location.reload(), 3000);
                     });
             }
         });
     });
+    
+    console.log('Interceptadores configurados para formulários e links de IA');
 });
