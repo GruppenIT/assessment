@@ -250,6 +250,22 @@ This is a Flask-based web application for multi-type maturity assessments. The s
     * Formal signature section with evaluator credentials
   - **STREAMLINED EXPORT WORKFLOW**: Replaced multiple export options with single formal report generation
   - **DATABASE MIGRATION**: Successfully added evaluator fields to projetos table with PostgreSQL compatibility
+- July 22, 2025. Complete On-Premise Documentation Overhaul:
+  - **DEFINITIVE ON-PREMISE SOLUTION**: Resolved critical deployment issue where Flask application was using SQLite instead of PostgreSQL
+  - Created env_loader.py module that automatically loads .env variables at application startup
+  - Modified main.py and app.py to import env_loader, ensuring proper environment variable loading
+  - **CONSOLIDATED DOCUMENTATION**: Completely rebuilt on-premise documentation with single, clean version
+  - Created new IMPLANTACAO-ONPREMISE.md with comprehensive installation guide for Ubuntu servers
+  - **NEW INSTALLATION SCRIPTS**: Created complete set of installation and maintenance scripts:
+    * instalar_sistema.py: Complete system installation with database setup, admin user, and initial configuration
+    * verificar_instalacao.py: Comprehensive verification of all system components and dependencies
+    * atualizar_sistema.sh: Full system update script with backup, rollback, and service management
+    * migrar_banco.py: Database migration script for schema updates and data integrity
+  - Removed all outdated installation documents and scripts (ATUALIZACAO-ONPREMISE.md, deploy.sh, etc.)
+  - **ENVIRONMENT LOADING FIX**: Solved the core issue where supervisor configuration wasn't sufficient for Flask to read .env
+  - env_loader module automatically loads environment variables from .env files at multiple locations
+  - System now correctly uses PostgreSQL in production environment without manual intervention
+  - **DEPLOYMENT READY**: Single authoritative source for on-premise deployment with proven working solution
 - July 18, 2025. Question Management Enhancement:
   - **QUESTION ENHANCEMENT**: Added three new fields to assessment questions:
     * Referência: theoretical/compliance references (ISO 27001, NIST CSF, CIS, etc.)
