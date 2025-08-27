@@ -7,7 +7,7 @@ echo "=================================="
 # 1. Criar arquivo .env com as variáveis corretas
 echo "📝 Criando arquivo .env..."
 sudo tee /var/www/assessment/.env << 'EOF'
-DATABASE_URL=postgresql://assessment_user:P@ssw0rd@.!@localhost/assessment_db
+DATABASE_URL=postgresql://assessment_user:P%40ssw0rd%40.%21@localhost/assessment_db
 SESSION_SECRET=9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=
 FLASK_SECRET_KEY=9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=
 FLASK_ENV=production
