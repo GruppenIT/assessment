@@ -8,7 +8,8 @@ import os
 
 def load_env():
     """Carregar variáveis do arquivo .env"""
-    env_files = ['.env', '/home/suporte/.env']
+    # Priorizar arquivo .env no diretório da aplicação
+    env_files = ['.env', '/var/www/assessment/.env', '/home/suporte/.env']
     
     for env_file in env_files:
         if os.path.exists(env_file):

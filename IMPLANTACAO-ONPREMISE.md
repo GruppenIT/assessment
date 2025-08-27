@@ -73,6 +73,19 @@ sudo chown -R www-data:www-data assessment
 
 # Configurar ambiente Python
 cd /var/www/assessment
+
+# Criar arquivo .env (variáveis de ambiente)
+sudo tee .env << 'EOF'
+DATABASE_URL=postgresql://assessment_user:SuaSenhaSegura123!@localhost/assessment_db
+SESSION_SECRET=9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=
+FLASK_SECRET_KEY=9JUijS0Z9csNkHM2ssAXXirRPsW0MSA3Ax1yACVWqxs=
+FLASK_ENV=production
+TZ=America/Sao_Paulo
+EOF
+
+# Configurar permissões do .env
+sudo chown www-data:www-data .env
+sudo chmod 600 .env
 sudo -u www-data python3 -m venv venv
 sudo -u www-data venv/bin/pip install --upgrade pip
 sudo -u www-data venv/bin/pip install -r requirements.txt

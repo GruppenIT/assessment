@@ -1,0 +1,19 @@
+# CONFIGURAÇÃO CORRIGIDA DO SUPERVISOR
+# Este arquivo deve ser salvo como /etc/supervisor/conf.d/assessment.conf
+
+[program:assessment]
+command=/var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 main:app
+directory=/var/www/assessment
+user=www-data
+autostart=true
+autorestart=true
+environment=PATH="/var/www/assessment/venv/bin"
+stdout_logfile=/var/log/assessment.log
+stderr_logfile=/var/log/assessment_error.log
+redirect_stderr=true
+
+# COMANDOS PARA APLICAR:
+# 1. sudo cp templates_supervisor_onpremise.txt /etc/supervisor/conf.d/assessment.conf
+# 2. sudo supervisorctl reread
+# 3. sudo supervisorctl update
+# 4. sudo supervisorctl start assessment
