@@ -42,6 +42,7 @@ Preferred communication style: Simple, everyday language.
 - **AI Integration**: Uses OpenAI for generating report introductions and final considerations, with payload optimization and a loading interface.
 - **On-Premise Deployment**: Designed for robust on-premise deployment, including an `env_loader.py` for environment variable management and comprehensive installation/update scripts.
 - **Supervisor Configuration Fix**: Resolved production deployment issue where Supervisor couldn't parse complex environment variables with special characters by implementing .env file approach.
+- **Database URL Encoding Fix**: Resolved PostgreSQL connection error by properly URL-encoding special characters (@→%40, !→%21) in database password for production deployment.
 
 ## External Dependencies
 
