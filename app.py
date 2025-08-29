@@ -60,14 +60,25 @@ def create_app():
         except (ValueError, TypeError):
             return {}
     
-    # Handler personalizado para unauthorized - BYPASS COMPLETO
+    # Handler personalizado para unauthorized - PROTEÇÃO TOTAL
     @login_manager.unauthorized_handler
     def unauthorized():
-        from flask import request, redirect, url_for
-        # BYPASS TOTAL para rotas de projetos
-        if request.path.startswith('/admin/projetos'):
-            return None  # Permitir acesso sem login
-        # Para outras rotas, redirecionar para login
+        from flask import request, redirect, url_for, flash
+        # Rotas públicas permitidas (apenas login e recursos estáticos)
+        rotas_publicas = [
+            '/auth/login',
+            '/auth/logout',
+            '/static/',
+            '/favicon.ico'
+        ]
+        
+        # Permitir apenas rotas públicas específicas
+        for rota_publica in rotas_publicas:
+            if request.path.startswith(rota_publica):
+                return None
+        
+        # Todas as outras rotas requerem login
+        flash('Acesso não autorizado. Por favor, faça login.', 'warning')
         return redirect(url_for('auth.login', next=request.url))
     
     # User loader para Flask-Login (para administradores e respondentes)
@@ -151,6 +162,58 @@ def create_app():
     app.register_blueprint(respondente_bp, url_prefix='/respondente')
     app.register_blueprint(sse_bp, url_prefix='/sse')
     
+    # Rota raiz - redirecionar para login ou dashboard baseado na autenticação
+    @app.route('/')
+    def home_redirect():
+        from flask import redirect, url_for
+        from flask_login import current_user
+        
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login'))
+        
+        # Redirecionar baseado no tipo de usuário
+        if hasattr(current_user, 'tipo') and current_user.tipo == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        elif hasattr(current_user, 'cliente_id'):
+            return redirect(url_for('respondente.dashboard'))
+        else:
+            return redirect(url_for('admin.dashboard'))
+    
+    # Middleware global de proteção de autenticação
+    @app.before_request
+    def require_login():
+        from flask import request, redirect, url_for, flash
+        from flask_login import current_user
+        
+        # Rotas públicas que não requerem autenticação
+        rotas_publicas = [
+            'auth.login',
+            'auth.logout',
+            'static',
+            'home_redirect'  # Permitir acesso à rota raiz que faz o redirect
+        ]
+        
+        # Caminhos que sempre devem ser permitidos
+        caminhos_publicos = [
+            '/static/',
+            '/favicon.ico'
+        ]
+        
+        # Verificar se é caminho público
+        for caminho in caminhos_publicos:
+            if request.path.startswith(caminho):
+                return
+        
+        # Verificar se é rota pública
+        endpoint = request.endpoint
+        if endpoint and any(endpoint.startswith(rota) for rota in rotas_publicas):
+            return
+        
+        # Se não está autenticado e não é rota pública, redirecionar para login
+        if not current_user.is_authenticated:
+            flash('Acesso restrito. Por favor, faça login.', 'warning')
+            return redirect(url_for('auth.login', next=request.url))
+    
     # Blueprint admin_old removido - causava conflito de rotas
     
     # Registrar blueprint de relatório separadamente
@@ -198,44 +261,21 @@ def create_app():
     except Exception as e:
         logging.error(f"Erro ao registrar portal do cliente: {e}")
         
-    # Rota de projetos temporária sem autenticação
-    @app.route('/admin/projetos_temp')
-    def lista_projetos_bypass():
-        """Lista projetos sem autenticação - solução temporária"""
-        from flask import redirect
-        return redirect('/admin/projetos/working')
-    
-    # Rota para servir uploads
+    # Rota para servir uploads protegida por autenticação
     @app.route('/uploads/<path:filename>')
-    def uploaded_file(filename):
+    def uploaded_file_protected(filename):
+        from flask_login import login_required, current_user
+        # Verificar autenticação manualmente
+        if not current_user.is_authenticated:
+            from flask import redirect, url_for
+            return redirect(url_for('auth.login'))
         from flask import send_from_directory
         import os
         upload_folder = os.path.join(app.root_path, 'static', 'uploads')
         return send_from_directory(upload_folder, filename)
     
-    # Rota raiz
-    @app.route('/')
-    def index():
-        from flask import redirect, url_for, session
-        from flask_login import current_user
-        from models.respondente import Respondente
-        
-        if current_user.is_authenticated:
-            if isinstance(current_user, Respondente):
-                return redirect(url_for('respondente.dashboard'))
-            elif hasattr(current_user, 'tipo') and current_user.tipo == 'admin':
-                return redirect(url_for('admin.dashboard'))
-            else:
-                return redirect(url_for('cliente.dashboard'))
-        return redirect(url_for('auth.login'))
-    
     # Rota de login alternativa para compatibilidade
-    @app.route('/login')
-    def login_redirect():
-        """Redireciona para a rota de login correta"""
-        from flask import redirect, url_for
-        return redirect(url_for('auth.login'))
-    
+        
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos

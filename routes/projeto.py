@@ -26,24 +26,8 @@ projeto_bp = Blueprint('projeto', __name__, url_prefix='/admin/projetos')
 from .projeto_extras import register_projeto_extras_routes
 register_projeto_extras_routes(projeto_bp)
 
-@projeto_bp.route('/auto-login')
-def auto_login():
-    """Auto login para teste"""
-    from flask_login import login_user
-    from models.usuario import Usuario
-    from flask import session
-    
-    admin = Usuario.query.filter_by(email='admin@sistema.com').first()
-    if admin:
-        login_user(admin)
-        session['user_type'] = 'admin'
-        return redirect(url_for('projeto.listar'))
-    else:
-        return "Admin não encontrado"
-
-
-
 @projeto_bp.route('/working')
+@login_required
 def listar_working():
     """Lista todos os projetos - versão simplificada"""
     try:
@@ -75,6 +59,7 @@ def listar_working():
         return f"<h1>Erro ao carregar projetos: {str(e)}</h1>"
 
 @projeto_bp.route('/')
+@login_required
 def listar():
     """Lista todos os projetos ou filtra por cliente"""
     cliente_id = request.args.get('cliente')
@@ -1087,5 +1072,4 @@ def gerar_consideracoes_finais(projeto_id):
         flash('Erro interno ao processar considerações finais. Tente novamente em alguns minutos.', 'error')
     
     return redirect(url_for('projeto.estatisticas', projeto_id=projeto_id))
-
 

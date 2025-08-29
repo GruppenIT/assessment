@@ -17,6 +17,7 @@ import pytz
 cliente_portal_bp = Blueprint('cliente_portal', __name__, url_prefix='/cliente')
 
 @cliente_portal_bp.route('/projetos/<int:projeto_id>/estatisticas')
+@login_required
 def estatisticas_cliente(projeto_id):
     """Página de estatísticas para o cliente - somente projetos liberados"""
     projeto = Projeto.query.get_or_404(projeto_id)
@@ -51,6 +52,7 @@ def estatisticas_cliente(projeto_id):
         return redirect(url_for('auth.login'))
 
 @cliente_portal_bp.route('/projetos/<int:projeto_id>/relatorio-pdf')
+@login_required
 def gerar_relatorio_cliente(projeto_id):
     """Gera relatório PDF para cliente"""
     projeto = Projeto.query.get_or_404(projeto_id)

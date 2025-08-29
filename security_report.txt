@@ -1,0 +1,55 @@
+🔍 AUDITORIA DE SEGURANÇA DAS ROTAS
+============================================================
+
+📊 RESUMO DA AUDITORIA:
+   Total de rotas encontradas: 84
+   Rotas públicas (OK): 5
+   Rotas protegidas (OK): 72
+   ⚠️  Rotas desprotegidas: 6
+   🚨 Rotas suspeitas: 1
+
+❌ ROTAS DESPROTEGIDAS (VULNERABILIDADE):
+--------------------------------------------------
+   /projetos/<int:projeto_id>/estatisticas -> estatisticas_cliente()
+      📄 routes/cliente_portal.py:19
+   /projetos/<int:projeto_id>/relatorio-pdf -> gerar_relatorio_cliente()
+      📄 routes/cliente_portal.py:53
+   / -> home_redirect()
+      📄 app.py:166
+   / -> home_redirect()
+      📄 app.py:166
+   /uploads/<path:filename> -> uploaded_file_protected()
+      📄 app.py:265
+   /uploads/<path:filename> -> uploaded_file_protected()
+      📄 app.py:265
+
+🚨 ROTAS SUSPEITAS (RISCO DE SEGURANÇA):
+--------------------------------------------------
+   /auto-login -> auto_login()
+      📄 routes/auth.py:118
+      ⚠️  Tipo: Rota de teste/debug
+
+✅ ROTAS PROTEGIDAS (SEGURAS):
+--------------------------------------------------
+   /gerar_pdf/<int:cliente_id>/<int:tipo_assessment_id> -> gerar_pdf() [login_required, admin_required]
+   /visualizar/<int:cliente_id>/<int:tipo_assessment_id> -> visualizar() [login_required, admin_required]
+   /progress/<session_id> -> progress_stream() [login_required, admin_required]
+   /start_analysis/<int:projeto_id> -> start_analysis() [login_required, admin_required]
+   /<int:projeto_id>/editar-texto-ia/<tipo> -> editar_texto_ia() [login_required, admin_required]
+   /<int:projeto_id>/salvar-texto-ia -> salvar_texto_ia() [login_required, admin_required]
+   /<int:projeto_id>/liberar-cliente -> confirmar_liberacao_cliente() [login_required, admin_required]
+   /<int:projeto_id>/liberar-cliente -> liberar_para_cliente() [login_required, admin_required]
+   /<int:projeto_id>/melhorar_texto_ia -> melhorar_texto_ia() [login_required, admin_required]
+   /perfil -> perfil() [login_required]
+   ... e mais 62 rotas protegidas
+
+💡 RECOMENDAÇÕES DE SEGURANÇA:
+--------------------------------------------------
+   1. Adicionar @login_required em todas as rotas desprotegidas
+   2. Adicionar decoradores específicos (@admin_required, etc.)
+   3. REMOVER rotas de auto-login em produção
+   4. REMOVER rotas de teste e debug em produção
+   5. Implementar middleware global de autenticação
+   6. Configurar HTTPS obrigatório
+   7. Implementar rate limiting
+   8. Logs de auditoria para acessos não autorizados

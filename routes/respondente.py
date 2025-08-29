@@ -14,30 +14,6 @@ from app import db
 
 respondente_bp = Blueprint('respondente', __name__)
 
-@respondente_bp.route('/auto-login')
-def auto_login():
-    """Auto login de teste para respondente Rodrigo"""
-    respondente = Respondente.query.filter_by(login='rodrigo.melnick').first()
-    if respondente:
-        login_user(respondente)
-        session['user_type'] = 'respondente'
-        return redirect(url_for('respondente.dashboard'))
-    else:
-        return "Respondente não encontrado"
-
-@respondente_bp.route('/auto-login-marcelo')
-def auto_login_marcelo():
-    """Auto login de teste para respondente Marcelo"""
-    respondente = Respondente.query.filter_by(login='marcelo.gruppen').first()
-    if respondente:
-        login_user(respondente)
-        session['user_type'] = 'respondente'
-        return redirect(url_for('respondente.dashboard'))
-    else:
-        return "Respondente não encontrado"
-
-# Login removido - agora usa o login unificado em /auth/login
-
 @respondente_bp.route('/dashboard')
 @respondente_required
 def dashboard():

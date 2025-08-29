@@ -115,17 +115,7 @@ def logout():
     flash('Logout realizado com sucesso!', 'info')
     return redirect(url_for('auth.login'))
 
-@auth_bp.route('/auto-login')
-def auto_login():
-    """Auto-login para desenvolvimento"""
-    usuario = Usuario.query.filter_by(email='admin@sistema.com').first()
-    if usuario:
-        login_user(usuario)
-        session['user_type'] = 'admin'
-        return redirect(url_for('admin.dashboard'))
-    else:
-        flash('Usuário admin não encontrado', 'error')
-        return redirect(url_for('auth.login'))
+# Rota de auto-login removida por segurança
 
 @auth_bp.route('/perfil')
 @login_required

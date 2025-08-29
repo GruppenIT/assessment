@@ -12,7 +12,7 @@
                     <div class="row align-items-center">
                         <div class="col-auto me-3">
                             {% if projeto.cliente.logo_path %}
-                                <img src="{{ url_for('uploaded_file', filename=projeto.cliente.logo_path) }}" 
+                                <img src="{{ url_for('uploaded_file_protected', filename=projeto.cliente.logo_path) }}" 
                                      alt="Logo {{ projeto.cliente.nome }}" 
                                      class="rounded" 
                                      style="width: 80px; height: 80px; object-fit: contain; background: rgba(255,255,255,0.1); padding: 8px;">

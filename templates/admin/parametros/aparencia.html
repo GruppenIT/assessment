@@ -45,7 +45,7 @@
                 <div class="card-body">
                     {% if logo_atual %}
                     <div class="text-center mb-3">
-                        <img src="{{ url_for('uploaded_file', filename=logo_atual.caminho_arquivo) }}" 
+                        <img src="{{ url_for('uploaded_file_protected', filename=logo_atual.caminho_arquivo) }}" 
                              alt="Logo atual" class="img-fluid" style="max-height: 100px;">
                         <p class="text-muted small mt-2">Logo atual</p>
                     </div>

@@ -11,7 +11,7 @@
                     <!-- Logo e título -->
                     <div class="text-center mb-4">
                         {% if logo_path %}
-                            <img src="{{ url_for('uploaded_file', filename=logo_path) }}" 
+                            <img src="{{ url_for('uploaded_file_protected', filename=logo_path) }}" 
                                  alt="Logo" height="50" class="mb-3">
                         {% endif %}
                         <h4 class="text-dark mb-0">Acesso ao Sistema</h4>
