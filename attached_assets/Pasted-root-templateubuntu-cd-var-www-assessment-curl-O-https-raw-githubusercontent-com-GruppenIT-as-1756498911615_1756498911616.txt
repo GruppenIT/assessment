@@ -1,0 +1,47 @@
+root@templateubuntu:~# cd /var/www/assessment
+curl -O https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/manual_security_patch.py
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  6164  100  6164    0     0  24296      0 --:--:-- --:--:-- --:--:-- 24363
+root@templateubuntu:/var/www/assessment# sudo python3 manual_security_patch.py
+🔐 APLICANDO PATCH DE SEGURANÇA MANUAL
+==================================================
+1. Aplicando middleware de segurança...
+✅ Backup criado: /var/www/assessment/app.py.backup_1756498913
+✅ Middleware de segurança adicionado ao app.py
+2. Removendo rotas de auto-login...
+✅ Rotas de auto-login removidas de /var/www/assessment/routes/auth.py
+✅ Rotas de auto-login removidas de /var/www/assessment/routes/respondente.py
+✅ Rotas de auto-login removidas de /var/www/assessment/routes/projeto.py
+
+✅ PATCH APLICADO COM SUCESSO!
+Agora execute:
+  sudo supervisorctl restart assessment
+  curl -I http://localhost:8000/admin/projetos/working
+root@templateubuntu:/var/www/assessment# sudo supervisorctl restart assessment
+assessment: stopped
+assessment: ERROR (spawn error)
+root@templateubuntu:/var/www/assessment# history | grep journal
+  698  sudo journalctl -u supervisor -f
+  700  sudo journalctl -u supervisor -f
+  722  sudo journalctl -u supervisor -f
+  725  sudo journalctl -u supervisor -f
+  731  sudo journalctl -u supervisor -f
+  734  sudo journalctl -u supervisor -f
+  742  sudo journalctl -u supervisor -f
+  753  sudo journalctl -u supervisor -f
+  755  sudo journalctl -u supervisor -f
+  764  sudo journalctl -u supervisor -f
+  784  history | grep journal
+root@templateubuntu:/var/www/assessment# sudo journalctl -u supervisor -f
+Aug 29 20:21:58 templateubuntu supervisord[406398]: 2025-08-29 20:21:58,713 INFO stopped: assessment (exit status 0)
+Aug 29 20:21:58 templateubuntu supervisord[406398]: 2025-08-29 20:21:58,716 INFO spawned: 'assessment' with pid 423517
+Aug 29 20:21:58 templateubuntu supervisord[406398]: 2025-08-29 20:21:58,908 WARN exited: assessment (exit status 3; not expected)
+Aug 29 20:21:59 templateubuntu supervisord[406398]: 2025-08-29 20:21:59,912 INFO spawned: 'assessment' with pid 423519
+Aug 29 20:22:00 templateubuntu supervisord[406398]: 2025-08-29 20:22:00,141 WARN exited: assessment (exit status 1; not expected)
+Aug 29 20:22:02 templateubuntu supervisord[406398]: 2025-08-29 20:22:02,145 INFO spawned: 'assessment' with pid 423522
+Aug 29 20:22:02 templateubuntu supervisord[406398]: 2025-08-29 20:22:02,369 WARN exited: assessment (exit status 1; not expected)
+Aug 29 20:22:05 templateubuntu supervisord[406398]: 2025-08-29 20:22:05,375 INFO spawned: 'assessment' with pid 423525
+Aug 29 20:22:05 templateubuntu supervisord[406398]: 2025-08-29 20:22:05,579 WARN exited: assessment (exit status 3; not expected)
+Aug 29 20:22:06 templateubuntu supervisord[406398]: 2025-08-29 20:22:06,580 INFO gave up: assessment entered FATAL state, too many start retries too quickly
+^C
