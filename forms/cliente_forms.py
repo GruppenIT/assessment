@@ -70,6 +70,7 @@ class ResponenteForm(FlaskForm):
     ], render_kw={'placeholder': 'Setor/departamento'})
     
     ativo = BooleanField('Ativo', default=True)
+    forcar_troca_senha = BooleanField('Forçar troca de senha no próximo login', default=False)
     
     submit = SubmitField('Salvar Respondente')
 

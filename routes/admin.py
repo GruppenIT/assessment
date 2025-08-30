@@ -511,6 +511,7 @@ def editar_respondente(respondente_id):
             respondente.cargo = form.cargo.data
             respondente.setor = form.setor.data
             respondente.ativo = form.ativo.data
+            respondente.forcar_troca_senha = form.forcar_troca_senha.data
             
             # Atualizar senha se fornecida
             if form.senha.data:

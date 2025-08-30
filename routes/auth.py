@@ -93,6 +93,10 @@ def login():
             
             flash('Login realizado com sucesso!', 'success')
             
+            # Verificar se precisa trocar senha obrigatoriamente
+            if hasattr(respondente, 'forcar_troca_senha') and respondente.forcar_troca_senha:
+                return redirect(url_for('auth.troca_senha_obrigatoria'))
+            
             # Verificar se precisa de 2FA
             fa_required = check_2fa_required()
             if fa_required == 'setup':
@@ -140,6 +144,52 @@ def logout():
     return redirect(url_for('auth.login'))
 
 # Rota de auto-login removida por segurança
+
+@auth_bp.route('/troca-senha-obrigatoria', methods=['GET', 'POST'])
+@login_required
+def troca_senha_obrigatoria():
+    """Troca obrigatória de senha solicitada pelo administrador"""
+    from forms.troca_senha_forms import TrocaSenhaObrigatoriaForm
+    
+    # Verificar se realmente precisa trocar senha
+    if not (hasattr(current_user, 'forcar_troca_senha') and current_user.forcar_troca_senha):
+        flash('Você não possui solicitação de troca de senha pendente.', 'info')
+        if hasattr(current_user, 'cliente_id'):
+            return redirect(url_for('respondente.dashboard'))
+        else:
+            return redirect(url_for('admin.dashboard'))
+    
+    form = TrocaSenhaObrigatoriaForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Atualizar a senha
+            current_user.set_password(form.nova_senha.data)
+            # Desmarcar a flag de troca obrigatória
+            current_user.forcar_troca_senha = False
+            db.session.commit()
+            
+            flash('Senha alterada com sucesso!', 'success')
+            
+            # Verificar se precisa de 2FA após troca de senha
+            fa_required = check_2fa_required()
+            if fa_required == 'setup':
+                return redirect(url_for('auth.setup_2fa'))
+            elif fa_required == 'verify':
+                return redirect(url_for('auth.verify_2fa'))
+            
+            # Redirecionar para dashboard apropriado
+            if hasattr(current_user, 'cliente_id'):
+                return redirect(url_for('respondente.dashboard'))
+            else:
+                return redirect(url_for('admin.dashboard'))
+                
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao alterar senha. Tente novamente.', 'danger')
+            logging.error(f"Erro ao alterar senha obrigatória: {e}")
+    
+    return render_template('auth/troca_senha_obrigatoria.html', form=form)
 
 @auth_bp.route('/setup-2fa', methods=['GET', 'POST'])
 @login_required
