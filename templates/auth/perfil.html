@@ -17,13 +17,13 @@
                         Informações da sua conta
                     </p>
                 </div>
-                {% if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' %}
-                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
+                {% if current_user.cliente_id is defined and current_user.cliente_id %}
+                    <a href="{{ url_for('respondente.dashboard') }}" class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-2"></i>
                         Voltar ao Dashboard
                     </a>
-                {% elif hasattr(current_user, 'cliente_id') and current_user.cliente_id %}
-                    <a href="{{ url_for('respondente.dashboard') }}" class="btn btn-outline-primary">
+                {% else %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-2"></i>
                         Voltar ao Dashboard
                     </a>
@@ -58,12 +58,12 @@
                                     <tr>
                                         <td class="fw-bold">Tipo de Conta:</td>
                                         <td>
-                                            {% if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' %}
+                                            {% if current_user.tipo is defined and current_user.tipo == 'admin' %}
                                                 <span class="badge bg-danger">Administrador</span>
-                                            {% elif hasattr(current_user, 'cliente_id') and current_user.cliente_id %}
+                                            {% elif current_user.cliente_id is defined and current_user.cliente_id %}
                                                 <span class="badge bg-primary">Respondente</span>
                                             {% else %}
-                                                <span class="badge bg-secondary">Usuário</span>
+                                                <span class="badge bg-success">Administrador</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -73,7 +73,7 @@
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tbody>
-                                    {% if hasattr(current_user, 'cliente') and current_user.cliente and current_user.cliente.nome_empresa %}
+                                    {% if current_user.cliente is defined and current_user.cliente and current_user.cliente.nome_empresa is defined %}
                                         <tr>
                                             <td class="fw-bold">Empresa:</td>
                                             <td>{{ current_user.cliente.nome_empresa }}</td>
@@ -111,12 +111,12 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        {% if hasattr(current_user, 'cliente_id') and current_user.cliente_id %}
+                        {% if current_user.cliente_id is defined and current_user.cliente_id %}
                             <a href="{{ url_for('respondente.dashboard') }}" class="btn btn-outline-primary">
                                 <i class="fas fa-clipboard-check me-2"></i>
                                 Meu Assessment
                             </a>
-                        {% elif hasattr(current_user, 'tipo') and current_user.tipo == 'admin' %}
+                        {% else %}
                             <a href="{{ url_for('admin.projetos') }}" class="btn btn-outline-primary">
                                 <i class="fas fa-project-diagram me-2"></i>
                                 Gerenciar Projetos

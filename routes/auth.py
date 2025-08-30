@@ -148,7 +148,16 @@ def perfil():
                     # Registrar na auditoria
                     try:
                         from models.auditoria import registrar_auditoria
-                        usuario_tipo = 'admin' if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' else 'respondente'
+                        # Determinar tipo de usuário de forma mais robusta
+                        usuario_tipo = 'admin'
+                        try:
+                            if getattr(current_user, 'cliente_id', None):
+                                usuario_tipo = 'respondente'
+                            elif getattr(current_user, 'tipo', None) == 'admin':
+                                usuario_tipo = 'admin'
+                        except:
+                            usuario_tipo = 'admin'  # Default
+                        
                         registrar_auditoria(
                             acao='senha_alterada',
                             usuario_tipo=usuario_tipo,
@@ -167,7 +176,7 @@ def perfil():
                     db.session.rollback()
                     flash('Erro ao alterar senha. Tente novamente.', 'danger')
         
-        return render_template('auth/perfil.html', usuario=current_user)
+        return render_template('auth/perfil.html')
         
     except Exception as e:
         # Log do erro e retorno de página de erro amigável
