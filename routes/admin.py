@@ -434,10 +434,14 @@ def respondentes_cliente(cliente_id):
         from models.resposta import Resposta
         respostas_count = Resposta.query.filter_by(respondente_id=respondente.id).count()
         
+        # Verificar configuração 2FA do respondente
+        config_2fa = get_user_2fa_config(respondente)
+        
         respondentes_data.append({
             'respondente': respondente,
             'projetos_associados': projetos_associados,
-            'respostas_count': respostas_count
+            'respostas_count': respostas_count,
+            'config_2fa': config_2fa
         })
     
     return render_template('admin/respondentes_cliente.html', 

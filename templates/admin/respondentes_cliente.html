@@ -41,6 +41,7 @@
                                         <th>Setor</th>
                                         <th>Projetos</th>
                                         <th>Respostas</th>
+                                        <th>2FA</th>
                                         <th>Status</th>
                                         <th>Ações</th>
                                     </tr>
@@ -75,6 +76,17 @@
                                                 <span class="badge bg-success">{{ item.respostas_count }}</span>
                                             </td>
                                             <td>
+                                                {% if item.config_2fa and item.config_2fa.is_active %}
+                                                    <span class="badge bg-success" title="2FA Ativo">
+                                                        <i class="fas fa-shield-alt"></i>
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-warning" title="2FA Inativo">
+                                                        <i class="fas fa-shield-alt"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
                                                 {% if item.respondente.ativo %}
                                                     <span class="badge bg-success">Ativo</span>
                                                 {% else %}
@@ -87,6 +99,13 @@
                                                        class="btn btn-outline-warning" title="Editar Respondente">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
+                                                    {% if item.config_2fa and item.config_2fa.is_active %}
+                                                        <button type="button" class="btn btn-outline-info" 
+                                                                onclick="confirmarReset2FA({{ item.respondente.id }}, '{{ item.respondente.nome }}')"
+                                                                title="Resetar 2FA">
+                                                            <i class="fas fa-shield-alt"></i>
+                                                        </button>
+                                                    {% endif %}
                                                     <button type="button" class="btn btn-outline-danger" 
                                                             onclick="confirmarExclusaoRespondente({{ item.respondente.id }}, '{{ item.respondente.nome }}')"
                                                             title="Excluir Respondente">
@@ -137,11 +156,62 @@
     </div>
 </div>
 
+<!-- Modal de confirmação de reset 2FA -->
+<div class="modal fade" id="modalReset2FA" tabindex="-1" aria-labelledby="modalReset2FALabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalReset2FALabel">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Resetar 2FA - Confirmação
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Atenção!</strong> Esta ação irá resetar a autenticação 2FA do respondente.
+                </div>
+                
+                <p>Confirma o reset do 2FA para o respondente <strong id="nomeRespondente2FA"></strong>?</p>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>O que acontecerá:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>O 2FA atual será desativado</li>
+                        <li>Uma nova configuração será gerada</li>
+                        <li>O respondente precisará configurar novamente no próximo login</li>
+                        <li>Esta ação será registrada no log de auditoria</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <form id="formReset2FA" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-shield-alt me-2"></i>Resetar 2FA
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function confirmarExclusaoRespondente(respondenteId, respondenteNome) {
     document.getElementById('nomeRespondente').textContent = respondenteNome;
     document.getElementById('formExclusaoRespondente').action = '/admin/respondentes/' + respondenteId + '/excluir';
     var modal = new bootstrap.Modal(document.getElementById('modalExclusaoRespondente'));
+    modal.show();
+}
+
+function confirmarReset2FA(respondenteId, respondenteNome) {
+    document.getElementById('nomeRespondente2FA').textContent = respondenteNome;
+    document.getElementById('formReset2FA').action = '/admin/reset-respondente-2fa/' + respondenteId;
+    var modal = new bootstrap.Modal(document.getElementById('modalReset2FA'));
     modal.show();
 }
 </script>
