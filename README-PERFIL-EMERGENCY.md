@@ -1,7 +1,9 @@
 # 🚨 CORREÇÃO EMERGENCIAL - PERFIL ON-PREMISE
 
-## Problema
-Internal Server Error persistente na página `/auth/perfil` no ambiente on-premise.
+## Problema ESPECÍFICO
+Internal Server Error na página `/auth/perfil` quando logado como admin@sistema.com:
+- URL: https://assessments.zerobox.com.br/auth/perfil  
+- Erro: "Internal Server Error - The server encountered an internal error"
 
 ## Soluções Disponíveis
 
@@ -18,7 +20,18 @@ sudo python3 investigar_erro_perfil.py
 - Verifica banco de dados e templates
 - Gera relatório detalhado
 
-### 2. 🔧 CORREÇÃO RADICAL
+### 2. 🎯 CORREÇÃO DEFINITIVA (RECOMENDADA)
+```bash
+curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/fix_perfil_definitivo.sh | sudo bash
+```
+
+### 3. 🔧 DIAGNÓSTICO ESPECÍFICO ADMIN
+```bash  
+curl -O https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/diagnostico_perfil_admin.py
+sudo python3 diagnostico_perfil_admin.py
+```
+
+### 4. 🔧 CORREÇÃO RADICAL
 ```bash
 curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/correcao_radical_perfil.sh | sudo bash
 ```
