@@ -43,7 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **On-Premise Deployment**: Designed for robust on-premise deployment, including an `env_loader.py` for environment variable management and comprehensive installation/update scripts.
 - **Supervisor Configuration Fix**: Resolved production deployment issue where Supervisor couldn't parse complex environment variables with special characters by implementing .env file approach.
 - **Database URL Encoding Fix**: Resolved PostgreSQL connection error by properly URL-encoding special characters (@→%40, !→%21) in database password for production deployment.
-- **Unified Deployment Script**: Created `deploy_onpremise_unified.sh` - comprehensive deployment script that preserves all existing data (projects, clients, users, assessments) while updating code from Git. Includes automatic security fixes, database structure verification, and complete backup system.
+- **Unified Deployment Script**: Created `deploy_onpremise_unified.sh` - comprehensive deployment script that preserves all existing data (projects, clients, users, assessments) while updating code from Git. Includes automatic security fixes, database structure verification, complete backup system, and automatic bug fixes for known issues (auth profile, form validation, template corrections).
 
 ## External Dependencies
 

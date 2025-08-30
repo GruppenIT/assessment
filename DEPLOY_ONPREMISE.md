@@ -16,6 +16,8 @@ Este script atualiza automaticamente sua instalação on-premise com o código m
 - Verificação de mudanças destrutivas no banco
 - Aplicação automática de correções de segurança
 - Middleware de autenticação obrigatória
+- Correção automática de bugs conhecidos (perfil, formulários)
+- Atualização de templates com funcionalidades seguras
 
 ## 📥 Instalação/Atualização
 
@@ -70,6 +72,8 @@ Se detectadas, o script solicitará confirmação antes de prosseguir.
    - Aplica middleware de autenticação
    - Remove rotas de auto-login
    - Testa proteção de rotas
+   - Corrige bugs conhecidos (perfil, formulários)
+   - Atualiza templates com funcionalidades completas
 
 ## 📊 Após a Instalação
 

@@ -240,6 +240,116 @@ EOF
         log "   ℹ️  Middleware de segurança já presente"
     fi
     
+    # Corrigir problemas específicos do auth.py
+    log "   🔧 Aplicando correções no auth.py..."
+    python3 << 'EOF'
+import re
+
+try:
+    # Corrigir routes/auth.py
+    with open('routes/auth.py', 'r') as f:
+        content = f.read()
+    
+    # Adicionar import do AlterarSenhaForm se não existir
+    if 'AlterarSenhaForm' not in content:
+        content = re.sub(
+            r'from forms\.auth_forms import LoginForm',
+            'from forms.auth_forms import LoginForm, AlterarSenhaForm',
+            content
+        )
+    
+    # Corrigir problemas de None nos formulários
+    content = re.sub(
+        r'email = form\.email\.data\.lower\(\)\.strip\(\)',
+        'email = form.email.data.lower().strip() if form.email.data else ""',
+        content
+    )
+    
+    content = re.sub(
+        r'senha = form\.senha\.data',
+        'senha = form.senha.data if form.senha.data else ""',
+        content
+    )
+    
+    # Substituir função de perfil simples pela versão com alteração de senha
+    perfil_pattern = r'@auth_bp\.route\(\'/perfil\'\)\s*@login_required\s*def perfil\(\):[^@]+?return render_template\([^)]+\)'
+    
+    new_perfil_function = '''@auth_bp.route('/perfil', methods=['GET', 'POST'])
+@login_required
+def perfil():
+    """Página de perfil do usuário com opção de alterar senha"""
+    form = AlterarSenhaForm()
+    
+    if form.validate_on_submit():
+        # Verificar senha atual
+        if not check_password_hash(current_user.senha_hash, form.senha_atual.data):
+            flash('Senha atual incorreta.', 'danger')
+            return render_template('auth/perfil.html', usuario=current_user, form=form)
+        
+        # Alterar senha
+        current_user.senha_hash = generate_password_hash(form.nova_senha.data)
+        
+        try:
+            db.session.commit()
+            
+            # Registrar na auditoria
+            from models.auditoria import registrar_auditoria
+            usuario_tipo = 'admin' if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' else 'respondente'
+            registrar_auditoria(
+                acao='senha_alterada',
+                usuario_tipo=usuario_tipo,
+                usuario_id=current_user.id,
+                usuario_nome=current_user.nome,
+                detalhes='Senha alterada pelo próprio usuário',
+                ip_address=request.remote_addr
+            )
+            
+            flash('Senha alterada com sucesso!', 'success')
+            return redirect(url_for('auth.perfil'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao alterar senha. Tente novamente.', 'danger')
+    
+    return render_template('auth/perfil.html', usuario=current_user, form=form)'''
+    
+    content = re.sub(perfil_pattern, new_perfil_function, content, flags=re.DOTALL)
+    
+    with open('routes/auth.py', 'w') as f:
+        f.write(content)
+    
+    print("✅ Correções aplicadas em routes/auth.py")
+    
+except Exception as e:
+    print(f"❌ Erro ao corrigir auth.py: {e}")
+EOF
+
+    # Adicionar AlterarSenhaForm ao forms/auth_forms.py se não existir
+    log "   📝 Verificando formulário de alteração de senha..."
+    if ! grep -q "AlterarSenhaForm" forms/auth_forms.py; then
+        cat >> forms/auth_forms.py << 'EOF'
+
+class AlterarSenhaForm(FlaskForm):
+    """Formulário para alterar senha"""
+    senha_atual = PasswordField('Senha Atual', validators=[
+        DataRequired(message='Senha atual é obrigatória')
+    ], render_kw={'placeholder': 'Digite sua senha atual'})
+    
+    nova_senha = PasswordField('Nova Senha', validators=[
+        DataRequired(message='Nova senha é obrigatória'),
+        Length(min=6, message='Nova senha deve ter pelo menos 6 caracteres')
+    ], render_kw={'placeholder': 'Digite a nova senha'})
+    
+    confirmar_nova_senha = PasswordField('Confirmar Nova Senha', validators=[
+        DataRequired(message='Confirmação de nova senha é obrigatória'),
+        EqualTo('nova_senha', message='As senhas devem ser iguais')
+    ], render_kw={'placeholder': 'Digite a nova senha novamente'})
+    
+    submit = SubmitField('Alterar Senha')
+EOF
+        log "   ✅ Formulário AlterarSenhaForm adicionado"
+    fi
+    
     # Remover rotas de auto-login se existirem
     for route_file in routes/auth.py routes/respondente.py routes/projeto.py; do
         if [ -f "$route_file" ] && grep -q "auto.*login" "$route_file"; then
@@ -249,6 +359,135 @@ EOF
     done
     
     log "   ✅ Correções de segurança aplicadas"
+}
+
+# Função para corrigir template de perfil
+fix_profile_template() {
+    log "🎨 Corrigindo template de perfil..."
+    
+    cd "$INSTALL_DIR"
+    
+    # Corrigir template auth/perfil.html
+    if [ -f "templates/auth/perfil.html" ]; then
+        log "   🔧 Atualizando template de perfil..."
+        
+        # Backup do template original
+        cp templates/auth/perfil.html templates/auth/perfil.html.backup
+        
+        # Aplicar correções no template usando Python
+        python3 << 'EOF'
+import re
+
+try:
+    with open('templates/auth/perfil.html', 'r') as f:
+        content = f.read()
+    
+    # Corrigir verificações de tipo de usuário
+    content = re.sub(
+        r'current_user\.is_admin\(\)',
+        "hasattr(current_user, 'tipo') and current_user.tipo == 'admin'",
+        content
+    )
+    
+    content = re.sub(
+        r'current_user\.is_cliente\(\)',
+        "hasattr(current_user, 'cliente_id') and current_user.cliente_id",
+        content
+    )
+    
+    # Corrigir acesso a nome_empresa
+    content = re.sub(
+        r'current_user\.nome_empresa',
+        "current_user.cliente.nome_empresa if hasattr(current_user, 'cliente') and current_user.cliente else None",
+        content
+    )
+    
+    # Adicionar modal de alteração de senha se não existir
+    if 'alterarSenhaModal' not in content:
+        modal_html = '''
+    <!-- Modal para Alterar Senha -->
+    <div class="modal fade" id="alterarSenhaModal" tabindex="-1" aria-labelledby="alterarSenhaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('auth.perfil') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="alterarSenhaModalLabel">
+                            <i class="fas fa-key me-2"></i>
+                            Alterar Senha
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            {{ form.senha_atual.label(class="form-label") }}
+                            {{ form.senha_atual(class="form-control") }}
+                            {% for error in form.senha_atual.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.nova_senha.label(class="form-label") }}
+                            {{ form.nova_senha(class="form-control") }}
+                            {% for error in form.nova_senha.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.confirmar_nova_senha.label(class="form-label") }}
+                            {{ form.confirmar_nova_senha(class="form-control") }}
+                            {% for error in form.confirmar_nova_senha.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            A nova senha deve ter pelo menos 6 caracteres.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>
+                            Cancelar
+                        </button>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>'''
+        
+        # Inserir modal antes do {% endblock %}
+        content = content.replace('{% endblock %}', modal_html + '\n{% endblock %}')
+        
+        # Adicionar botão de alterar senha se não existir
+        if 'Alterar Senha' not in content:
+            # Procurar pela seção de botões e adicionar botão de alterar senha
+            button_pattern = r'(<hr>\s*<a href="{{ url_for\(\'auth\.logout\'\) }}")'
+            replacement = r'''<button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#alterarSenhaModal">
+                            <i class="fas fa-key me-2"></i>
+                            Alterar Senha
+                        </button>
+                        
+                        \1'''
+            content = re.sub(button_pattern, replacement, content)
+    
+    with open('templates/auth/perfil.html', 'w') as f:
+        f.write(content)
+    
+    print("✅ Template de perfil corrigido")
+    
+except Exception as e:
+    print(f"❌ Erro ao corrigir template: {e}")
+EOF
+        
+        log "   ✅ Template de perfil atualizado"
+    else
+        log "   ⚠️  Template de perfil não encontrado"
+    fi
 }
 
 # Função para configurar banco de dados
@@ -391,8 +630,11 @@ main() {
     # 5. Configurar ambiente Python
     setup_python_environment
     
-    # 6. Aplicar correções de segurança
+    # 6. Aplicar correções de segurança e bugs
     apply_security_fixes
+    
+    # 6.1. Corrigir template de perfil
+    fix_profile_template
     
     # 7. Configurar banco de dados (preservando dados)
     setup_database
