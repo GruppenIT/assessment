@@ -117,17 +117,17 @@
                                 Meu Assessment
                             </a>
                         {% else %}
-                            <a href="{{ url_for('admin.projetos') }}" class="btn btn-outline-primary">
+                            <a href="{{ url_for('projeto.listar') }}" class="btn btn-outline-primary">
                                 <i class="fas fa-project-diagram me-2"></i>
                                 Gerenciar Projetos
                             </a>
-                            <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-primary">
+                            <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-primary">
                                 <i class="fas fa-users me-2"></i>
                                 Gerenciar Clientes
                             </a>
-                            <a href="{{ url_for('admin.usuarios') }}" class="btn btn-outline-primary">
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
                                 <i class="fas fa-user-cog me-2"></i>
-                                Gerenciar Usuários
+                                Painel Administrativo
                             </a>
                         {% endif %}
                         

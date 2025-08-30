@@ -155,11 +155,17 @@ content = re.sub(
     flags=re.DOTALL
 )
 
+# Correção das rotas - substituir rotas incorretas pelas corretas
+content = content.replace("url_for('admin.projetos')", "url_for('projeto.listar')")
+content = content.replace("url_for('admin.clientes')", "url_for('cliente.listar')")
+content = content.replace("url_for('admin.usuarios')", "url_for('admin.dashboard')")
+
 # Salvar
 with open('templates/auth/perfil.html', 'w') as f:
     f.write(content)
 
 print("✅ Template corrigido")
+print("✅ Rotas corrigidas para projeto.listar e cliente.listar")
 EOF
 
 # 3. Verificar sintaxe
