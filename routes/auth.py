@@ -5,6 +5,7 @@ from app import db
 from models.usuario import Usuario
 from models.respondente import Respondente
 from forms.auth_forms import LoginForm
+from utils.password_utils import safe_check_password_hash, safe_generate_password_hash, normalize_password
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -24,12 +25,12 @@ def login():
     
     if form.validate_on_submit():
         email = form.email.data.lower().strip() if form.email.data else ""
-        senha = form.senha.data if form.senha.data else ""
+        senha = normalize_password(form.senha.data) if form.senha.data else ""
         
         # Primeiro tentar encontrar um administrador
         usuario_admin = Usuario.query.filter_by(email=email, ativo=True).first()
         
-        if usuario_admin and check_password_hash(usuario_admin.senha_hash, senha):
+        if usuario_admin and safe_check_password_hash(usuario_admin.senha_hash, senha):
             # Login como administrador
             login_user(usuario_admin, remember=form.lembrar.data)
             session['user_type'] = 'admin'
@@ -58,7 +59,7 @@ def login():
             Respondente.ativo == True
         ).first()
         
-        if respondente and check_password_hash(respondente.senha_hash, senha):
+        if respondente and safe_check_password_hash(respondente.senha_hash, senha):
             # Login como respondente
             from datetime import datetime
             respondente.ultimo_acesso = datetime.now()
@@ -124,9 +125,9 @@ def perfil():
     try:
         # Processar alteração de senha
         if request.method == 'POST':
-            senha_atual = request.form.get('senha_atual', '').strip()
-            nova_senha = request.form.get('nova_senha', '').strip()
-            confirmar_nova_senha = request.form.get('confirmar_nova_senha', '').strip()
+            senha_atual = normalize_password(request.form.get('senha_atual', '').strip())
+            nova_senha = normalize_password(request.form.get('nova_senha', '').strip())
+            confirmar_nova_senha = normalize_password(request.form.get('confirmar_nova_senha', '').strip())
             
             # Validações
             if not senha_atual:
@@ -137,12 +138,12 @@ def perfil():
                 flash('Nova senha deve ter pelo menos 6 caracteres.', 'danger')
             elif nova_senha != confirmar_nova_senha:
                 flash('Confirmação de senha não confere.', 'danger')
-            elif not check_password_hash(current_user.senha_hash, senha_atual):
+            elif not safe_check_password_hash(current_user.senha_hash, senha_atual):
                 flash('Senha atual incorreta.', 'danger')
             else:
                 # Alterar senha
                 try:
-                    current_user.senha_hash = generate_password_hash(nova_senha)
+                    current_user.senha_hash = safe_generate_password_hash(nova_senha)
                     db.session.commit()
                     
                     # Registrar na auditoria

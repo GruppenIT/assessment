@@ -1,8 +1,8 @@
 #!/bin/bash
-# Script para aplicar correção do erro hasattr no perfil
+# Script para aplicar correção completa do perfil (hasattr + senhas especiais)
 
-echo "🔧 APLICANDO CORREÇÃO - ERRO HASATTR NO PERFIL"
-echo "============================================="
+echo "🔧 APLICANDO CORREÇÃO COMPLETA - PERFIL + SENHAS ESPECIAIS"
+echo "==========================================================="
 
 cd /var/www/assessment
 
