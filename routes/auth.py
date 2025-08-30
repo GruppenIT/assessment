@@ -95,7 +95,7 @@ def login():
             
             # Verificar se precisa trocar senha obrigatoriamente
             if respondente.forcar_troca_senha:
-                logout_user()  # Deslogar antes de forçar troca
+                # NÃO deslogar - manter sessão mas redirecionar para troca
                 session['pending_password_change_user_id'] = respondente.id
                 return redirect(url_for('auth.troca_senha_obrigatoria'))
             
@@ -156,8 +156,12 @@ def troca_senha_obrigatoria():
     # Verificar se há usuário pendente de troca de senha
     user_id = session.get('pending_password_change_user_id')
     if not user_id:
-        flash('Sessão expirada. Faça login novamente.', 'warning')
-        return redirect(url_for('auth.login'))
+        # Se não há usuário pendente, verificar se está logado
+        if current_user.is_authenticated and hasattr(current_user, 'forcar_troca_senha') and current_user.forcar_troca_senha:
+            user_id = current_user.id
+        else:
+            flash('Sessão expirada. Faça login novamente.', 'warning')
+            return redirect(url_for('auth.login'))
     
     respondente = Respondente.query.get_or_404(user_id)
     form = TrocaSenhaObrigatoriaForm()
@@ -172,9 +176,10 @@ def troca_senha_obrigatoria():
             # Limpar sessão pendente
             session.pop('pending_password_change_user_id', None)
             
-            # Fazer login automático
-            login_user(respondente)
-            session['user_type'] = 'respondente'
+            # Garantir que o usuário continue logado
+            if not current_user.is_authenticated:
+                login_user(respondente)
+                session['user_type'] = 'respondente'
             
             flash('Senha alterada com sucesso!', 'success')
             
