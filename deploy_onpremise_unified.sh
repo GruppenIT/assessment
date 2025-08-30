@@ -641,6 +641,12 @@ main() {
     # 11. Verificar deployment
     verify_deployment
     
+    # 12. Diagnóstico específico do perfil se necessário
+    if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/auth/perfil | grep -q "200\|302"; then
+        log "⚠️  Problema detectado na rota /auth/perfil, aplicando correção emergencial..."
+        bash -c "$(curl -s https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/fix_perfil_onpremise.sh)"
+    fi
+    
     log "✅ DEPLOY CONCLUÍDO COM SUCESSO!"
     
     echo ""
