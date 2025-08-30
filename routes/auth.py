@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from models.usuario import Usuario
 from models.respondente import Respondente
-from forms.auth_forms import LoginForm, AlterarSenhaForm
+from forms.auth_forms import LoginForm
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -121,37 +121,50 @@ def logout():
 @login_required
 def perfil():
     """Página de perfil do usuário com opção de alterar senha"""
-    form = AlterarSenhaForm()
     
-    if form.validate_on_submit():
-        # Verificar senha atual
-        if not check_password_hash(current_user.senha_hash, form.senha_atual.data):
+    # Processar alteração de senha
+    if request.method == 'POST':
+        senha_atual = request.form.get('senha_atual', '').strip()
+        nova_senha = request.form.get('nova_senha', '').strip()
+        confirmar_nova_senha = request.form.get('confirmar_nova_senha', '').strip()
+        
+        # Validações
+        if not senha_atual:
+            flash('Senha atual é obrigatória.', 'danger')
+        elif not nova_senha:
+            flash('Nova senha é obrigatória.', 'danger')
+        elif len(nova_senha) < 6:
+            flash('Nova senha deve ter pelo menos 6 caracteres.', 'danger')
+        elif nova_senha != confirmar_nova_senha:
+            flash('Confirmação de senha não confere.', 'danger')
+        elif not check_password_hash(current_user.senha_hash, senha_atual):
             flash('Senha atual incorreta.', 'danger')
-            return render_template('auth/perfil.html', usuario=current_user, form=form)
-        
-        # Alterar senha
-        current_user.senha_hash = generate_password_hash(form.nova_senha.data)
-        
-        try:
-            db.session.commit()
-            
-            # Registrar na auditoria
-            from models.auditoria import registrar_auditoria
-            usuario_tipo = 'admin' if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' else 'respondente'
-            registrar_auditoria(
-                acao='senha_alterada',
-                usuario_tipo=usuario_tipo,
-                usuario_id=current_user.id,
-                usuario_nome=current_user.nome,
-                detalhes='Senha alterada pelo próprio usuário',
-                ip_address=request.remote_addr
-            )
-            
-            flash('Senha alterada com sucesso!', 'success')
-            return redirect(url_for('auth.perfil'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash('Erro ao alterar senha. Tente novamente.', 'danger')
+        else:
+            # Alterar senha
+            try:
+                current_user.senha_hash = generate_password_hash(nova_senha)
+                db.session.commit()
+                
+                # Registrar na auditoria
+                try:
+                    from models.auditoria import registrar_auditoria
+                    usuario_tipo = 'admin' if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' else 'respondente'
+                    registrar_auditoria(
+                        acao='senha_alterada',
+                        usuario_tipo=usuario_tipo,
+                        usuario_id=current_user.id,
+                        usuario_nome=current_user.nome,
+                        detalhes='Senha alterada pelo próprio usuário',
+                        ip_address=request.remote_addr
+                    )
+                except:
+                    pass  # Continua mesmo se auditoria falhar
+                
+                flash('Senha alterada com sucesso!', 'success')
+                return redirect(url_for('auth.perfil'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash('Erro ao alterar senha. Tente novamente.', 'danger')
     
-    return render_template('auth/perfil.html', usuario=current_user, form=form)
+    return render_template('auth/perfil.html', usuario=current_user)

@@ -250,13 +250,12 @@ try:
     with open('routes/auth.py', 'r') as f:
         content = f.read()
     
-    # Adicionar import do AlterarSenhaForm se não existir
-    if 'AlterarSenhaForm' not in content:
-        content = re.sub(
-            r'from forms\.auth_forms import LoginForm',
-            'from forms.auth_forms import LoginForm, AlterarSenhaForm',
-            content
-        )
+    # Remover import do AlterarSenhaForm se existir (não é mais necessário)
+    content = re.sub(
+        r'from forms\.auth_forms import LoginForm, AlterarSenhaForm',
+        'from forms.auth_forms import LoginForm',
+        content
+    )
     
     # Corrigir problemas de None nos formulários
     content = re.sub(
@@ -272,46 +271,59 @@ try:
     )
     
     # Substituir função de perfil simples pela versão com alteração de senha
-    perfil_pattern = r'@auth_bp\.route\(\'/perfil\'\)\s*@login_required\s*def perfil\(\):[^@]+?return render_template\([^)]+\)'
+    perfil_pattern = r'@auth_bp\.route\(\'/perfil\'\).*?def perfil\(\):.*?return render_template\([^)]+\)'
     
     new_perfil_function = '''@auth_bp.route('/perfil', methods=['GET', 'POST'])
 @login_required
 def perfil():
     """Página de perfil do usuário com opção de alterar senha"""
-    form = AlterarSenhaForm()
     
-    if form.validate_on_submit():
-        # Verificar senha atual
-        if not check_password_hash(current_user.senha_hash, form.senha_atual.data):
+    # Processar alteração de senha
+    if request.method == 'POST':
+        senha_atual = request.form.get('senha_atual', '').strip()
+        nova_senha = request.form.get('nova_senha', '').strip()
+        confirmar_nova_senha = request.form.get('confirmar_nova_senha', '').strip()
+        
+        # Validações
+        if not senha_atual:
+            flash('Senha atual é obrigatória.', 'danger')
+        elif not nova_senha:
+            flash('Nova senha é obrigatória.', 'danger')
+        elif len(nova_senha) < 6:
+            flash('Nova senha deve ter pelo menos 6 caracteres.', 'danger')
+        elif nova_senha != confirmar_nova_senha:
+            flash('Confirmação de senha não confere.', 'danger')
+        elif not check_password_hash(current_user.senha_hash, senha_atual):
             flash('Senha atual incorreta.', 'danger')
-            return render_template('auth/perfil.html', usuario=current_user, form=form)
-        
-        # Alterar senha
-        current_user.senha_hash = generate_password_hash(form.nova_senha.data)
-        
-        try:
-            db.session.commit()
-            
-            # Registrar na auditoria
-            from models.auditoria import registrar_auditoria
-            usuario_tipo = 'admin' if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' else 'respondente'
-            registrar_auditoria(
-                acao='senha_alterada',
-                usuario_tipo=usuario_tipo,
-                usuario_id=current_user.id,
-                usuario_nome=current_user.nome,
-                detalhes='Senha alterada pelo próprio usuário',
-                ip_address=request.remote_addr
-            )
-            
-            flash('Senha alterada com sucesso!', 'success')
-            return redirect(url_for('auth.perfil'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash('Erro ao alterar senha. Tente novamente.', 'danger')
+        else:
+            # Alterar senha
+            try:
+                current_user.senha_hash = generate_password_hash(nova_senha)
+                db.session.commit()
+                
+                # Registrar na auditoria
+                try:
+                    from models.auditoria import registrar_auditoria
+                    usuario_tipo = 'admin' if hasattr(current_user, 'tipo') and current_user.tipo == 'admin' else 'respondente'
+                    registrar_auditoria(
+                        acao='senha_alterada',
+                        usuario_tipo=usuario_tipo,
+                        usuario_id=current_user.id,
+                        usuario_nome=current_user.nome,
+                        detalhes='Senha alterada pelo próprio usuário',
+                        ip_address=request.remote_addr
+                    )
+                except:
+                    pass  # Continua mesmo se auditoria falhar
+                
+                flash('Senha alterada com sucesso!', 'success')
+                return redirect(url_for('auth.perfil'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash('Erro ao alterar senha. Tente novamente.', 'danger')
     
-    return render_template('auth/perfil.html', usuario=current_user, form=form)'''
+    return render_template('auth/perfil.html', usuario=current_user)'''
     
     content = re.sub(perfil_pattern, new_perfil_function, content, flags=re.DOTALL)
     
@@ -324,30 +336,11 @@ except Exception as e:
     print(f"❌ Erro ao corrigir auth.py: {e}")
 EOF
 
-    # Adicionar AlterarSenhaForm ao forms/auth_forms.py se não existir
-    log "   📝 Verificando formulário de alteração de senha..."
-    if ! grep -q "AlterarSenhaForm" forms/auth_forms.py; then
-        cat >> forms/auth_forms.py << 'EOF'
-
-class AlterarSenhaForm(FlaskForm):
-    """Formulário para alterar senha"""
-    senha_atual = PasswordField('Senha Atual', validators=[
-        DataRequired(message='Senha atual é obrigatória')
-    ], render_kw={'placeholder': 'Digite sua senha atual'})
-    
-    nova_senha = PasswordField('Nova Senha', validators=[
-        DataRequired(message='Nova senha é obrigatória'),
-        Length(min=6, message='Nova senha deve ter pelo menos 6 caracteres')
-    ], render_kw={'placeholder': 'Digite a nova senha'})
-    
-    confirmar_nova_senha = PasswordField('Confirmar Nova Senha', validators=[
-        DataRequired(message='Confirmação de nova senha é obrigatória'),
-        EqualTo('nova_senha', message='As senhas devem ser iguais')
-    ], render_kw={'placeholder': 'Digite a nova senha novamente'})
-    
-    submit = SubmitField('Alterar Senha')
-EOF
-        log "   ✅ Formulário AlterarSenhaForm adicionado"
+    # Remover AlterarSenhaForm se existir (não é mais necessário)
+    log "   📝 Limpando formulários desnecessários..."
+    if grep -q "AlterarSenhaForm" forms/auth_forms.py; then
+        sed -i '/class AlterarSenhaForm/,/submit = SubmitField/d' forms/auth_forms.py
+        log "   ✅ AlterarSenhaForm removido (usando HTML puro)"
     fi
     
     # Remover rotas de auto-login se existirem
@@ -410,7 +403,7 @@ try:
         <div class="modal-dialog">
             <div class="modal-content">
                 <form method="POST" action="{{ url_for('auth.perfil') }}">
-                    {{ form.hidden_tag() }}
+
                     <div class="modal-header">
                         <h5 class="modal-title" id="alterarSenhaModalLabel">
                             <i class="fas fa-key me-2"></i>
@@ -420,27 +413,21 @@ try:
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            {{ form.senha_atual.label(class="form-label") }}
-                            {{ form.senha_atual(class="form-control") }}
-                            {% for error in form.senha_atual.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
+                            <label for="senha_atual" class="form-label">Senha Atual</label>
+                            <input type="password" class="form-control" id="senha_atual" name="senha_atual" 
+                                   placeholder="Digite sua senha atual" required>
                         </div>
                         
                         <div class="mb-3">
-                            {{ form.nova_senha.label(class="form-label") }}
-                            {{ form.nova_senha(class="form-control") }}
-                            {% for error in form.nova_senha.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
+                            <label for="nova_senha" class="form-label">Nova Senha</label>
+                            <input type="password" class="form-control" id="nova_senha" name="nova_senha" 
+                                   placeholder="Digite a nova senha" minlength="6" required>
                         </div>
                         
                         <div class="mb-3">
-                            {{ form.confirmar_nova_senha.label(class="form-label") }}
-                            {{ form.confirmar_nova_senha(class="form-control") }}
-                            {% for error in form.confirmar_nova_senha.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
+                            <label for="confirmar_nova_senha" class="form-label">Confirmar Nova Senha</label>
+                            <input type="password" class="form-control" id="confirmar_nova_senha" name="confirmar_nova_senha" 
+                                   placeholder="Digite a nova senha novamente" minlength="6" required>
                         </div>
                         
                         <div class="alert alert-info">
@@ -453,7 +440,10 @@ try:
                             <i class="fas fa-times me-2"></i>
                             Cancelar
                         </button>
-                        {{ form.submit(class="btn btn-primary") }}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-key me-2"></i>
+                            Alterar Senha
+                        </button>
                     </div>
                 </form>
             </div>
