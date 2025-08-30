@@ -1,0 +1,101 @@
+root@vlxweb12:~# curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/verificar_logs_sistema.sh | sudo bash
+📋 VERIFICANDO LOGS DO SISTEMA
+===============================
+1. 🔧 LOGS DO SUPERVISOR:
+   Últimas 20 linhas dos logs do assessment:
+   📄 supervisord.log (últimas 10 linhas):
+2025-08-30 20:23:11,269 INFO Included extra file "/etc/supervisor/conf.d/assessment.conf" during parsing
+2025-08-30 20:23:11,275 INFO RPC interface 'supervisor' initialized
+2025-08-30 20:23:11,275 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2025-08-30 20:23:11,276 INFO supervisord started with pid 1299
+2025-08-30 20:23:12,282 INFO spawned: 'assessment' with pid 1469
+2025-08-30 20:23:13,488 INFO success: assessment entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-08-30 20:33:19,282 INFO waiting for assessment to stop
+2025-08-30 20:33:19,598 INFO stopped: assessment (exit status 0)
+2025-08-30 20:33:22,922 INFO spawned: 'assessment' with pid 2075
+2025-08-30 20:33:23,941 INFO success: assessment entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+
+2. ⚙️ STATUS DO SUPERVISOR:
+assessment                       RUNNING   pid 2075, uptime 0:07:38
+
+3. 🐍 PROCESSOS PYTHON:
+root        1299  0.0  0.3  38360 28728 ?        Ss   20:23   0:00 /usr/bin/python3 /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+root        1320  0.0  0.2 109692 22784 ?        Ssl  20:23   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+www-data    2075  0.0  0.3  33928 24764 ?        S    20:33   0:00 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+www-data    2076  0.6  1.2 219836 104120 ?       Sl   20:33   0:02 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+www-data    2077  0.6  1.2 216164 100824 ?       Sl   20:33   0:02 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+www-data    2078  0.6  1.2 216312 101172 ?       Sl   20:33   0:02 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+postgres    2080  0.0  0.2 225684 18228 ?        Ss   20:33   0:00 postgres: 16/main: assessment_user assessment_db 127.0.0.1(44774) idle
+postgres    2081  0.0  0.2 225684 18228 ?        Ss   20:33   0:00 postgres: 16/main: assessment_user assessment_db 127.0.0.1(44782) idle
+postgres    2082  0.0  0.2 225684 18612 ?        Ss   20:33   0:00 postgres: 16/main: assessment_user assessment_db 127.0.0.1(44798) idle
+postgres    2083  0.0  0.2 225684 20916 ?        Ss   20:33   0:00 postgres: 16/main: assessment_user assessment_db 127.0.0.1(44812) idle
+postgres    2085  0.0  0.2 225684 19636 ?        Ss   20:33   0:00 postgres: 16/main: assessment_user assessment_db 127.0.0.1(44824) idle
+postgres    2169  0.0  0.2 225056 18484 ?        Ss   20:40   0:00 postgres: 16/main: assessment_user assessment_db 127.0.0.1(34424) idle
+
+4. 🌐 VERIFICAR PORTA 8000:
+tcp        0      0 0.0.0.0:8000            0.0.0.0:*               LISTEN      2075/python3
+
+5. 🔌 TESTE DE CONECTIVIDADE:
+   HTTP Response: 200
+   ✅ Aplicação respondendo
+
+6. ⚙️ CONFIGURAÇÃO DO SUPERVISOR:
+   📄 /etc/supervisor/conf.d/assessment.conf:
+[program:assessment]
+directory=/var/www/assessment
+command=/var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/assessment_error.log
+stdout_logfile=/var/log/assessment.log
+user=www-data
+environment=PATH="/var/www/assessment/venv/bin"
+
+7. 🔐 VARIÁVEIS DE AMBIENTE (resumo):
+   ✅ Arquivo .env existe
+   📊 Variáveis definidas:
+DATABASE_URL
+FLASK_ENV
+FLASK_SECRET_KEY
+SESSION_SECRET
+TZ
+
+8. 🔐 VERIFICAR PERMISSÕES:
+total 696
+drwxr-xr-x 14 www-data www-data  4096 Aug 30 20:33 .
+drwxr-xr-x  6 root     root      4096 Aug 30 18:04 ..
+-rwxr-xr-x  1 www-data www-data  5812 Aug 30 20:33 aplicar_2fa_sistema.sh
+-rwxr-xr-x  1 www-data www-data  9118 Aug 30 20:33 aplicar_correcao_perfil.sh
+-rwxr-xr-x  1 www-data www-data  6980 Aug 30 20:33 aplicar_correcao_senha_especial.sh
+-rwxr-xr-x  1 www-data www-data  2051 Aug 30 20:33 aplicar_correcao_supervisor.sh
+-rwxr-xr-x  1 www-data www-data 11885 Aug 30 20:33 aplicar_seguranca_completa.py
+-rwxr-xr-x  1 www-data www-data  5569 Aug 30 20:33 aplicar_troca_senha_obrigatoria.sh
+-rwxr-xr-x  1 www-data www-data 12688 Aug 30 20:33 app.py
+
+9. 💾 ESPAÇO EM DISCO:
+Filesystem                         Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-ubuntu--lv   97G   12G   80G  13% /
+
+10. 🧪 TESTE DE IMPORTAÇÃO PYTHON:
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+✅ app importado com sucesso
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+✅ app criado com sucesso
+
+===============================
+📋 VERIFICAÇÃO DE LOGS CONCLUÍDA
+
+📞 PRÓXIMOS PASSOS:
+   1. Analise os logs acima
+   2. Execute: sudo python3 /var/www/assessment/diagnostico_erro_deploy.py
+   3. Se necessário, execute: supervisorctl restart assessment
+root@vlxweb12:~#
