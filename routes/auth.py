@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import check_password_hash
-import logging
+from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from models.usuario import Usuario
 from models.respondente import Respondente
@@ -94,10 +93,6 @@ def login():
             
             flash('Login realizado com sucesso!', 'success')
             
-            # Verificar se precisa trocar senha obrigatoriamente
-            if hasattr(respondente, 'forcar_troca_senha') and respondente.forcar_troca_senha:
-                return redirect(url_for('auth.troca_senha_obrigatoria'))
-            
             # Verificar se precisa de 2FA
             fa_required = check_2fa_required()
             if fa_required == 'setup':
@@ -145,52 +140,6 @@ def logout():
     return redirect(url_for('auth.login'))
 
 # Rota de auto-login removida por segurança
-
-@auth_bp.route('/troca-senha-obrigatoria', methods=['GET', 'POST'])
-@login_required
-def troca_senha_obrigatoria():
-    """Troca obrigatória de senha solicitada pelo administrador"""
-    from forms.troca_senha_forms import TrocaSenhaObrigatoriaForm
-    
-    # Verificar se realmente precisa trocar senha
-    if not (hasattr(current_user, 'forcar_troca_senha') and current_user.forcar_troca_senha):
-        flash('Você não possui solicitação de troca de senha pendente.', 'info')
-        if hasattr(current_user, 'cliente_id'):
-            return redirect(url_for('respondente.dashboard'))
-        else:
-            return redirect(url_for('admin.dashboard'))
-    
-    form = TrocaSenhaObrigatoriaForm()
-    
-    if form.validate_on_submit():
-        try:
-            # Atualizar a senha
-            current_user.set_password(form.nova_senha.data)
-            # Desmarcar a flag de troca obrigatória
-            current_user.forcar_troca_senha = False
-            db.session.commit()
-            
-            flash('Senha alterada com sucesso!', 'success')
-            
-            # Verificar se precisa de 2FA após troca de senha
-            fa_required = check_2fa_required()
-            if fa_required == 'setup':
-                return redirect(url_for('auth.setup_2fa'))
-            elif fa_required == 'verify':
-                return redirect(url_for('auth.verify_2fa'))
-            
-            # Redirecionar para dashboard apropriado
-            if hasattr(current_user, 'cliente_id'):
-                return redirect(url_for('respondente.dashboard'))
-            else:
-                return redirect(url_for('admin.dashboard'))
-                
-        except Exception as e:
-            db.session.rollback()
-            flash('Erro ao alterar senha. Tente novamente.', 'danger')
-            logging.error(f"Erro ao alterar senha obrigatória: {e}")
-    
-    return render_template('auth/troca_senha_obrigatoria.html', form=form)
 
 @auth_bp.route('/setup-2fa', methods=['GET', 'POST'])
 @login_required
@@ -275,7 +224,7 @@ def verify_2fa():
         token = form.token.data
         
         # Verificar se é código de backup (8 dígitos)
-        if token and len(token) == 8:
+        if len(token) == 8:
             if config.use_backup_code(token):
                 db.session.commit()
                 mark_2fa_verified()
@@ -306,7 +255,7 @@ def verify_2fa():
                 flash('Código de backup inválido ou já utilizado.', 'danger')
         
         # Verificar código TOTP (6 dígitos)
-        elif token and config.verify_token(token):
+        elif config.verify_token(token):
             db.session.commit()
             mark_2fa_verified()
             

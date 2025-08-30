@@ -35,7 +35,6 @@ def dashboard():
     import pytz
     
     try:
-        print(f"🔍 DEBUG DASHBOARD: Usuário logado: {current_user.nome if current_user else 'None'}")
         # Obter fuso horário configurado
         fuso_horario = Configuracao.get_fuso_horario() or 'America/Sao_Paulo'
         tz = pytz.timezone(fuso_horario)
@@ -290,9 +289,7 @@ def dashboard():
                              
     except Exception as e:
         import logging
-        import traceback
         logging.error(f"Erro no dashboard: {e}")
-        traceback.print_exc()
         flash('Erro ao carregar dashboard. Tente novamente.', 'danger')
         # Retornar dados básicos em caso de erro
         stats = {
@@ -514,7 +511,6 @@ def editar_respondente(respondente_id):
             respondente.cargo = form.cargo.data
             respondente.setor = form.setor.data
             respondente.ativo = form.ativo.data
-            respondente.forcar_troca_senha = form.forcar_troca_senha.data
             
             # Atualizar senha se fornecida
             if form.senha.data:
