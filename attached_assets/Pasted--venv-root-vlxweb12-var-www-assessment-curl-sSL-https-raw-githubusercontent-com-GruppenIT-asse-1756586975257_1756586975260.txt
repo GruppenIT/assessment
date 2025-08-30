@@ -1,0 +1,156 @@
+(venv) root@vlxweb12:/var/www/assessment# curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/verificar_erro_aplicacao.sh | sudo bash
+🔍 INVESTIGANDO ERRO REAL DA APLICAÇÃO
+======================================
+1. 📋 LOGS DE ERRO RECENTES:
+
+   📄 /var/log/assessment_error.log (últimas 30 linhas):
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+           ^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1637, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2351, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+
+[SQL: SELECT configuracoes.id AS configuracoes_id, configuracoes.chave AS configuracoes_chave, configuracoes.valor AS configuracoes_valor, configuracoes.descricao AS configuracoes_descricao, configuracoes.tipo AS configuracoes_tipo, configuracoes.data_criacao AS configuracoes_data_criacao, configuracoes.data_atualizacao AS configuracoes_data_atualizacao
+FROM configuracoes
+WHERE configuracoes.chave = %(chave_1)s
+ LIMIT %(param_1)s]
+[parameters: {'chave_1': 'logo_sistema', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/2j85)
+
+   📄 /var/log/assessment.log (últimas 20 linhas):
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+ENV_LOADER: Carregadas variáveis de .env
+
+2. 🔥 GERANDO ERRO PARA CAPTURAR LOG:
+
+   Fazendo login como admin@sistema.com...
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:8000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:8000...
+* connect to ::1 port 8000 from ::1 port 58562 failed: Connection refused
+*   Trying 127.0.0.1:8000...
+* Connected to localhost (127.0.0.1) port 8000
+> POST /auth/login HTTP/1.1
+> Host: localhost:8000
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Content-Type: application/x-www-form-urlencoded
+> Content-Length: 54
+>
+} [54 bytes data]
+< HTTP/1.1 200 OK
+< Server: gunicorn
+
+   Aguardando logs de erro...
+
+3. 📋 LOGS APÓS TENTATIVA DE LOGIN:
+   📄 Novos erros:
+sqlalchemy.exc.InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+
+[SQL: SELECT configuracoes.id AS configuracoes_id, configuracoes.chave AS configuracoes_chave, configuracoes.valor AS configuracoes_valor, configuracoes.descricao AS configuracoes_descricao, configuracoes.tipo AS configuracoes_tipo, configuracoes.data_criacao AS configuracoes_data_criacao, configuracoes.data_atualizacao AS configuracoes_data_atualizacao
+FROM configuracoes
+WHERE configuracoes.chave = %(chave_1)s
+ LIMIT %(param_1)s]
+[parameters: {'chave_1': 'logo_sistema', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/2j85)
+INFO:flask_wtf.csrf:The CSRF token is invalid.
+DEBUG:root:Logo path encontrado: logos/715b568be35740378f03d145aa7e0bf2.png
+
+4. 🧪 TESTE ESPECÍFICO DA NOVA FUNCIONALIDADE:
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+✅ App criado com sucesso
+✅ ResponenteForm importado
+❌ Erro: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+Traceback (most recent call last):
+  File "<stdin>", line 16, in <module>
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 209, in __call__
+    return type.__call__(cls, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/flask_wtf/form.py", line 73, in __init__
+    super().__init__(formdata=formdata, **kwargs)
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 287, in __init__
+    self.process(formdata, obj, data=data, **kwargs)
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 128, in process
+    field.process(formdata, data, extra_filters=field_extra_filters)
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/csrf/core.py", line 44, in process
+    self.current_token = self.csrf_impl.generate_csrf_token(self)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/flask_wtf/csrf.py", line 147, in generate_csrf_token
+    return generate_csrf(
+           ^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/flask_wtf/csrf.py", line 52, in generate_csrf
+    if field_name not in session:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/werkzeug/local.py", line 318, in __get__
+    obj = instance._get_current_object()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/werkzeug/local.py", line 519, in _get_current_object
+    raise RuntimeError(unbound_message) from None
+RuntimeError: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+
+======================================
+🔍 INVESTIGAÇÃO CONCLUÍDA
+
+📞 PRÓXIMOS PASSOS:
+   1. Analise os logs de erro acima
+   2. Identifique a linha específica do erro
+   3. Verifique se há conflito de importação
+(venv) root@vlxweb12:/var/www/assessment#
