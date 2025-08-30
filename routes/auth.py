@@ -93,6 +93,12 @@ def login():
             
             flash('Login realizado com sucesso!', 'success')
             
+            # Verificar se precisa trocar senha obrigatoriamente
+            if respondente.forcar_troca_senha:
+                logout_user()  # Deslogar antes de forçar troca
+                session['pending_password_change_user_id'] = respondente.id
+                return redirect(url_for('auth.troca_senha_obrigatoria'))
+            
             # Verificar se precisa de 2FA
             fa_required = check_2fa_required()
             if fa_required == 'setup':
@@ -140,6 +146,53 @@ def logout():
     return redirect(url_for('auth.login'))
 
 # Rota de auto-login removida por segurança
+
+@auth_bp.route('/troca-senha-obrigatoria', methods=['GET', 'POST'])
+def troca_senha_obrigatoria():
+    """Troca obrigatória de senha para respondentes"""
+    from forms.troca_senha_forms import TrocaSenhaObrigatoriaForm
+    from models.respondente import Respondente
+    
+    # Verificar se há usuário pendente de troca de senha
+    user_id = session.get('pending_password_change_user_id')
+    if not user_id:
+        flash('Sessão expirada. Faça login novamente.', 'warning')
+        return redirect(url_for('auth.login'))
+    
+    respondente = Respondente.query.get_or_404(user_id)
+    form = TrocaSenhaObrigatoriaForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Atualizar senha
+            respondente.set_password(form.nova_senha.data)
+            respondente.forcar_troca_senha = False  # Desmarcar flag
+            db.session.commit()
+            
+            # Limpar sessão pendente
+            session.pop('pending_password_change_user_id', None)
+            
+            # Fazer login automático
+            login_user(respondente)
+            session['user_type'] = 'respondente'
+            
+            flash('Senha alterada com sucesso!', 'success')
+            
+            # Verificar se precisa de 2FA
+            fa_required = check_2fa_required()
+            if fa_required == 'setup':
+                return redirect(url_for('auth.setup_2fa'))
+            elif fa_required == 'verify':
+                return redirect(url_for('auth.verify_2fa'))
+            
+            return redirect(url_for('respondente.dashboard'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao alterar senha. Tente novamente.', 'danger')
+            logging.error(f"Erro ao alterar senha obrigatória: {e}")
+    
+    return render_template('auth/troca_senha_obrigatoria.html', form=form)
 
 @auth_bp.route('/setup-2fa', methods=['GET', 'POST'])
 @login_required

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Troca de Senha Obrigatória - Sistema de Avaliações{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-key me-2"></i>
+                        Troca de Senha Obrigatória
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção!</strong> Você deve alterar sua senha antes de continuar.
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-shield fa-3x text-warning mb-3"></i>
+                        <p class="text-muted">
+                            Olá, <strong>{{ current_user.nome }}</strong>!<br>
+                            O administrador solicitou que você altere sua senha.
+                        </p>
+                    </div>
+                    
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.nova_senha.label(class="form-label") }}
+                            {{ form.nova_senha(class="form-control") }}
+                            {% if form.nova_senha.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.nova_senha.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.confirmar_senha.label(class="form-label") }}
+                            {{ form.confirmar_senha(class="form-control") }}
+                            {% if form.confirmar_senha.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.confirmar_senha.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Requisitos da senha:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Mínimo de 6 caracteres</li>
+                                <li>Use uma senha segura e fácil de lembrar</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-warning btn-lg") }}
+                        </div>
+                    </form>
+                    
+                </div>
+                
+                <div class="card-footer text-muted text-center">
+                    <small>
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Após alterar a senha, você poderá acessar o sistema normalmente
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-focus no primeiro campo
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('nova_senha').focus();
+});
+
+// Validação em tempo real
+document.getElementById('nova_senha').addEventListener('input', function(e) {
+    const senha = e.target.value;
+    const feedback = document.createElement('div');
+    
+    if (senha.length < 6) {
+        e.target.classList.add('is-invalid');
+        e.target.classList.remove('is-valid');
+    } else {
+        e.target.classList.add('is-valid');
+        e.target.classList.remove('is-invalid');
+    }
+});
+
+document.getElementById('confirmar_senha').addEventListener('input', function(e) {
+    const senha = document.getElementById('nova_senha').value;
+    const confirmacao = e.target.value;
+    
+    if (confirmacao !== senha) {
+        e.target.classList.add('is-invalid');
+        e.target.classList.remove('is-valid');
+    } else {
+        e.target.classList.add('is-valid');
+        e.target.classList.remove('is-invalid');
+    }
+});
+</script>
+{% endblock %}

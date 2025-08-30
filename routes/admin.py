@@ -471,7 +471,8 @@ def criar_respondente(cliente_id):
                 cargo=form.cargo.data,
                 setor=form.setor.data,
                 cliente_id=cliente_id,
-                ativo=form.ativo.data
+                ativo=form.ativo.data,
+                forcar_troca_senha=form.forcar_troca_senha.data
             )
             
             # Hash da senha
@@ -511,6 +512,7 @@ def editar_respondente(respondente_id):
             respondente.cargo = form.cargo.data
             respondente.setor = form.setor.data
             respondente.ativo = form.ativo.data
+            respondente.forcar_troca_senha = form.forcar_troca_senha.data
             
             # Atualizar senha se fornecida
             if form.senha.data:

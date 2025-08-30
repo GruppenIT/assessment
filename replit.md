@@ -47,6 +47,7 @@ Preferred communication style: Simple, everyday language.
 - **Profile Page Corrections**: Fixed 'hasattr' undefined error by replacing with getattr and Jinja2 'is defined' checks. Implemented complete password change functionality with validation, audit logging, and error handling. Created `aplicar_correcao_perfil.sh` for quick deployment of profile fixes.
 - **Password Encoding Security**: Fixed login issues with special characters (@, #, !, etc.) by implementing `utils/password_utils.py` with UTF-8 normalization and robust password verification. Created `aplicar_correcao_senha_especial.sh` for deployment.
 - **Two-Factor Authentication (2FA)**: Complete TOTP implementation with QR code setup, backup codes, user self-reset, and admin reset capabilities. Mandatory for respondents, optional for admins. Includes comprehensive audit trail and session management.
+- **Mandatory Password Change**: Administrators can force respondents to change passwords on next login via checkbox in respondent editing. After login and 2FA verification, users are redirected to mandatory password change page. Flag is automatically cleared after successful password update.
 
 ## External Dependencies
 

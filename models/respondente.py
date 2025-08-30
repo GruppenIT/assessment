@@ -17,6 +17,7 @@ class Respondente(UserMixin, db.Model):
     cargo = db.Column(db.String(100), comment='Cargo do respondente')
     setor = db.Column(db.String(100), comment='Setor/departamento')
     ativo = db.Column(db.Boolean, default=True, comment='Se o respondente está ativo')
+    forcar_troca_senha = db.Column(db.Boolean, default=False, nullable=False, comment='Forçar troca de senha no próximo login')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')
     ultimo_acesso = db.Column(db.DateTime, comment='Último acesso do respondente')
     data_conclusao = db.Column(db.DateTime, comment='Data de conclusão do assessment')
