@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash
+import logging
 from app import db
 from models.usuario import Usuario
 from models.respondente import Respondente
@@ -274,7 +275,7 @@ def verify_2fa():
         token = form.token.data
         
         # Verificar se é código de backup (8 dígitos)
-        if len(token) == 8:
+        if token and len(token) == 8:
             if config.use_backup_code(token):
                 db.session.commit()
                 mark_2fa_verified()
@@ -305,7 +306,7 @@ def verify_2fa():
                 flash('Código de backup inválido ou já utilizado.', 'danger')
         
         # Verificar código TOTP (6 dígitos)
-        elif config.verify_token(token):
+        elif token and config.verify_token(token):
             db.session.commit()
             mark_2fa_verified()
             
