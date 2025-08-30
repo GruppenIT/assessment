@@ -1,0 +1,116 @@
+root@vlxweb12:~# cd /var/www/assessment && source venv/bin/activate && curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/diagnostico_erro_deploy.py | python3
+🔍 DIAGNÓSTICO DE ERRO PÓS-DEPLOY
+==================================================
+📅 Data/Hora: 2025-08-30 20:42:19
+
+1. 📦 VERIFICANDO IMPORTAÇÕES...
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+   ✅ app importado
+   ✅ models.usuario importado
+   ✅ models.respondente importado
+   ✅ forms.cliente_forms importado
+   ❌ Erro de importação: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+   📋 Traceback: Traceback (most recent call last):
+  File "<stdin>", line 38, in diagnosticar_erro
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 209, in __call__
+    return type.__call__(cls, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/flask_wtf/form.py", line 73, in __init__
+    super().__init__(formdata=formdata, **kwargs)
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 281, in __init__
+    super().__init__(self._unbound_fields, meta=meta_obj, prefix=prefix)
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 40, in __init__
+    translations = self.meta.get_translations(self)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/flask_wtf/form.py", line 67, in get_translations
+    if not current_app.config.get("WTF_I18N_ENABLED", True):
+           ^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/werkzeug/local.py", line 318, in __get__
+    obj = instance._get_current_object()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/werkzeug/local.py", line 519, in _get_current_object
+    raise RuntimeError(unbound_message) from None
+RuntimeError: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+
+(venv) root@vlxweb12:/var/www/assessment# curl -I http://localhost:8000/auth/login
+HTTP/1.1 200 OK
+Server: gunicorn
+Date: Sat, 30 Aug 2025 20:42:35 GMT
+Connection: close
+Content-Type: text/html; charset=utf-8
+Content-Length: 7971
+Vary: Cookie
+Set-Cookie: session=eyJjc3JmX3Rva2VuIjoiOWJlNzYyODI1MmY2OTViYTQwOWYzZWRjNDFhYWI3YmI0MzQyY2IxYSJ9.aLNiOw.pw1QMZEvbw0PowmBiTZpFRwdViA; HttpOnly; Path=/
+
+(venv) root@vlxweb12:/var/www/assessment# curl -I http://localhost:8000/admin/dashboard
+HTTP/1.1 302 FOUND
+Server: gunicorn
+Date: Sat, 30 Aug 2025 20:42:42 GMT
+Connection: close
+Content-Type: text/html; charset=utf-8
+Content-Length: 295
+Location: /auth/login?next=http://localhost:8000/admin/dashboard
+Vary: Cookie
+Set-Cookie: session=eyJfZmxhc2hlcyI6W3siIHQiOlsid2FybmluZyIsIkFjZXNzbyByZXN0cml0by4gUG9yIGZhdm9yLCBmYVx1MDBlN2EgbG9naW4uIl19XX0.aLNiQg.-a-bPeJVQMPthTUS0Zja7nO7GIw; HttpOnly; Path=/
+
+(venv) root@vlxweb12:/var/www/assessment# cd /var/www/assessment && source venv/bin/activate && curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/diagnostico_erro_deploy.py | python3
+🔍 DIAGNÓSTICO DE ERRO PÓS-DEPLOY
+==================================================
+📅 Data/Hora: 2025-08-30 20:42:54
+
+1. 📦 VERIFICANDO IMPORTAÇÕES...
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+   ✅ app importado
+   ✅ models.usuario importado
+   ✅ models.respondente importado
+   ✅ forms.cliente_forms importado
+   ❌ Erro de importação: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+   📋 Traceback: Traceback (most recent call last):
+  File "<stdin>", line 38, in diagnosticar_erro
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 209, in __call__
+    return type.__call__(cls, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/flask_wtf/form.py", line 73, in __init__
+    super().__init__(formdata=formdata, **kwargs)
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 281, in __init__
+    super().__init__(self._unbound_fields, meta=meta_obj, prefix=prefix)
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/wtforms/form.py", line 40, in __init__
+    translations = self.meta.get_translations(self)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/flask_wtf/form.py", line 67, in get_translations
+    if not current_app.config.get("WTF_I18N_ENABLED", True):
+           ^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/werkzeug/local.py", line 318, in __get__
+    obj = instance._get_current_object()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/werkzeug/local.py", line 519, in _get_current_object
+    raise RuntimeError(unbound_message) from None
+RuntimeError: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+
+(venv) root@vlxweb12:/var/www/assessment#
