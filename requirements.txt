@@ -31,3 +31,7 @@ openai
 cryptography
 matplotlib
 numpy
+pillow
+pyotp
+qrcode
+requests

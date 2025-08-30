@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Configurar 2FA - Sistema de Avaliações{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Configurar Autenticação de Dois Fatores (2FA)
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Aviso importante -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Primeira vez?</strong> Configure seu aplicativo autenticador primeiro.
+                        {% if current_user.cliente_id %}
+                        <br><small>Para respondentes, o 2FA é <strong>obrigatório</strong> por questões de segurança.</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <!-- QR Code -->
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-qrcode me-2"></i>1. Escaneie o QR Code</h5>
+                            <div class="text-center mb-3">
+                                <img src="{{ qr_code }}" alt="QR Code para 2FA" 
+                                     class="img-fluid border p-3 bg-light rounded" 
+                                     style="max-width: 250px;">
+                            </div>
+                            
+                            <div class="alert alert-secondary">
+                                <small>
+                                    <strong>Aplicativos recomendados:</strong><br>
+                                    • Google Authenticator<br>
+                                    • Microsoft Authenticator<br>
+                                    • Authy<br>
+                                    • 1Password
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Formulário de ativação -->
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-mobile-alt me-2"></i>2. Digite o código de 6 dígitos</h5>
+                            
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="mb-3">
+                                    {{ form.token.label(class="form-label") }}
+                                    {{ form.token(class="form-control text-center", style="font-size: 1.5em; letter-spacing: 0.5em;") }}
+                                    {% if form.token.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.token.errors %}
+                                                <small>{{ error }}</small><br>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Digite o código de 6 dígitos do seu aplicativo
+                                    </small>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Códigos de backup -->
+                    <hr class="my-4">
+                    
+                    <h5><i class="fas fa-key me-2"></i>3. Códigos de Backup</h5>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Importante:</strong> Guarde estes códigos em local seguro. 
+                        Use-os caso perca acesso ao seu aplicativo autenticador.
+                    </div>
+                    
+                    <div class="row">
+                        {% for code in backup_codes %}
+                            <div class="col-md-4 col-sm-6 mb-2">
+                                <code class="d-block p-2 bg-light text-dark border rounded text-center">
+                                    {{ code }}
+                                </code>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="printBackupCodes()">
+                            <i class="fas fa-print me-2"></i>Imprimir Códigos
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm ms-2" onclick="copyBackupCodes()">
+                            <i class="fas fa-copy me-2"></i>Copiar Códigos
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card-footer text-muted">
+                    <small>
+                        <i class="fas fa-lock me-2"></i>
+                        O 2FA adiciona uma camada extra de segurança à sua conta
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function printBackupCodes() {
+    var codes = [];
+    {% for code in backup_codes %}
+    codes.push("{{ code }}");
+    {% endfor %}
+    
+    var printContent = "CÓDIGOS DE BACKUP - SISTEMA DE AVALIAÇÕES\\n";
+    printContent += "Usuário: {{ current_user.nome }} ({{ current_user.email }})\\n";
+    printContent += "Data: " + new Date().toLocaleDateString('pt-BR') + "\\n\\n";
+    printContent += "GUARDE ESTES CÓDIGOS EM LOCAL SEGURO:\\n\\n";
+    
+    codes.forEach(function(code, index) {
+        printContent += (index + 1) + ". " + code + "\\n";
+    });
+    
+    printContent += "\\nCada código pode ser usado apenas uma vez.";
+    
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write('<pre>' + printContent + '</pre>');
+    printWindow.print();
+    printWindow.close();
+}
+
+function copyBackupCodes() {
+    var codes = [];
+    {% for code in backup_codes %}
+    codes.push("{{ code }}");
+    {% endfor %}
+    
+    var textToCopy = "Códigos de Backup - {{ current_user.nome }}\\n" + codes.join("\\n");
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(textToCopy).then(function() {
+            alert('Códigos copiados para a área de transferência!');
+        });
+    } else {
+        // Fallback para navegadores mais antigos
+        var textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Códigos copiados para a área de transferência!');
+    }
+}
+
+// Auto-focus no campo de token
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('token').focus();
+});
+</script>
+{% endblock %}

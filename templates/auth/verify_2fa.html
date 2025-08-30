@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Verificar 2FA - Sistema de Avaliações{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Verificação 2FA
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <div class="text-center mb-4">
+                        <i class="fas fa-mobile-alt fa-3x text-warning mb-3"></i>
+                        <p class="text-muted">
+                            Digite o código do seu aplicativo autenticador
+                        </p>
+                    </div>
+                    
+                    <form method="POST" id="verify2faForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.token.label(class="form-label") }}
+                            {{ form.token(class="form-control text-center", style="font-size: 1.8em; letter-spacing: 0.5em;") }}
+                            {% if form.token.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.token.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2 mb-3">
+                            {{ form.submit(class="btn btn-warning btn-lg") }}
+                        </div>
+                    </form>
+                    
+                    <!-- Botão para usar código de backup -->
+                    <div class="text-center">
+                        <button class="btn btn-link btn-sm" onclick="showBackupForm()" id="showBackupBtn">
+                            <i class="fas fa-key me-2"></i>
+                            Usar código de backup
+                        </button>
+                    </div>
+                    
+                    <!-- Formulário de código de backup (oculto inicialmente) -->
+                    <div id="backupForm" style="display: none;">
+                        <hr>
+                        <h6 class="text-center">Código de Backup</h6>
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+                            <input type="hidden" name="use_backup" value="true">
+                            
+                            <div class="mb-3">
+                                <label for="backup_code" class="form-label">Código de 8 dígitos</label>
+                                <input type="text" 
+                                       id="backup_code" 
+                                       name="token"
+                                       class="form-control text-center" 
+                                       style="font-size: 1.5em; letter-spacing: 0.3em;"
+                                       placeholder="12345678"
+                                       maxlength="8"
+                                       pattern="[0-9]{8}">
+                                <small class="form-text text-muted">
+                                    Use um dos códigos de backup salvos
+                                </small>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-secondary">
+                                    <i class="fas fa-key me-2"></i>
+                                    Usar Código de Backup
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="text-center mt-2">
+                            <button class="btn btn-link btn-sm" onclick="hideBackupForm()">
+                                Voltar ao código normal
+                            </button>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer text-muted text-center">
+                    <small>
+                        <i class="fas fa-clock me-2"></i>
+                        Códigos são válidos por 30 segundos
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showBackupForm() {
+    document.getElementById('backupForm').style.display = 'block';
+    document.getElementById('showBackupBtn').style.display = 'none';
+    document.getElementById('backup_code').focus();
+}
+
+function hideBackupForm() {
+    document.getElementById('backupForm').style.display = 'none';
+    document.getElementById('showBackupBtn').style.display = 'block';
+    document.getElementById('token').focus();
+}
+
+// Auto-focus no campo de token
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('token').focus();
+    
+    // Atualizar automaticamente a página a cada 30 segundos para sincronizar com o servidor
+    setInterval(function() {
+        // Apenas se não há input no campo (para não atrapalhar o usuário digitando)
+        if (document.getElementById('token').value === '') {
+            // location.reload(); // Descomentir se quiser auto-refresh
+        }
+    }, 30000);
+});
+
+// Permitir apenas números nos campos
+document.getElementById('token').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+});
+
+// Submeter automaticamente quando digitar 6 dígitos
+document.getElementById('token').addEventListener('input', function(e) {
+    if (e.target.value.length === 6) {
+        setTimeout(function() {
+            document.getElementById('verify2faForm').submit();
+        }, 500);
+    }
+});
+</script>
+{% endblock %}

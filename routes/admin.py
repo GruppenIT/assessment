@@ -17,6 +17,7 @@ from forms.admin_forms import DominioForm, PerguntaForm, LogoForm
 from forms.cliente_forms import ClienteForm, ResponenteForm, TipoAssessmentForm, ImportacaoCSVForm
 from forms.configuracao_forms import ConfiguracaoForm
 from utils.auth_utils import admin_required
+from utils.two_factor_utils import reset_user_2fa, get_user_2fa_config
 from utils.upload_utils import allowed_file, save_uploaded_file
 from utils.csv_utils import processar_csv_importacao, gerar_template_csv
 
@@ -545,3 +546,39 @@ def excluir_respondente(respondente_id):
         logging.error(f"Erro ao excluir respondente: {e}")
     
     return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+
+@admin_bp.route('/reset-respondente-2fa/<int:respondente_id>', methods=['POST'])
+@admin_required
+def reset_respondente_2fa(respondente_id):
+    """Reset do 2FA de um respondente por parte do administrador"""
+    from models.auditoria import registrar_auditoria
+    
+    respondente = Respondente.query.get_or_404(respondente_id)
+    
+    # Obter configuração 2FA do respondente
+    config_2fa = get_user_2fa_config(respondente)
+    
+    if not config_2fa or not config_2fa.is_active:
+        flash('Respondente não possui 2FA ativo.', 'warning')
+        return redirect(url_for('admin.clientes'))
+    
+    # Resetar 2FA
+    if reset_user_2fa(respondente):
+        # Registrar na auditoria
+        try:
+            registrar_auditoria(
+                acao='admin_reset_2fa_respondente',
+                usuario_tipo='admin',
+                usuario_id=current_user.id,
+                usuario_nome=current_user.nome,
+                detalhes=f'Admin resetou 2FA do respondente {respondente.nome} ({respondente.email})',
+                ip_address=request.remote_addr
+            )
+        except:
+            pass
+        
+        flash(f'2FA do respondente {respondente.nome} foi resetado com sucesso. Ele precisará configurar novamente no próximo login.', 'success')
+    else:
+        flash('Erro ao resetar 2FA do respondente.', 'danger')
+    
+    return redirect(url_for('admin.clientes'))

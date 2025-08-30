@@ -45,6 +45,8 @@ Preferred communication style: Simple, everyday language.
 - **Database URL Encoding Fix**: Resolved PostgreSQL connection error by properly URL-encoding special characters (@→%40, !→%21) in database password for production deployment.
 - **Unified Deployment Script**: Created `deploy_onpremise_unified.sh` - comprehensive deployment script that preserves all existing data (projects, clients, users, assessments) while updating code from Git. Includes automatic security fixes, database structure verification, complete backup system, and automatic bug fixes for known issues (auth profile, form validation, template corrections).
 - **Profile Page Corrections**: Fixed 'hasattr' undefined error by replacing with getattr and Jinja2 'is defined' checks. Implemented complete password change functionality with validation, audit logging, and error handling. Created `aplicar_correcao_perfil.sh` for quick deployment of profile fixes.
+- **Password Encoding Security**: Fixed login issues with special characters (@, #, !, etc.) by implementing `utils/password_utils.py` with UTF-8 normalization and robust password verification. Created `aplicar_correcao_senha_especial.sh` for deployment.
+- **Two-Factor Authentication (2FA)**: Complete TOTP implementation with QR code setup, backup codes, user self-reset, and admin reset capabilities. Mandatory for respondents, optional for admins. Includes comprehensive audit trail and session management.
 
 ## External Dependencies
 

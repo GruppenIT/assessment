@@ -198,5 +198,165 @@
             </div>
         </div>
     </div>
+    
+    <!-- Seção 2FA -->
+    <div class="row mt-4">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Autenticação de Dois Fatores (2FA)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if config_2fa and config_2fa.is_active %}
+                        <!-- 2FA Ativo -->
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>2FA Ativo</strong>
+                            <br><small>Sua conta está protegida por autenticação de dois fatores</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Status:</label>
+                                    <span class="badge bg-success ms-2">
+                                        <i class="fas fa-shield-alt me-1"></i>Ativo
+                                    </span>
+                                </div>
+                                
+                                {% if config_2fa.activated_at %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Ativado em:</label>
+                                    <div class="text-muted">
+                                        {{ config_2fa.activated_at.strftime('%d/%m/%Y às %H:%M') }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {% if config_2fa.last_used %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Último uso:</label>
+                                    <div class="text-muted">
+                                        {{ config_2fa.last_used.strftime('%d/%m/%Y às %H:%M') }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Códigos de backup restantes -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Códigos de backup:</label>
+                                    {% set backup_codes = config_2fa.get_backup_codes_list() %}
+                                    <span class="badge bg-info ms-2">
+                                        {{ backup_codes|length }} disponíveis
+                                    </span>
+                                    {% if backup_codes|length < 3 %}
+                                        <br><small class="text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            Poucos códigos restantes - considere resetar o 2FA
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botão de reset -->
+                        <div class="text-center">
+                            <button class="btn btn-outline-warning" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#reset2faModal">
+                                <i class="fas fa-redo me-2"></i>
+                                Resetar 2FA
+                            </button>
+                        </div>
+                        
+                    {% else %}
+                        <!-- 2FA Inativo -->
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>2FA Inativo</strong>
+                            <br><small>Configure para maior segurança da sua conta</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Status:</label>
+                                    <span class="badge bg-warning ms-2">
+                                        <i class="fas fa-shield-alt me-1"></i>Inativo
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-grid">
+                                <a href="{{ url_for('auth.setup_2fa') }}" class="btn btn-warning">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    Configurar 2FA
+                                </a>
+                            </div>
+                        </div>
+                        
+                        {% if current_user.cliente_id %}
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>Para respondentes, o 2FA será obrigatório no próximo login</small>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para reset de 2FA -->
+<div class="modal fade" id="reset2faModal" tabindex="-1" aria-labelledby="reset2faModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="reset2faModalLabel">
+                    <i class="fas fa-redo me-2"></i>
+                    Resetar Autenticação 2FA
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('auth.reset_2fa') }}">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção:</strong> Resetar o 2FA irá:
+                        <ul class="mb-0 mt-2">
+                            <li>Desativar a autenticação atual</li>
+                            <li>Gerar nova chave secreta</li>
+                            <li>Criar novos códigos de backup</li>
+                            <li>Exigir nova configuração no app autenticador</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="current_password_2fa" class="form-label">Senha Atual</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="current_password_2fa" 
+                               name="current_password" 
+                               required
+                               placeholder="Digite sua senha atual para confirmar">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-redo me-2"></i>
+                        Resetar 2FA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
