@@ -45,3 +45,21 @@ class CadastroForm(FlaskForm):
     ], render_kw={'placeholder': 'Digite a senha novamente'})
     
     submit = SubmitField('Criar Conta')
+
+class AlterarSenhaForm(FlaskForm):
+    """Formulário para alterar senha"""
+    senha_atual = PasswordField('Senha Atual', validators=[
+        DataRequired(message='Senha atual é obrigatória')
+    ], render_kw={'placeholder': 'Digite sua senha atual'})
+    
+    nova_senha = PasswordField('Nova Senha', validators=[
+        DataRequired(message='Nova senha é obrigatória'),
+        Length(min=6, message='Nova senha deve ter pelo menos 6 caracteres')
+    ], render_kw={'placeholder': 'Digite a nova senha'})
+    
+    confirmar_nova_senha = PasswordField('Confirmar Nova Senha', validators=[
+        DataRequired(message='Confirmação de nova senha é obrigatória'),
+        EqualTo('nova_senha', message='As senhas devem ser iguais')
+    ], render_kw={'placeholder': 'Digite a nova senha novamente'})
+    
+    submit = SubmitField('Alterar Senha')
