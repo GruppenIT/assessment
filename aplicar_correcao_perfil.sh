@@ -157,7 +157,7 @@ content = re.sub(
 
 # Correção das rotas - substituir rotas incorretas pelas corretas
 content = content.replace("url_for('admin.projetos')", "url_for('projeto.listar')")
-content = content.replace("url_for('admin.clientes')", "url_for('cliente.listar')")
+content = content.replace("url_for('cliente.listar')", "url_for('admin.clientes')")
 content = content.replace("url_for('admin.usuarios')", "url_for('admin.dashboard')")
 
 # Salvar
