@@ -555,34 +555,43 @@ def excluir_respondente(respondente_id):
 @admin_required
 def reset_respondente_2fa(respondente_id):
     """Reset do 2FA de um respondente por parte do administrador"""
-    from models.auditoria import registrar_auditoria
     
     respondente = Respondente.query.get_or_404(respondente_id)
+    cliente_id = respondente.cliente_id
     
-    # Obter configuração 2FA do respondente
-    config_2fa = get_user_2fa_config(respondente)
-    
-    if not config_2fa or not config_2fa.is_active:
-        flash('Respondente não possui 2FA ativo.', 'warning')
-        return redirect(url_for('admin.clientes'))
-    
-    # Resetar 2FA
-    if reset_user_2fa(respondente):
-        # Registrar na auditoria
-        try:
-            registrar_auditoria(
-                acao='admin_reset_2fa_respondente',
-                usuario_tipo='admin',
-                usuario_id=current_user.id,
-                usuario_nome=current_user.nome,
-                detalhes=f'Admin resetou 2FA do respondente {respondente.nome} ({respondente.email})',
-                ip_address=request.remote_addr
-            )
-        except:
-            pass
+    try:
+        # Obter configuração 2FA do respondente
+        config_2fa = get_user_2fa_config(respondente)
         
-        flash(f'2FA do respondente {respondente.nome} foi resetado com sucesso. Ele precisará configurar novamente no próximo login.', 'success')
-    else:
-        flash('Erro ao resetar 2FA do respondente.', 'danger')
+        if not config_2fa or not config_2fa.is_active:
+            flash('Respondente não possui 2FA ativo.', 'warning')
+            return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
+        
+        # Resetar 2FA
+        if reset_user_2fa(respondente):
+            # Tentar registrar na auditoria (se disponível)
+            try:
+                from models.auditoria import registrar_auditoria
+                registrar_auditoria(
+                    acao='admin_reset_2fa_respondente',
+                    usuario_tipo='admin',
+                    usuario_id=current_user.id,
+                    usuario_nome=current_user.nome,
+                    detalhes=f'Admin resetou 2FA do respondente {respondente.nome} ({respondente.email})',
+                    ip_address=request.remote_addr
+                )
+            except ImportError:
+                # Sistema de auditoria não disponível
+                logging.info(f'Admin {current_user.nome} resetou 2FA do respondente {respondente.nome}')
+            except Exception as e:
+                logging.error(f'Erro ao registrar auditoria: {e}')
+            
+            flash(f'2FA do respondente {respondente.nome} foi resetado com sucesso. Ele precisará configurar novamente no próximo login.', 'success')
+        else:
+            flash('Erro ao resetar 2FA do respondente.', 'danger')
+            
+    except Exception as e:
+        logging.error(f'Erro ao resetar 2FA do respondente: {e}')
+        flash('Erro interno ao resetar 2FA. Tente novamente.', 'danger')
     
-    return redirect(url_for('admin.clientes'))
+    return redirect(url_for('admin.respondentes_cliente', cliente_id=cliente_id))
