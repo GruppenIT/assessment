@@ -278,6 +278,14 @@ def create_app():
         logging.info("Portal do cliente registrado com sucesso")
     except Exception as e:
         logging.error(f"Erro ao registrar portal do cliente: {e}")
+    
+    # Registrar blueprint de leads
+    try:
+        from routes.leads import leads_bp
+        app.register_blueprint(leads_bp)
+        logging.info("Blueprint de leads registrado com sucesso")
+    except Exception as e:
+        logging.error(f"Erro ao registrar blueprint de leads: {e}")
         
     # Rota para servir uploads protegida por autenticação
     @app.route('/uploads/<path:filename>')
@@ -297,7 +305,7 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema, assessment_publico
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema, assessment_publico, lead
         db.create_all()
         
         # Criar usuário admin padrão se não existir

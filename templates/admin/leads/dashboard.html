@@ -1,0 +1,221 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard de Leads{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-3">
+                <i class="fas fa-users me-2"></i>
+                Dashboard de Leads
+            </h1>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total de Leads</p>
+                            <h3 class="mb-0">{{ total_leads }}</h3>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-users fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Novos Leads</p>
+                            <h3 class="mb-0">{{ leads_novos }}</h3>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-user-plus fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Qualificados</p>
+                            <h3 class="mb-0">{{ leads_qualificados }}</h3>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-star fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Convertidos</p>
+                            <h3 class="mb-0">{{ leads_ganhos }}</h3>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('leads.dashboard') }}" class="row g-3">
+                <div class="col-md-3">
+                    {{ form.status.label(class="form-label") }}
+                    {{ form.status(class="form-select") }}
+                </div>
+                
+                <div class="col-md-3">
+                    {{ form.prioridade.label(class="form-label") }}
+                    {{ form.prioridade(class="form-select") }}
+                </div>
+                
+                <div class="col-md-4">
+                    {{ form.busca.label(class="form-label") }}
+                    {{ form.busca(class="form-control") }}
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela de Leads -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                Leads ({{ leads|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if leads %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Empresa</th>
+                            <th>Email</th>
+                            <th>Assessment</th>
+                            <th class="text-center">Pontuação</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Prioridade</th>
+                            <th class="text-center">Data</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in leads %}
+                        <tr>
+                            <td>
+                                <strong>{{ lead.nome }}</strong>
+                                {% if lead.cargo %}
+                                <br><small class="text-muted">{{ lead.cargo }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ lead.empresa }}</td>
+                            <td>
+                                <small>{{ lead.email }}</small>
+                                {% if lead.telefone %}
+                                <br><small class="text-muted">{{ lead.telefone }}</small>
+                                {% endif %}
+                            </td>
+                            <td><small>{{ lead.tipo_assessment_nome }}</small></td>
+                            <td class="text-center">
+                                {% set nivel, cor = lead.get_nivel_maturidade() %}
+                                <span class="badge bg-{{ cor }}">
+                                    {{ lead.pontuacao_geral|round|int }}%
+                                </span>
+                                <br><small class="text-muted">{{ nivel }}</small>
+                            </td>
+                            <td class="text-center">
+                                {% if lead.status == 'novo' %}
+                                    <span class="badge bg-info">Novo</span>
+                                {% elif lead.status == 'contatado' %}
+                                    <span class="badge bg-primary">Contatado</span>
+                                {% elif lead.status == 'qualificado' %}
+                                    <span class="badge bg-warning">Qualificado</span>
+                                {% elif lead.status == 'proposta' %}
+                                    <span class="badge bg-secondary">Proposta</span>
+                                {% elif lead.status == 'negociacao' %}
+                                    <span class="badge bg-purple">Negociação</span>
+                                {% elif lead.status == 'ganho' %}
+                                    <span class="badge bg-success">Ganho</span>
+                                {% elif lead.status == 'perdido' %}
+                                    <span class="badge bg-danger">Perdido</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if lead.prioridade == 'alta' %}
+                                    <span class="badge bg-danger">Alta</span>
+                                {% elif lead.prioridade == 'media' %}
+                                    <span class="badge bg-warning">Média</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Baixa</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <small>{{ lead.data_criacao|datetime_local('%d/%m/%y') }}</small>
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ url_for('leads.detalhes', lead_id=lead.id) }}" 
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="Ver detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Nenhum lead encontrado.</p>
+                <p class="text-muted small">Leads serão criados automaticamente quando assessments públicos forem respondidos.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .opacity-50 {
+        opacity: 0.5;
+    }
+    
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+</style>
+{% endblock %}

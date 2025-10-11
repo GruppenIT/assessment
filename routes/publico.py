@@ -210,6 +210,30 @@ def dados_respondente(assessment_id):
         
         db.session.commit()
         
+        # Criar lead automaticamente a partir do assessment público
+        from models.lead import Lead
+        
+        # Verificar se já existe lead para este assessment
+        lead_existente = Lead.query.filter_by(assessment_publico_id=assessment_publico.id).first()
+        
+        if not lead_existente:
+            try:
+                lead = Lead.criar_de_assessment_publico(assessment_publico)
+                db.session.add(lead)
+                
+                # Adicionar entrada no histórico
+                lead.adicionar_historico(
+                    acao='criado',
+                    detalhes=f'Lead criado automaticamente a partir do assessment público #{assessment_publico.id}'
+                )
+                
+                db.session.commit()
+                logging.info(f"Lead criado automaticamente para assessment público {assessment_publico.id}")
+            except Exception as e:
+                logging.error(f"Erro ao criar lead automático: {e}")
+                # Não falhar o processo se houver erro na criação do lead
+                db.session.rollback()
+        
         # Redirecionar para resultado
         return redirect(url_for('publico.resultado', 
                               assessment_id=assessment_id,

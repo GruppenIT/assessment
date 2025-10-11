@@ -1,0 +1,305 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Lead: {{ lead.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('leads.dashboard') }}">Leads</a></li>
+                    <li class="breadcrumb-item active">{{ lead.nome }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-user-circle me-2"></i>
+                    {{ lead.nome }}
+                </h1>
+                <div>
+                    {% if lead.status == 'novo' %}
+                        <span class="badge bg-info fs-6">Novo</span>
+                    {% elif lead.status == 'qualificado' %}
+                        <span class="badge bg-warning fs-6">Qualificado</span>
+                    {% elif lead.status == 'ganho' %}
+                        <span class="badge bg-success fs-6">Ganho</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informações do Lead -->
+        <div class="col-lg-8 mb-4">
+            <!-- Dados Pessoais -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-address-card me-2"></i>
+                        Informações do Lead
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1 small">Nome Completo</p>
+                            <p class="mb-0"><strong>{{ lead.nome }}</strong></p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1 small">Email</p>
+                            <p class="mb-0">
+                                <a href="mailto:{{ lead.email }}">{{ lead.email }}</a>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1 small">Telefone</p>
+                            <p class="mb-0">{{ lead.telefone or '-' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1 small">Cargo</p>
+                            <p class="mb-0">{{ lead.cargo or '-' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1 small">Empresa</p>
+                            <p class="mb-0"><strong>{{ lead.empresa }}</strong></p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1 small">Data de Criação</p>
+                            <p class="mb-0">{{ lead.data_criacao|datetime_local }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pontuação do Assessment -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Resultado do Assessment: {{ lead.tipo_assessment_nome }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-4 text-center">
+                            {% set nivel, cor = lead.get_nivel_maturidade() %}
+                            <div class="mb-2">
+                                <h1 class="display-4 mb-0 text-{{ cor }}">{{ lead.pontuacao_geral|round|int }}%</h1>
+                            </div>
+                            <span class="badge bg-{{ cor }} fs-6">{{ nivel }}</span>
+                        </div>
+                        <div class="col-md-8">
+                            <p class="text-muted mb-2">Pontuação Geral</p>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar bg-{{ cor }}" role="progressbar" 
+                                     style="width: {{ lead.pontuacao_geral }}%;" 
+                                     aria-valuenow="{{ lead.pontuacao_geral }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ lead.pontuacao_geral|round|int }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if lead.pontuacoes_dominios %}
+                    <hr>
+                    <h6 class="mb-3">Pontuação por Domínio</h6>
+                    <div class="row">
+                        {% for dominio, pontuacao in lead.pontuacoes_dominios.items() %}
+                        <div class="col-md-6 mb-3">
+                            <p class="small mb-1">{{ dominio }}</p>
+                            <div class="progress" style="height: 20px;">
+                                {% if pontuacao >= 70 %}
+                                    {% set cor_dominio = 'success' %}
+                                {% elif pontuacao >= 40 %}
+                                    {% set cor_dominio = 'warning' %}
+                                {% else %}
+                                    {% set cor_dominio = 'danger' %}
+                                {% endif %}
+                                <div class="progress-bar bg-{{ cor_dominio }}" role="progressbar" 
+                                     style="width: {{ pontuacao }}%;" 
+                                     aria-valuenow="{{ pontuacao }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ pontuacao|round|int }}%
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if assessment_publico %}
+                    <div class="mt-3">
+                        <a href="{{ url_for('publico.resultado', assessment_id=assessment_publico.tipo_assessment_id, token=assessment_publico.token) }}" 
+                           class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            Ver Resultado Completo
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Histórico e Comentários -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Histórico e Interações
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if historico %}
+                    <div class="timeline">
+                        {% for item in historico %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    {% if item.acao == 'criado' %}
+                                        <div class="timeline-icon bg-success">
+                                            <i class="fas fa-plus text-white"></i>
+                                        </div>
+                                    {% elif item.acao == 'status_alterado' or item.acao == 'atualizacao' %}
+                                        <div class="timeline-icon bg-primary">
+                                            <i class="fas fa-sync text-white"></i>
+                                        </div>
+                                    {% elif item.acao == 'comentario' %}
+                                        <div class="timeline-icon bg-info">
+                                            <i class="fas fa-comment text-white"></i>
+                                        </div>
+                                    {% else %}
+                                        <div class="timeline-icon bg-secondary">
+                                            <i class="fas fa-circle text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>{{ item.usuario.nome if item.usuario else 'Sistema' }}</strong>
+                                        <small class="text-muted">{{ item.data_registro|datetime_local }}</small>
+                                    </div>
+                                    <p class="mb-0 text-muted">{{ item.detalhes }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">Nenhum histórico registrado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Gestão do Lead -->
+        <div class="col-lg-4">
+            <!-- Formulário de Atualização -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Gerenciar Lead
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('leads.atualizar', lead_id=lead.id) }}">
+                        {{ update_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ update_form.status.label(class="form-label") }}
+                            {{ update_form.status(class="form-select") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ update_form.prioridade.label(class="form-label") }}
+                            {{ update_form.prioridade(class="form-select") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ update_form.atribuido_a_id.label(class="form-label") }}
+                            {{ update_form.atribuido_a_id(class="form-select") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ update_form.comentarios.label(class="form-label") }}
+                            {{ update_form.comentarios(class="form-control", rows=4) }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save me-1"></i>
+                            {{ update_form.submit.label.text }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Adicionar Comentário Rápido -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comment-medical me-2"></i>
+                        Adicionar Comentário
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('leads.adicionar_comentario', lead_id=lead.id) }}">
+                        {{ comentario_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ comentario_form.comentario(class="form-control") }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="fas fa-plus me-1"></i>
+                            {{ comentario_form.submit.label.text }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Ações Perigosas -->
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Zona de Perigo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Esta ação não pode ser desfeita.</p>
+                    <form method="POST" action="{{ url_for('leads.excluir', lead_id=lead.id) }}" 
+                          onsubmit="return confirm('Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita!');">
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-trash me-1"></i>
+                            Excluir Lead
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .timeline-item:not(:last-child) .timeline-icon::after {
+        content: '';
+        position: absolute;
+        width: 2px;
+        height: 100%;
+        background: #dee2e6;
+        top: 35px;
+        left: 16px;
+    }
+</style>
+{% endblock %}
