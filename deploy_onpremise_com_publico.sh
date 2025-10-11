@@ -161,7 +161,8 @@ apply_public_assessment_migration() {
 -- Migração Assessment Público - Idempotente (pode rodar múltiplas vezes)
 -- Data: 2025-10-11
 
--- Adicionar coluna url_publica na tabela tipos_assessment (se não existir)
+-- Adicionar coluna url_publica nas tabelas de tipos de assessment (se não existir)
+-- Tabela antiga (tipos_assessment)
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -172,6 +173,20 @@ BEGIN
         RAISE NOTICE 'Coluna url_publica adicionada em tipos_assessment';
     ELSE
         RAISE NOTICE 'Coluna url_publica já existe em tipos_assessment';
+    END IF;
+END $$;
+
+-- Tabela nova com versionamento (assessment_tipos)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='assessment_tipos' AND column_name='url_publica'
+    ) THEN
+        ALTER TABLE assessment_tipos ADD COLUMN url_publica BOOLEAN DEFAULT FALSE;
+        RAISE NOTICE 'Coluna url_publica adicionada em assessment_tipos';
+    ELSE
+        RAISE NOTICE 'Coluna url_publica já existe em assessment_tipos';
     END IF;
 END $$;
 

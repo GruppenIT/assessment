@@ -11,6 +11,7 @@ class AssessmentTipo(db.Model):
     nome = db.Column(db.String(200), nullable=False, comment='Nome do tipo de assessment')
     descricao = db.Column(db.Text, comment='Descrição do tipo de assessment')
     ativo = db.Column(db.Boolean, default=True, comment='Se o tipo está ativo')
+    url_publica = db.Column(db.Boolean, default=False, comment='Se o assessment possui URL pública')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')
     
     # Relacionamentos

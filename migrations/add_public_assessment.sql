@@ -1,8 +1,10 @@
 -- Migração para adicionar funcionalidade de assessment público
 -- Data: 2025-10-11
 
--- Adicionar campo url_publica na tabela tipos_assessment
+-- Adicionar campo url_publica nas tabelas de tipos de assessment
+-- (sistema antigo e novo com versionamento)
 ALTER TABLE tipos_assessment ADD COLUMN IF NOT EXISTS url_publica BOOLEAN DEFAULT FALSE;
+ALTER TABLE assessment_tipos ADD COLUMN IF NOT EXISTS url_publica BOOLEAN DEFAULT FALSE;
 
 -- Adicionar campo telefone nas tabelas respondentes e clientes
 ALTER TABLE respondentes ADD COLUMN IF NOT EXISTS telefone VARCHAR(20);
