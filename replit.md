@@ -25,15 +25,16 @@ Preferred communication style: Simple, everyday language.
 - **Icons**: Font Awesome
 
 ### Core Features
-- **Models**: `Usuario` (admins), `TipoAssessment` (assessment types), `Cliente`, `Respondente`, `Dominio`, `Pergunta`, `Resposta`, `ClienteAssessment`, `Logo`. Includes comprehensive assessment versioning with `AssessmentTipo`, `AssessmentVersao`, `AssessmentDominio` for managing draft/published/archived states.
-- **Routes**: Modularized for `auth`, `admin`, `respondente`, `cliente`, `relatorio`.
-- **Forms**: Dedicated forms for authentication, administration, client management, and assessment responses.
+- **Models**: `Usuario` (admins), `TipoAssessment` (assessment types), `Cliente`, `Respondente`, `Dominio`, `Pergunta`, `Resposta`, `ClienteAssessment`, `Logo`, `AssessmentPublico`, `RespostaPublica`. Includes comprehensive assessment versioning with `AssessmentTipo`, `AssessmentVersao`, `AssessmentDominio` for managing draft/published/archived states.
+- **Routes**: Modularized for `auth`, `admin`, `respondente`, `cliente`, `relatorio`, `publico`.
+- **Forms**: Dedicated forms for authentication, administration, client management, and assessment responses. Includes public assessment forms for anonymous responses and lead capture.
 - **Utilities**:
     - `auth_utils`: Role-based access control.
     - `pdf_utils`: Formal PDF report generation using ReportLab, including AI-generated sections and detailed analysis with preserved line breaks.
     - `upload_utils`: Secure file handling for logos.
     - `csv_utils`: Bulk import for domains and questions, supporting assessment versioning.
     - `openai_monitor`: Monitors OpenAI payload for size, token estimation, and performance.
+    - `publico_utils`: Calculate scores and generate AI recommendations for public assessments.
 - **Assessment Process**: Clients respond to questions with a 0-5 rating, progress is tracked, and auto-saved with AJAX.
 - **Administrative Workflow**: Admins manage assessment content, monitor client progress, and generate reports.
 - **Authentication**: Password hashing with Werkzeug, Flask-Login for sessions, role-based access.
@@ -48,6 +49,7 @@ Preferred communication style: Simple, everyday language.
 - **Password Encoding Security**: Fixed login issues with special characters (@, #, !, etc.) by implementing `utils/password_utils.py` with UTF-8 normalization and robust password verification. Created `aplicar_correcao_senha_especial.sh` for deployment.
 - **Two-Factor Authentication (2FA)**: Complete TOTP implementation with QR code setup, backup codes, user self-reset, and admin reset capabilities. Mandatory for respondents, optional for admins. Includes comprehensive audit trail and session management.
 - **Mandatory Password Change**: Administrators can force respondents to change passwords on next login via checkbox in respondent editing. After login and 2FA verification, users are redirected to mandatory password change page. Flag is automatically cleared after successful password update.
+- **Public Assessment URL System**: Shareable URLs for assessments marked as "URL Pública". Anonymous users can respond to simplified questions (3 options: Não=0, Parcial=3, Sim=5), provide contact information (lead capture), and receive AI-generated domain-specific recommendations. Mobile-first design with progress tracking, one domain per page navigation, and secure token-based access to results. Respondent data is collected after answering questions to avoid integrity errors.
 
 ## External Dependencies
 
