@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models.tipo_assessment import TipoAssessment
+from models.assessment_version import AssessmentTipo
 from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.assessment_publico import AssessmentPublico, RespostaPublica
@@ -13,18 +13,26 @@ publico_bp = Blueprint('publico', __name__, url_prefix='/public')
 @publico_bp.route('/<int:assessment_id>')
 def iniciar_assessment(assessment_id):
     """Página inicial do assessment público"""
-    tipo_assessment = TipoAssessment.query.get_or_404(assessment_id)
+    tipo_assessment = AssessmentTipo.query.get_or_404(assessment_id)
     
     # Verificar se o assessment tem URL pública habilitada
     if not tipo_assessment.url_publica:
         flash('Este assessment não está disponível publicamente.', 'warning')
         return redirect(url_for('auth.login'))
     
-    # Obter domínios ativos com perguntas light
-    dominios = Dominio.query.filter_by(
-        tipo_assessment_id=assessment_id,
+    # Obter versão publicada do assessment
+    versao_publicada = tipo_assessment.get_versao_ativa()
+    
+    if not versao_publicada:
+        flash('Este assessment não possui versão publicada.', 'warning')
+        return redirect(url_for('auth.login'))
+    
+    # Obter domínios ativos da versão publicada
+    from models.assessment_version import AssessmentDominio
+    dominios = AssessmentDominio.query.filter_by(
+        versao_id=versao_publicada.id,
         ativo=True
-    ).order_by(Dominio.ordem).all()
+    ).order_by(AssessmentDominio.ordem).all()
     
     # Filtrar apenas domínios que têm perguntas light
     dominios_com_light = []
@@ -65,7 +73,7 @@ def iniciar_assessment(assessment_id):
 @publico_bp.route('/<int:assessment_id>/dominio/<int:dominio_index>', methods=['GET', 'POST'])
 def responder_dominio(assessment_id, dominio_index):
     """Responder perguntas de um domínio específico"""
-    tipo_assessment = TipoAssessment.query.get_or_404(assessment_id)
+    tipo_assessment = AssessmentTipo.query.get_or_404(assessment_id)
     
     if not tipo_assessment.url_publica:
         flash('Este assessment não está disponível publicamente.', 'warning')
@@ -85,11 +93,12 @@ def responder_dominio(assessment_id, dominio_index):
         return redirect(url_for('publico.dados_respondente', assessment_id=assessment_id))
     
     dominio_id = dominios_ids[dominio_index]
-    dominio = Dominio.query.get_or_404(dominio_id)
+    from models.assessment_version import AssessmentDominio
+    dominio = AssessmentDominio.query.get_or_404(dominio_id)
     
-    # Obter perguntas light do domínio
+    # Obter perguntas light do domínio (usando dominio_versao_id)
     perguntas = Pergunta.query.filter_by(
-        dominio_id=dominio_id,
+        dominio_versao_id=dominio_id,
         ativo=True,
         light=True
     ).order_by(Pergunta.ordem).all()
@@ -172,7 +181,7 @@ def responder_dominio(assessment_id, dominio_index):
 @publico_bp.route('/<int:assessment_id>/dados', methods=['GET', 'POST'])
 def dados_respondente(assessment_id):
     """Capturar dados do respondente ao final do assessment"""
-    tipo_assessment = TipoAssessment.query.get_or_404(assessment_id)
+    tipo_assessment = AssessmentTipo.query.get_or_404(assessment_id)
     
     if not tipo_assessment.url_publica:
         flash('Este assessment não está disponível publicamente.', 'warning')
@@ -213,7 +222,7 @@ def dados_respondente(assessment_id):
 @publico_bp.route('/<int:assessment_id>/resultado/<token>')
 def resultado(assessment_id, token):
     """Exibir resultado do assessment com recomendações IA"""
-    tipo_assessment = TipoAssessment.query.get_or_404(assessment_id)
+    tipo_assessment = AssessmentTipo.query.get_or_404(assessment_id)
     
     assessment_publico = AssessmentPublico.query.filter_by(
         tipo_assessment_id=assessment_id,
