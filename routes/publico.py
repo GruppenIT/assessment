@@ -243,20 +243,29 @@ def resultado(assessment_id, token):
             'recomendacao': None  # Será preenchido pela IA
         })
     
-    # Gerar recomendações com OpenAI (será implementado no próximo passo)
+    # Gerar recomendações com OpenAI
     from utils.publico_utils import gerar_recomendacoes_ia
     
     try:
+        logging.info(f"Gerando recomendações IA para assessment público {assessment_publico.id}")
         recomendacoes = gerar_recomendacoes_ia(assessment_publico, dominios_dados)
         
         # Atualizar recomendações nos dados dos domínios
         for i, dominio_data in enumerate(dominios_dados):
             if i < len(recomendacoes):
                 dominio_data['recomendacao'] = recomendacoes[i]
+                logging.info(f"Recomendação atribuída ao domínio {dominio_data['dominio'].nome}")
     except Exception as e:
-        logging.error(f"Erro ao gerar recomendações IA: {e}")
-        # Se falhar, deixar sem recomendações
-        pass
+        logging.error(f"Erro ao gerar recomendações IA: {e}", exc_info=True)
+        # Se falhar, adicionar recomendações padrão
+        for dominio_data in dominios_dados:
+            pontuacao = dominio_data['pontuacao']
+            dominio_nome = dominio_data['dominio'].nome
+            dominio_data['recomendacao'] = (
+                f"Com base na pontuação de {pontuacao:.0f}%, recomenda-se revisar e fortalecer "
+                f"as práticas relacionadas a {dominio_nome}, priorizando a implementação "
+                f"de processos formais e a melhoria contínua dos controles existentes."
+            )
     
     # Limpar sessão
     session_key = f'assessment_publico_{assessment_id}'

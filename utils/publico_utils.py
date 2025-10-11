@@ -26,10 +26,10 @@ def gerar_recomendacoes_ia(assessment_publico, dominios_dados):
             dominio = dominio_data['dominio']
             pontuacao = dominio_data['pontuacao']
             
-            # Obter respostas do domínio
+            # Obter respostas do domínio (usando dominio_versao_id para assessments versionados)
             respostas_dominio = [
                 r for r in assessment_publico.respostas 
-                if r.pergunta.dominio_id == dominio.id
+                if r.pergunta.dominio_versao_id == dominio.id
             ]
             
             # Preparar dados para análise
