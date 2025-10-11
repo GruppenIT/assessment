@@ -56,14 +56,26 @@
                                     <i class="fas fa-globe me-1"></i>
                                     Ao ativar, este assessment poderá ser acessado publicamente sem necessidade de login. 
                                     Apenas perguntas marcadas como "light" serão exibidas.
-                                    {% if tipo.url_publica %}
-                                    <br>
-                                    <span class="badge bg-success mt-2">
-                                        <i class="fas fa-link me-1"></i>
-                                        URL: /public/{{ tipo.id }}
-                                    </span>
-                                    {% endif %}
                                 </div>
+                                {% if tipo.url_publica %}
+                                <div class="alert alert-success mt-3 mb-0">
+                                    <h6 class="alert-heading mb-2">
+                                        <i class="fas fa-share-alt me-2"></i>URL Pública Ativa
+                                    </h6>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="urlPublica" 
+                                               value="{{ request.url_root }}public/{{ tipo.id }}" readonly>
+                                        <button class="btn btn-outline-success" type="button" 
+                                                onclick="copiarUrl()" title="Copiar URL">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <small class="d-block mt-2 text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Compartilhe este link para que pessoas respondam anonimamente ao assessment
+                                    </small>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         
@@ -143,4 +155,29 @@
         </div>
     </div>
 </div>
+
+<script>
+function copiarUrl() {
+    const urlInput = document.getElementById('urlPublica');
+    urlInput.select();
+    urlInput.setSelectionRange(0, 99999); // Para mobile
+    
+    navigator.clipboard.writeText(urlInput.value).then(function() {
+        // Feedback visual
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+        btn.classList.remove('btn-outline-success');
+        btn.classList.add('btn-success');
+        
+        setTimeout(function() {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-success');
+        }, 2000);
+    }).catch(function(err) {
+        alert('Erro ao copiar URL. Por favor, copie manualmente.');
+    });
+}
+</script>
 {% endblock %}
