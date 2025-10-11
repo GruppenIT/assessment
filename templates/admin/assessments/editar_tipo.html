@@ -38,11 +38,33 @@
                             <div class="form-text">Nome único que identifica este tipo de assessment</div>
                         </div>
                         
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="descricao" class="form-label">Descrição</label>
                             <textarea class="form-control" id="descricao" name="descricao" rows="4"
                                       placeholder="Descreva o objetivo e escopo deste tipo de assessment...">{{ tipo.descricao or '' }}</textarea>
                             <div class="form-text">Explicação detalhada sobre o que este assessment avalia</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="url_publica" name="url_publica" 
+                                       {% if tipo.url_publica %}checked{% endif %}>
+                                <label class="form-check-label" for="url_publica">
+                                    <strong>URL Pública</strong>
+                                </label>
+                                <div class="form-text">
+                                    <i class="fas fa-globe me-1"></i>
+                                    Ao ativar, este assessment poderá ser acessado publicamente sem necessidade de login. 
+                                    Apenas perguntas marcadas como "light" serão exibidas.
+                                    {% if tipo.url_publica %}
+                                    <br>
+                                    <span class="badge bg-success mt-2">
+                                        <i class="fas fa-link me-1"></i>
+                                        URL: /public/{{ tipo.id }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">

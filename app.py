@@ -149,6 +149,12 @@ def create_app():
         from markupsafe import Markup
         return Markup(text.replace('\n', '<br>\n'))
     
+    @app.template_filter('nivel_maturidade')
+    def nivel_maturidade_filter(pontuacao):
+        """Retorna o nível de maturidade e cor baseado na pontuação"""
+        from utils.publico_utils import calcular_nivel_maturidade
+        return calcular_nivel_maturidade(pontuacao)
+    
     # Registrar blueprints (importação direta para evitar circular imports)
     from routes.auth import auth_bp
     from routes.cliente import cliente_bp
@@ -190,13 +196,15 @@ def create_app():
             'auth.login',
             'auth.logout',
             'static',
-            'home_redirect'  # Permitir acesso à rota raiz que faz o redirect
+            'home_redirect',  # Permitir acesso à rota raiz que faz o redirect
+            'publico.'  # Permitir todas as rotas do blueprint público
         ]
         
         # Caminhos que sempre devem ser permitidos
         caminhos_publicos = [
             '/static/',
-            '/favicon.ico'
+            '/favicon.ico',
+            '/public/'  # Permitir acesso ao assessment público
         ]
         
         # Verificar se é caminho público
@@ -252,6 +260,16 @@ def create_app():
         logging.error(f"Erro ao importar blueprint de parâmetros: {e}")
     except Exception as e:
         logging.error(f"Erro ao registrar blueprint de parâmetros: {e}")
+    
+    # Registrar blueprint de assessment público
+    try:
+        from routes.publico import publico_bp
+        app.register_blueprint(publico_bp)
+        logging.info("Blueprint de assessment público registrado com sucesso")
+    except ImportError as e:
+        logging.error(f"Erro ao importar blueprint de assessment público: {e}")
+    except Exception as e:
+        logging.error(f"Erro ao registrar blueprint de assessment público: {e}")
 
     # Registrar portal do cliente
     try:
@@ -279,7 +297,7 @@ def create_app():
     # Criar tabelas do banco
     with app.app_context():
         # Importar todos os modelos
-        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema
+        from models import usuario, dominio, pergunta, resposta, logo, tipo_assessment, cliente, respondente, configuracao, projeto, assessment_version, parametro_sistema, assessment_publico
         db.create_all()
         
         # Criar usuário admin padrão se não existir

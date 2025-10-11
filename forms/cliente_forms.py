@@ -90,6 +90,9 @@ class TipoAssessmentForm(FlaskForm):
         DataRequired(message='Ordem é obrigatória')
     ], default='1', render_kw={'placeholder': 'Ordem de exibição', 'type': 'number', 'min': '1'})
     
+    url_publica = BooleanField('URL Pública', default=False,
+                               description='Permitir acesso público sem autenticação para este assessment')
+    
     submit = SubmitField('Salvar Tipo')
 
 class ImportacaoCSVForm(FlaskForm):

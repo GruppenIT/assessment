@@ -16,6 +16,7 @@ class Respondente(UserMixin, db.Model):
     senha_hash = db.Column(db.String(256), nullable=False, comment='Hash da senha')
     cargo = db.Column(db.String(100), comment='Cargo do respondente')
     setor = db.Column(db.String(100), comment='Setor/departamento')
+    telefone = db.Column(db.String(20), comment='Telefone do respondente')
     ativo = db.Column(db.Boolean, default=True, comment='Se o respondente está ativo')
     forcar_troca_senha = db.Column(db.Boolean, default=False, nullable=False, comment='Forçar troca de senha no próximo login')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')

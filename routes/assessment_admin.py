@@ -318,6 +318,7 @@ def editar_tipo_assessment(tipo_id):
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
+        url_publica = request.form.get('url_publica') == 'on'
         
         if not nome:
             flash('Nome é obrigatório', 'error')
@@ -336,6 +337,7 @@ def editar_tipo_assessment(tipo_id):
         # Atualizar tipo
         tipo.nome = nome
         tipo.descricao = descricao if descricao else None
+        tipo.url_publica = url_publica
         
         db.session.commit()
         

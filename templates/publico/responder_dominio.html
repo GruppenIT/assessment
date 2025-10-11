@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tipo_assessment.nome }} - {{ dominio.nome }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        
+        .assessment-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin: 20px auto;
+            max-width: 800px;
+        }
+        
+        .progress-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .progress-dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .progress-dot.completed {
+            background: #28a745;
+            color: white;
+        }
+        
+        .progress-dot.current {
+            background: white;
+            color: #667eea;
+            transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .question-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .question-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+        }
+        
+        .question-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .answer-option {
+            flex: 1;
+            min-width: 100px;
+        }
+        
+        .answer-option input[type="radio"] {
+            display: none;
+        }
+        
+        .answer-option label {
+            display: block;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .answer-option input[type="radio"]:checked + label {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102,126,234,0.3);
+        }
+        
+        .answer-option label:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+        }
+        
+        .domain-progress {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 576px) {
+            .answer-options {
+                flex-direction: column;
+            }
+            
+            .answer-option {
+                width: 100%;
+            }
+            
+            .progress-dots {
+                gap: 5px;
+            }
+            
+            .progress-dot {
+                width: 35px;
+                height: 35px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="assessment-card">
+            <!-- Cabeçalho com progresso -->
+            <div class="progress-header">
+                <h2 class="text-center mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>
+                    {{ tipo_assessment.nome }}
+                </h2>
+                
+                <!-- Indicador de progresso com bolinhas -->
+                <div class="progress-dots">
+                    {% for i in range(total_dominios) %}
+                    <div class="progress-dot {% if i < dominio_index %}completed{% elif i == dominio_index %}current{% endif %}">
+                        {% if i < dominio_index %}
+                            <i class="fas fa-check"></i>
+                        {% else %}
+                            {{ i + 1 }}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Barra de progresso -->
+                <div class="domain-progress mt-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small>Progresso da Análise</small>
+                        <small><strong>{{ dominio_index }} de {{ total_dominios }} concluídos</strong></small>
+                    </div>
+                    <div class="progress" style="height: 8px; background: rgba(255,255,255,0.3);">
+                        <div class="progress-bar bg-light" role="progressbar" 
+                             style="width: {{ progresso_percentual }}%;" 
+                             aria-valuenow="{{ progresso_percentual }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Conteúdo do domínio -->
+            <div class="p-4">
+                <div class="mb-4">
+                    <h3 class="text-primary">
+                        <i class="fas fa-layer-group me-2"></i>
+                        {{ dominio.nome }}
+                    </h3>
+                    {% if dominio.descricao %}
+                    <p class="text-muted">{{ dominio.descricao }}</p>
+                    {% endif %}
+                    <hr>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>{{ perguntas|length }} {% if perguntas|length == 1 %}pergunta{% else %}perguntas{% endif %} neste domínio</small>
+                    </p>
+                </div>
+                
+                <!-- Formulário de respostas -->
+                <form method="POST" id="formRespostas">
+                    {{ form.hidden_tag() }}
+                    
+                    {% for pergunta in perguntas %}
+                    <div class="question-card">
+                        <div class="d-flex align-items-start">
+                            <span class="question-number">{{ loop.index }}</span>
+                            <div class="flex-grow-1">
+                                <p class="mb-3 fw-500">{{ pergunta.texto }}</p>
+                                
+                                <div class="answer-options">
+                                    <div class="answer-option">
+                                        <input type="radio" 
+                                               id="pergunta_{{ pergunta.id }}_nao" 
+                                               name="pergunta_{{ pergunta.id }}" 
+                                               value="0"
+                                               {% if respostas_existentes.get(pergunta.id) == 0 %}checked{% endif %}
+                                               required>
+                                        <label for="pergunta_{{ pergunta.id }}_nao">
+                                            <i class="fas fa-times-circle me-1"></i>
+                                            Não
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="answer-option">
+                                        <input type="radio" 
+                                               id="pergunta_{{ pergunta.id }}_parcial" 
+                                               name="pergunta_{{ pergunta.id }}" 
+                                               value="3"
+                                               {% if respostas_existentes.get(pergunta.id) == 3 %}checked{% endif %}
+                                               required>
+                                        <label for="pergunta_{{ pergunta.id }}_parcial">
+                                            <i class="fas fa-adjust me-1"></i>
+                                            Parcial
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="answer-option">
+                                        <input type="radio" 
+                                               id="pergunta_{{ pergunta.id }}_sim" 
+                                               name="pergunta_{{ pergunta.id }}" 
+                                               value="5"
+                                               {% if respostas_existentes.get(pergunta.id) == 5 %}checked{% endif %}
+                                               required>
+                                        <label for="pergunta_{{ pergunta.id }}_sim">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Sim
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Botão de envio -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-submit">
+                            {% if dominio_index + 1 < total_dominios %}
+                                Próximo Domínio <i class="fas fa-arrow-right ms-2"></i>
+                            {% else %}
+                                Finalizar Análise <i class="fas fa-check ms-2"></i>
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Validação do formulário
+        document.getElementById('formRespostas').addEventListener('submit', function(e) {
+            const radios = document.querySelectorAll('input[type="radio"]');
+            const perguntas = new Set();
+            
+            radios.forEach(radio => {
+                perguntas.add(radio.name);
+            });
+            
+            let todasRespondidas = true;
+            perguntas.forEach(pergunta => {
+                const checked = document.querySelector(`input[name="${pergunta}"]:checked`);
+                if (!checked) {
+                    todasRespondidas = false;
+                }
+            });
+            
+            if (!todasRespondidas) {
+                e.preventDefault();
+                alert('Por favor, responda todas as perguntas antes de continuar.');
+            }
+        });
+    </script>
+</body>
+</html>

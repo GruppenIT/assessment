@@ -12,6 +12,7 @@ class Cliente(db.Model):
     cnpj = db.Column(db.String(18), comment='CNPJ da empresa')
     localidade = db.Column(db.String(100), comment='Cidade/Estado do cliente')
     segmento = db.Column(db.String(100), comment='Segmento de negócio')
+    telefone = db.Column(db.String(20), comment='Telefone do cliente')
     logo_path = db.Column(db.String(255), comment='Caminho do logo da empresa')
     ativo = db.Column(db.Boolean, default=True, comment='Se o cliente está ativo')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')

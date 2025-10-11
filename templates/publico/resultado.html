@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado - {{ tipo_assessment.nome }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        body {
+            background: #f8f9fa;
+            padding: 20px 0;
+        }
+        
+        .resultado-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        
+        .score-number {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .resultado-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .dominio-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .dominio-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 6px 16px rgba(102,126,234,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .dominio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .dominio-score {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .recomendacao-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .nivel-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .info-respondente {
+            background: #e7f3ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .btn-print {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102,126,234,0.4);
+            color: white;
+        }
+        
+        @media print {
+            .btn-print {
+                display: none;
+            }
+            
+            body {
+                background: white;
+            }
+            
+            .dominio-card {
+                page-break-inside: avoid;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .score-circle {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .score-number {
+                font-size: 36px;
+            }
+            
+            .dominio-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .dominio-score {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Cabeçalho com pontuação geral -->
+        <div class="resultado-header">
+            <h1 class="mb-3">
+                <i class="fas fa-trophy me-2"></i>
+                Resultado da Análise
+            </h1>
+            <p class="mb-0">{{ tipo_assessment.nome }}</p>
+            
+            <div class="score-circle">
+                <div class="score-number">{{ pontuacao_geral|round|int }}%</div>
+            </div>
+            
+            {% set nivel, cor = (pontuacao_geral|round|int)|nivel_maturidade %}
+            <span class="badge nivel-badge bg-{{ cor }}">
+                Nível: {{ nivel }}
+            </span>
+        </div>
+        
+        <!-- Informações do respondente -->
+        <div class="info-respondente">
+            <h5 class="mb-3">
+                <i class="fas fa-user-circle me-2"></i>
+                Informações do Respondente
+            </h5>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <strong>Nome:</strong> {{ assessment_publico.nome_respondente }}
+                </div>
+                <div class="col-md-6 mb-2">
+                    <strong>Email:</strong> {{ assessment_publico.email_respondente }}
+                </div>
+                {% if assessment_publico.telefone_respondente %}
+                <div class="col-md-6 mb-2">
+                    <strong>Telefone:</strong> {{ assessment_publico.telefone_respondente }}
+                </div>
+                {% endif %}
+                {% if assessment_publico.cargo_respondente %}
+                <div class="col-md-6 mb-2">
+                    <strong>Cargo:</strong> {{ assessment_publico.cargo_respondente }}
+                </div>
+                {% endif %}
+                <div class="col-md-6 mb-2">
+                    <strong>Empresa:</strong> {{ assessment_publico.empresa_respondente }}
+                </div>
+                <div class="col-md-6 mb-2">
+                    <strong>Data:</strong> {{ assessment_publico.data_conclusao.strftime('%d/%m/%Y %H:%M') if assessment_publico.data_conclusao else 'N/A' }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráfico de radar -->
+        <div class="resultado-card">
+            <h3 class="mb-4">
+                <i class="fas fa-chart-radar me-2"></i>
+                Visão Geral por Domínio
+            </h3>
+            
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Análise detalhada por domínio -->
+        <div class="resultado-card">
+            <h3 class="mb-4">
+                <i class="fas fa-clipboard-list me-2"></i>
+                Análise Detalhada e Recomendações
+            </h3>
+            
+            {% for dominio_data in dominios_dados %}
+            <div class="dominio-card">
+                <div class="dominio-header">
+                    <div>
+                        <h5 class="mb-1">
+                            <i class="fas fa-layer-group me-2"></i>
+                            {{ dominio_data.dominio.nome }}
+                        </h5>
+                        {% if dominio_data.dominio.descricao %}
+                        <p class="text-muted mb-0 small">{{ dominio_data.dominio.descricao }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="dominio-score">
+                        {{ dominio_data.pontuacao|round|int }}%
+                    </div>
+                </div>
+                
+                <!-- Barra de progresso -->
+                <div class="progress mb-3" style="height: 10px;">
+                    {% if dominio_data.pontuacao >= 80 %}
+                        {% set cor_progress = 'success' %}
+                    {% elif dominio_data.pontuacao >= 60 %}
+                        {% set cor_progress = 'primary' %}
+                    {% elif dominio_data.pontuacao >= 40 %}
+                        {% set cor_progress = 'info' %}
+                    {% elif dominio_data.pontuacao >= 20 %}
+                        {% set cor_progress = 'warning' %}
+                    {% else %}
+                        {% set cor_progress = 'danger' %}
+                    {% endif %}
+                    <div class="progress-bar bg-{{ cor_progress }}" 
+                         role="progressbar" 
+                         style="width: {{ dominio_data.pontuacao }}%;" 
+                         aria-valuenow="{{ dominio_data.pontuacao }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100"></div>
+                </div>
+                
+                <!-- Recomendação IA -->
+                {% if dominio_data.recomendacao %}
+                <div class="recomendacao-box">
+                    <h6 class="mb-2">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Recomendações de Melhoria
+                    </h6>
+                    <p class="mb-0 text-muted">{{ dominio_data.recomendacao }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Botões de ação -->
+        <div class="text-center mb-5">
+            <button onclick="window.print()" class="btn btn-print">
+                <i class="fas fa-print me-2"></i>
+                Imprimir Resultado
+            </button>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Função para calcular nível de maturidade
+        function getNivelMaturidade(pontuacao) {
+            if (pontuacao >= 80) return 'Otimizado';
+            if (pontuacao >= 60) return 'Gerenciado';
+            if (pontuacao >= 40) return 'Definido';
+            if (pontuacao >= 20) return 'Em Desenvolvimento';
+            return 'Inicial';
+        }
+        
+        // Dados para o gráfico de radar
+        const dominiosLabels = [
+            {% for dominio_data in dominios_dados %}
+            '{{ dominio_data.dominio.nome }}'{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        const dominiosPontuacoes = [
+            {% for dominio_data in dominios_dados %}
+            {{ dominio_data.pontuacao|round|int }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Configuração do gráfico de radar
+        const ctx = document.getElementById('radarChart');
+        const radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: dominiosLabels,
+                datasets: [{
+                    label: 'Pontuação por Domínio',
+                    data: dominiosPontuacoes,
+                    fill: true,
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: 'rgb(102, 126, 234)',
+                    pointBackgroundColor: 'rgb(102, 126, 234)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(102, 126, 234)',
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100,
+                        ticks: {
+                            stepSize: 20
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.r + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
