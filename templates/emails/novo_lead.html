@@ -24,15 +24,15 @@
                     <!-- Informações do Lead -->
                     <tr>
                         <td style="padding: 30px;">
-                            <h2 style="margin: 0 0 20px; color: #333333; font-size: 20px;">
+                            <h2 style="margin: 0 0 20px; color: #333333 !important; font-size: 20px;">
                                 Informações do Lead
                             </h2>
                             
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                 <tr>
                                     <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px; margin-bottom: 8px;">
-                                        <strong style="color: #667eea;">📋 Assessment:</strong><br>
-                                        <span style="color: #333333; font-size: 16px;">{{ tipo_assessment.nome }}</span>
+                                        <strong style="color: #667eea !important;">📋 Assessment:</strong><br>
+                                        <span style="color: #333333 !important; font-size: 16px;">{{ tipo_assessment.nome }}</span>
                                     </td>
                                 </tr>
                                 
@@ -40,8 +40,8 @@
                                 
                                 <tr>
                                     <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
-                                        <strong style="color: #667eea;">👤 Nome:</strong><br>
-                                        <span style="color: #333333; font-size: 16px;">{{ lead.nome }}</span>
+                                        <strong style="color: #667eea !important;">👤 Nome:</strong><br>
+                                        <span style="color: #333333 !important; font-size: 16px;">{{ lead.nome }}</span>
                                     </td>
                                 </tr>
                                 
@@ -49,8 +49,8 @@
                                 
                                 <tr>
                                     <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
-                                        <strong style="color: #667eea;">📧 E-mail:</strong><br>
-                                        <a href="mailto:{{ lead.email }}" style="color: #667eea; text-decoration: none; font-size: 16px;">
+                                        <strong style="color: #667eea !important;">📧 E-mail:</strong><br>
+                                        <a href="mailto:{{ lead.email }}" style="color: #667eea !important; text-decoration: none; font-size: 16px;">
                                             {{ lead.email }}
                                         </a>
                                     </td>
@@ -61,8 +61,8 @@
                                 
                                 <tr>
                                     <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
-                                        <strong style="color: #667eea;">📱 Telefone:</strong><br>
-                                        <a href="tel:{{ lead.telefone }}" style="color: #667eea; text-decoration: none; font-size: 16px;">
+                                        <strong style="color: #667eea !important;">📱 Telefone:</strong><br>
+                                        <a href="tel:{{ lead.telefone }}" style="color: #667eea !important; text-decoration: none; font-size: 16px;">
                                             {{ lead.telefone }}
                                         </a>
                                     </td>
@@ -74,8 +74,8 @@
                                 
                                 <tr>
                                     <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
-                                        <strong style="color: #667eea;">🏢 Empresa:</strong><br>
-                                        <span style="color: #333333; font-size: 16px;">{{ lead.empresa }}</span>
+                                        <strong style="color: #667eea !important;">🏢 Empresa:</strong><br>
+                                        <span style="color: #333333 !important; font-size: 16px;">{{ lead.empresa }}</span>
                                     </td>
                                 </tr>
                                 {% endif %}
@@ -149,11 +149,11 @@
                     <!-- Call to Action -->
                     <tr>
                         <td style="padding: 0 30px 30px; text-align: center;">
-                            <p style="margin: 0 0 20px; color: #666666; font-size: 16px;">
+                            <p style="margin: 0 0 20px; color: #666666 !important; font-size: 16px;">
                                 Este lead respondeu ao assessment e está aguardando contato.
                             </p>
-                            <a href="{{ request.url_root }}admin/leads" 
-                               style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                            <a href="#" 
+                               style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
                                 📋 Ver Detalhes no Sistema
                             </a>
                         </td>
