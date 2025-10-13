@@ -153,8 +153,82 @@
             color: white;
         }
         
+        .cta-container {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border-radius: 20px;
+            padding: 50px 30px;
+            text-align: center;
+            margin: 40px 0;
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+        }
+        
+        .cta-icon {
+            font-size: 60px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .cta-title {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .cta-text {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 18px;
+            margin-bottom: 30px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-cta {
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+        }
+        
+        .btn-whatsapp:hover {
+            background: #128C7E;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+        }
+        
+        .btn-email {
+            background: white;
+            color: #4CAF50;
+        }
+        
+        .btn-email:hover {
+            background: #f0f0f0;
+            color: #45a049;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+        }
+        
         @media print {
-            .btn-print {
+            .btn-print, .cta-container {
                 display: none;
             }
             
@@ -379,6 +453,31 @@
                 <i class="fas fa-print me-2"></i>
                 Imprimir Resultado
             </button>
+        </div>
+        
+        <!-- CTA de Contato -->
+        <div class="cta-container">
+            <div class="cta-icon">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <h3 class="cta-title">Quer melhorar seus resultados?</h3>
+            <p class="cta-text">
+                A <strong>Gruppen</strong> e suas empresas especializadas podem ajudar você a evoluir 
+                nos controles deste assessment. Entre em contato conosco agora mesmo!
+            </p>
+            <div class="cta-buttons">
+                <a href="https://wa.me/5551989683228?text=Olá! Vi meu resultado do assessment e gostaria de saber como a Gruppen pode me ajudar." 
+                   target="_blank" 
+                   class="btn-cta btn-whatsapp">
+                    <i class="fab fa-whatsapp me-2"></i>
+                    WhatsApp: (51) 98968-3228
+                </a>
+                <a href="mailto:comercial@gruppen.com.br?subject=Interesse após Assessment&body=Olá! Vi meu resultado do assessment e gostaria de saber mais sobre como a Gruppen pode me ajudar." 
+                   class="btn-cta btn-email">
+                    <i class="fas fa-envelope me-2"></i>
+                    comercial@gruppen.com.br
+                </a>
+            </div>
         </div>
     </div>
     

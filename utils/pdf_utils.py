@@ -853,6 +853,67 @@ def gerar_relatorio_estatisticas(projeto):
             
             story.append(Spacer(1, 15))
     
+    # CTA de Contato
+    story.append(PageBreak())
+    
+    # Criar um box de destaque para o CTA
+    cta_style = ParagraphStyle(
+        'CTAStyle',
+        parent=normal_style,
+        fontSize=12,
+        textColor=colors.HexColor('#0f4c75'),
+        alignment=TA_CENTER,
+        spaceAfter=10,
+        leading=18
+    )
+    
+    cta_title_style = ParagraphStyle(
+        'CTATitleStyle',
+        parent=heading_style,
+        fontSize=18,
+        textColor=colors.HexColor('#4CAF50'),
+        alignment=TA_CENTER,
+        spaceAfter=15
+    )
+    
+    # Título do CTA
+    story.append(Paragraph("QUER MELHORAR SEUS RESULTADOS?", cta_title_style))
+    
+    # Texto do CTA
+    cta_text = """
+    A <b>Gruppen</b> e suas empresas especializadas podem ajudar você a evoluir 
+    nos controles deste assessment. Entre em contato conosco agora mesmo!
+    """
+    story.append(Paragraph(cta_text, cta_style))
+    story.append(Spacer(1, 15))
+    
+    # Dados de contato em tabela
+    contato_data = [
+        ['Canal', 'Contato'],
+        ['WhatsApp', '(51) 98968-3228'],
+        ['E-mail', 'comercial@gruppen.com.br'],
+        ['Website', 'www.gruppen.com.br']
+    ]
+    
+    contato_table = Table(contato_data, colWidths=[2*inch, 4*inch])
+    contato_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4CAF50')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#e8f5e9')),
+        ('FONTSIZE', (0, 1), (-1, -1), 11),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#4CAF50')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 1), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 10)
+    ]))
+    
+    story.append(contato_table)
+    story.append(Spacer(1, 30))
+    
     # Legenda de níveis de maturidade
     story.append(PageBreak())
     story.append(Paragraph("LEGENDA - NÍVEIS DE MATURIDADE", heading_style))
