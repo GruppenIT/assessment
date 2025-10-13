@@ -20,8 +20,9 @@ from models.assessment_version import AssessmentDominio
 from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.resposta import Resposta
-from app import db, app
+from app import db
 from sqlalchemy import func
+from flask import current_app
 
 def gerar_relatorio_markdown(projeto):
     """
@@ -353,7 +354,7 @@ def gerar_relatorio_estatisticas_visual(projeto):
     # Barra de logos das empresas
     try:
         # Usar caminho absoluto baseado no root_path da aplicação
-        base_path = app.root_path if hasattr(app, 'root_path') else os.path.dirname(os.path.dirname(__file__))
+        base_path = current_app.root_path if current_app else os.path.dirname(os.path.dirname(__file__))
         logos_paths = [
             os.path.join(base_path, 'static', 'img', 'gruppen.png'),
             os.path.join(base_path, 'static', 'img', 'zerobox.png'),

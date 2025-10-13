@@ -51,6 +51,7 @@ Preferred communication style: Simple, everyday language.
 - **Two-Factor Authentication (2FA)**: Complete TOTP implementation with QR code setup, backup codes, user self-reset, and admin reset capabilities. Mandatory for respondents, optional for admins. Includes comprehensive audit trail and session management.
 - **Mandatory Password Change**: Administrators can force respondents to change passwords on next login via checkbox in respondent editing. After login and 2FA verification, users are redirected to mandatory password change page. Flag is automatically cleared after successful password update.
 - **Public Assessment URL System**: Shareable URLs for assessments marked as "URL Pública". Anonymous users can respond to simplified questions (3 options: Não=0, Parcial=3, Sim=5), provide contact information (lead capture), and receive AI-generated domain-specific recommendations. Mobile-first design with progress tracking, one domain per page navigation, and secure token-based access to results. Respondent data is collected after answering questions to avoid integrity errors.
+- **Corporate Branding**: Four company logos (Gruppen, Zerobox, Firewall365, GSecDo) displayed in a black banner across public assessment pages (responder_dominio.html, resultado.html) and PDF reports. Dark theme applied to public assessment interface with gradient backgrounds (#1a1a2e to #16213e) for modern, professional appearance. Logo paths use Flask's current_app.root_path for deployment portability.
 
 ## External Dependencies
 
