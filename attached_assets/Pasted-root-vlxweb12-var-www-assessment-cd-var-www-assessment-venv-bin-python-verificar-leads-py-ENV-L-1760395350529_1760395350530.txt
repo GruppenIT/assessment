@@ -1,0 +1,45 @@
+root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+venv/bin/python verificar_leads.py
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+
+📊 ÚLTIMOS ASSESSMENTS PÚBLICOS E LEADS
+======================================================================
+
+📋 Assessment Público #91
+Traceback (most recent call last):
+  File "/var/www/assessment/verificar_leads.py", line 15, in <module>
+    print(f"   Tipo: {assessment.tipo_assessment.nome}")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'nome'
+root@vlxweb12:/var/www/assessment# # Ver se há leads criados hoje
+venv/bin/python -c "
+from app import app
+from models.lead import Lead
+from datetime import datetime, timedelta
+
+with app.app_context():
+    hoje = datetime.utcnow().date()
+    leads_hoje = Lead.query.filter(Lead.data_criacao >= hoje).all()
+    print(f'Leads criados hoje: {len(leads_hoje)}')
+    for lead in leads_hoje:
+        print(f'  - Lead #{lead.id}: {lead.nome} ({lead.email})')
+"
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+<string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+Leads criados hoje: 1
+  - Lead #22: Ricardo Souza (rolando@garros.com.fr)
+root@vlxweb12:/var/www/assessment#
