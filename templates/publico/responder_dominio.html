@@ -12,8 +12,29 @@
     
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
+            padding: 0;
+        }
+        
+        .logo-bar {
+            background: #000000;
+            padding: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        .logo-bar img {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .content-wrapper {
             padding: 20px 0;
         }
         
@@ -26,7 +47,7 @@
         }
         
         .progress-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f4c75 0%, #1b262c 100%);
             color: white;
             padding: 30px;
             border-radius: 15px 15px 0 0;
@@ -132,7 +153,7 @@
         }
         
         .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f4c75 0%, #1b262c 100%);
             border: none;
             padding: 15px 40px;
             font-size: 18px;
@@ -144,7 +165,7 @@
         
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+            box-shadow: 0 8px 20px rgba(15,76,117,0.4);
         }
         
         .domain-progress {
@@ -176,7 +197,15 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Barra de Logos -->
+    <div class="logo-bar">
+        <img src="{{ url_for('static', filename='img/gruppen.png') }}" alt="Gruppen">
+        <img src="{{ url_for('static', filename='img/zerobox.png') }}" alt="Zerobox">
+        <img src="{{ url_for('static', filename='img/firewall365.png') }}" alt="Firewall365">
+        <img src="{{ url_for('static', filename='img/gsecdo.png') }}" alt="GSecDo">
+    </div>
+    
+    <div class="container content-wrapper">
         <div class="assessment-card">
             <!-- Cabeçalho com progresso -->
             <div class="progress-header">
