@@ -1,0 +1,44 @@
+(venv) root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+source venv/bin/activate
+python3 << 'PYEOF'
+from app import app, db
+from models.assessment_publico import AssessmentPublico
+
+with app.app_context():
+    # Verificar assessments 18 e 19
+    for assessment_id in [18, 19]:
+        assessment = AssessmentPublico.query.get(assessment_id)
+        if assessment:
+            print(f"\nAssessment #{assessment_id}:")
+            print(f"  Nome: {assessment.nome_respondente}")
+            print(f"  Email: {assessment.email_respondente}")
+            print(f"  Empresa: {assessment.empresa_respondente}")
+            print(f"  Data conclusão: {assessment.data_conclusao}")
+            print(f"  Tem lead? {hasattr(assessment, 'lead') and assessment.lead is not None}")
+PYEOF
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+<stdin>:7: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+
+Assessment #18:
+  Nome: Ricardo Souza
+  Email: ricardo@ramotransp.com.br
+  Empresa: Ramo Transportadora LTDA
+  Data conclusão: 2025-10-13 15:19:14.792249
+  Tem lead? True
+
+Assessment #19:
+  Nome: Rolando Lero
+  Email: rolando@garros.com.fr
+  Empresa: Ramo Transportadora LTDA
+  Data conclusão: 2025-10-13 17:02:29.953509
+  Tem lead? True
+(venv) root@vlxweb12:/var/www/assessment# tail -200 /var/log/supervisor/assessment-stderr*.log | grep -i "dados do respondente\|lead\|assessment público" | tail -30
+tail: cannot open '/var/log/supervisor/assessment-stderr*.log' for reading: No such file or directory
+(venv) root@vlxweb12:/var/www/assessment#
