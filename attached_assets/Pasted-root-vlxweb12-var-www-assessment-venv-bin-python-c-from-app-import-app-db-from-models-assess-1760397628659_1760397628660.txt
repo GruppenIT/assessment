@@ -1,0 +1,78 @@
+root@vlxweb12:/var/www/assessment# venv/bin/python -c "
+from app import app, db
+from models.assessment_publico import AssessmentPublico
+from models.lead import Lead
+with app.app_context():
+    assessment = AssessmentPublico.query.get(93)
+
+    if not assessment:
+        print('Assessment não encontrado')
+    else:
+        # Verificar se já tem lead
+        lead_existente = Lead.query.filter_by(assessment_publico_id=93).first()
+
+        if lead_existente:
+            print(f'Lead já existe: #{lead_existente.id}')
+        else:
+            # Criar lead
+            lead = Lead.criar_de_assessment_publico(assessment)
+            db.session.add(lead)
+            db.session.flush()
+
+            lead.adicionar_historico(
+                acao='criado',
+                detalhes='Lead criado manualmente via script'
+            )
+
+            db.session.commit()
+            print(f'✓ Lead #{lead.id} criado com sucesso!')
+
+            # Tentar enviar email
+            from utils.email_utils import enviar_alerta_novo_lead
+
+            tipo = assessment.tipo_assessment
+            if tipo and tipo.email_destinatarios:
+                print(f'Enviando e-mail para: {tipo.email_destinatarios}')
+                resultado = enviar_alerta_novo_lead(lead, tipo)
+                if resultado:
+                    print('✓ E-mail enviado com sucesso!')
+                else:
+                    print('✗ Falha no envio de e-mail')
+            else:
+                print('Sem destinatários configurados')
+"
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+<string>:6: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+✓ Lead #25 criado com sucesso!
+Enviando e-mail para: rodrigo@gruppen.com.br
+DEBUG:root:Logo path encontrado: logos/715b568be35740378f03d145aa7e0bf2.png
+ERROR:utils.email_utils:Erro ao enviar alerta de novo lead: 'models.lead.Lead object' has no attribute 'pontuacao_total'
+✗ Falha no envio de e-mail
+root@vlxweb12:/var/www/assessment# venv/bin/python -c "
+from app import app
+from models.lead import Lead
+with app.app_context():
+    leads = Lead.query.all()
+    print(f'\nTotal de leads: {len(leads)}')
+    for lead in leads:
+        print(f'  Lead #{lead.id}: {lead.nome} - {lead.empresa}')
+"
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+
+Total de leads: 1
+  Lead #25: Ricardo Souza - Ramo Transportadora LTDA
+root@vlxweb12:/var/www/assessment#

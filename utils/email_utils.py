@@ -242,7 +242,7 @@ E-mail: {lead.email}
 Telefone: {lead.telefone or 'Não informado'}
 Empresa: {lead.empresa or 'Não informada'}
 
-Pontuação Obtida: {lead.pontuacao_total:.1f}%
+Pontuação Obtida: {lead.pontuacao_geral:.1f}%
 
 Este lead respondeu ao assessment público e está aguardando contato.
 
