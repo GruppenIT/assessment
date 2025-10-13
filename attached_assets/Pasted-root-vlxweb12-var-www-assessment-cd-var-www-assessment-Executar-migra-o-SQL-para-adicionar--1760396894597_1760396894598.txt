@@ -1,0 +1,140 @@
+root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+
+# Executar migração SQL para adicionar a coluna
+sudo -u postgres psql -d "$PGDATABASE" << 'EOF'
+DO $$
+BEGIN
+    -- Verificar se coluna já existe
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'tipos_assessment'
+        AND column_name = 'email_destinatarios'
+    ) THEN
+        -- Adicionar coluna
+        ALTER TABLE tipos_assessment
+        ADD COLUMN email_destinatarios TEXT;
+
+        COMMENT ON COLUMN tipos_assessment.email_destinatarios IS
+        'E-mails que receberão alertas de novos leads (separados por vírgula ou ponto-e-vírgula)';
+
+        RAISE NOTICE 'Coluna email_destinatarios adicionada com sucesso';
+    ELSE
+        RAISE NOTICE 'Coluna email_destinatarios já existe';
+    END IF;
+END $$;
+EOF
+
+# Verificar se a coluna foi criada
+sudo -u postgres psql -d "$PGDATABASE" -c "\d tipos_assessment" | grep email_destinatarios
+
+# Reiniciar aplicação
+sudo supervisorctl restart assessment
+
+# Testar novamente
+venv/bin/python diagnosticar_assessment_criado.py
+ERROR:  relation "tipos_assessment" does not exist
+CONTEXT:  SQL statement "ALTER TABLE tipos_assessment
+        ADD COLUMN email_destinatarios TEXT"
+PL/pgSQL function inline_code_block line 10 at SQL statement
+Did not find any relation named "tipos_assessment".
+assessment: stopped
+assessment: started
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+
+🔍 DIAGNÓSTICO DO ASSESSMENT CRIADO
+======================================================================
+
+📋 Assessment Público #93
+   tipo_assessment_id: 3
+   token: 345CuhGNQ7M5EUoMXEfmZ9eDVbqNnPcUSjMM_qAtdyY
+   data_inicio: 2025-10-13 23:03:21.441500
+   data_conclusao: 2025-10-13 23:03:37.880319
+
+👤 Dados do Respondente:
+   nome: Ricardo Souza
+   email: ricardo@ramotransp.com.br
+   empresa: Ramo Transportadora LTDA
+
+📊 Respostas:
+   Total de respostas: 7
+
+🔍 Tipo de Assessment:
+Traceback (most recent call last):
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column tipos_assessment.email_destinatarios does not exist
+LINE 1: ...ment.url_publica AS tipos_assessment_url_publica, tipos_asse...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/var/www/assessment/diagnosticar_assessment_criado.py", line 33, in <module>
+    if assessment.tipo_assessment:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 566, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 1086, in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 1121, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/strategies.py", line 1079, in _emit_lazyload
+    return loading.load_on_pk_identity(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 694, in load_on_pk_identity
+    session.execute(
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+           ^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1637, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2351, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+  File "/var/www/assessment/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column tipos_assessment.email_destinatarios does not exist
+LINE 1: ...ment.url_publica AS tipos_assessment_url_publica, tipos_asse...
+                                                             ^
+
+[SQL: SELECT tipos_assessment.id AS tipos_assessment_id, tipos_assessment.nome AS tipos_assessment_nome, tipos_assessment.versao AS tipos_assessment_versao, tipos_assessment.descricao AS tipos_assessment_descricao, tipos_assessment.ordem AS tipos_assessment_ordem, tipos_assessment.ativo AS tipos_assessment_ativo, tipos_assessment.url_publica AS tipos_assessment_url_publica, tipos_assessment.email_destinatarios AS tipos_assessment_email_destinatarios, tipos_assessment.data_criacao AS tipos_assessment_data_criacao
+FROM tipos_assessment
+WHERE tipos_assessment.id = %(pk_1)s]
+[parameters: {'pk_1': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+root@vlxweb12:/var/www/assessment#
