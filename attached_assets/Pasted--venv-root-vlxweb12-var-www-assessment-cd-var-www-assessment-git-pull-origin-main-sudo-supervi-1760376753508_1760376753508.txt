@@ -1,0 +1,91 @@
+(venv) root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+git pull origin main
+sudo supervisorctl restart assessment
+remote: Enumerating objects: 10, done.
+remote: Counting objects: 100% (10/10), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 6 (delta 4), reused 6 (delta 4), pack-reused 0 (from 0)
+Unpacking objects: 100% (6/6), 2.21 KiB | 1.11 MiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   8a265bb..6dd3e3d  main       -> origin/main
+Updating 8a265bb..6dd3e3d
+Fast-forward
+ ...ted--venv-root-vlxweb12-var-www-assessment-cd-var-www-assessment-git-pull-origin-main-sudo-supervi-1760376446802_1760376446802.txt | 88 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ models/lead.py                                                                                                                        |  4 ++--
+ 2 files changed, 90 insertions(+), 2 deletions(-)
+ create mode 100644 attached_assets/Pasted--venv-root-vlxweb12-var-www-assessment-cd-var-www-assessment-git-pull-origin-main-sudo-supervi-1760376446802_1760376446802.txt
+assessment: stopped
+assessment: started
+(venv) root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+source venv/bin/activate
+python3 << 'PYEOF'
+from app import app, db
+from models.assessment_publico import AssessmentPublico
+from models.lead import Lead
+
+with app.app_context():
+    for assessment_id in [18, 19, 20, 21]:
+        assessment = AssessmentPublico.query.get(assessment_id)
+        if assessment and assessment.nome_respondente:
+            lead_existente = Lead.query.filter_by(assessment_publico_id=assessment.id).first()
+
+            if not lead_existente:
+                print(f"\n=== Criando lead para assessment {assessment_id} ===")
+                try:
+                    lead = Lead.criar_de_assessment_publico(assessment)
+                    print(f"✓ Nome: {lead.nome}")
+                    print(f"✓ Tipo: {lead.tipo_assessment_nome}")
+
+                    db.session.add(lead)
+                    db.session.flush()
+
+                    lead.adicionar_historico(
+                        acao='criado',
+                        detalhes='Lead criado via script de correção'
+                    )
+
+                    db.session.commit()
+                    print(f"✓ Lead {lead.id} criado!")
+                except Exception as e:
+                    print(f"✗ ERRO: {e}")
+                    db.session.rollback()
+            else:
+                print(f"Assessment {assessment_id}: já tem lead #{lead_existente.id}")
+
+    print("\n=== TOTAL DE LEADS ===")
+    print(f"{Lead.query.count()} leads no sistema")
+PYEOF
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+<stdin>:7: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+
+=== Criando lead para assessment 18 ===
+✓ Nome: Ricardo Souza
+✓ Tipo: Assessment Público
+✓ Lead 2 criado!
+
+=== Criando lead para assessment 19 ===
+✓ Nome: Rolando Lero
+✓ Tipo: Assessment Público
+✓ Lead 3 criado!
+
+=== Criando lead para assessment 20 ===
+✓ Nome: Rolando Lero
+✓ Tipo: Assessment Público
+✓ Lead 4 criado!
+
+=== Criando lead para assessment 21 ===
+✓ Nome: Rolando Lero
+✓ Tipo: Assessment Público
+✓ Lead 5 criado!
+
+=== TOTAL DE LEADS ===
+5 leads no sistema
+(venv) root@vlxweb12:/var/www/assessment#
