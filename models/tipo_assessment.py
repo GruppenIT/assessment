@@ -4,7 +4,7 @@ from app import db
 class TipoAssessment(db.Model):
     """Modelo para tipos de assessment (ex: Cibersegurança, Compliance, etc.)"""
     
-    __tablename__ = 'tipos_assessment'
+    __tablename__ = 'assessment_tipos'
     
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False, comment='Nome do tipo de assessment')
