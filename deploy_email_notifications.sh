@@ -4,11 +4,32 @@
 
 set -e  # Parar em caso de erro
 
-# Carregar variáveis de ambiente se existir arquivo .env
+# Carregar variáveis de ambiente do .env se existir
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
-    echo "Variáveis de ambiente carregadas do .env"
+    set -a  # Exportar automaticamente todas as variáveis
+    source .env
+    set +a
+    echo "✓ Variáveis de ambiente carregadas do .env"
 fi
+
+# Carregar do supervisor.conf se as variáveis ainda não estiverem definidas
+if [ -z "$PGUSER" ] && [ -f "/etc/supervisor/conf.d/assessment.conf" ]; then
+    echo "Tentando carregar variáveis do Supervisor..."
+    export $(grep -E "^environment=" /etc/supervisor/conf.d/assessment.conf | sed 's/environment=//' | tr ',' '\n')
+fi
+
+# Verificar se as variáveis essenciais estão definidas
+if [ -z "$PGUSER" ] || [ -z "$PGDATABASE" ]; then
+    echo "❌ ERRO: Variáveis PostgreSQL não encontradas!"
+    echo "Por favor, defina manualmente:"
+    echo "export PGUSER=seu_usuario"
+    echo "export PGDATABASE=seu_database"
+    echo "export PGHOST=localhost"
+    echo "export PGPORT=5432"
+    exit 1
+fi
+
+echo "✓ Usando PostgreSQL: $PGUSER@$PGHOST:$PGPORT/$PGDATABASE"
 
 echo "=========================================="
 echo "DEPLOYMENT: Sistema de Notificações E-mail"

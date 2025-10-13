@@ -1,0 +1,35 @@
+root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/deploy_email_notifications.sh | sudo bash
+==========================================
+DEPLOYMENT: Sistema de Notificações E-mail
+==========================================
+1. Atualizando código do repositório...
+remote: Enumerating objects: 13, done.
+remote: Counting objects: 100% (13/13), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 8 (delta 5), reused 8 (delta 5), pack-reused 0 (from 0)
+Unpacking objects: 100% (8/8), 4.45 KiB | 2.23 MiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   31a9a22..7c5ba1f  main       -> origin/main
+Updating 31a9a22..7c5ba1f
+Fast-forward
+ .replit                                                                                                                               |   4 +-
+ CORRECAO_DEPLOYMENT_EMAIL.md                                                                                                          | 160 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ README_EMAIL_NOTIFICATIONS.md                                                                                                         |  30 ++++++++++---
+ ...ed-root-vlxweb12-var-www-assessment-curl-sSL-https-raw-githubusercontent-com-GruppenIT-assessment--1760391929997_1760391929998.txt |  46 ++++++++++++++++++++
+ deploy_email_notifications.sh                                                                                                         |   8 +++-
+ 5 files changed, 239 insertions(+), 9 deletions(-)
+ create mode 100644 CORRECAO_DEPLOYMENT_EMAIL.md
+ create mode 100644 attached_assets/Pasted-root-vlxweb12-var-www-assessment-curl-sSL-https-raw-githubusercontent-com-GruppenIT-assessment--1760391929997_1760391929998.txt
+2. Adicionando coluna email_destinatarios na tabela assessment_tipos...
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+git pull origin main
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+root@vlxweb12:/var/www/assessment# psql -U "$PGUSER" -d "$PGDATABASE" -h "$PGHOST" -p "$PGPORT" -c "
+ALTER TABLE assessment_tipos ADD COLUMN IF NOT EXISTS email_destinatarios TEXT;"
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+root@vlxweb12:/var/www/assessment#
