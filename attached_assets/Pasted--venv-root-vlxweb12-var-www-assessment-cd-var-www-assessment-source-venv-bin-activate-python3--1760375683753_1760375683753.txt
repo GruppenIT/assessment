@@ -1,0 +1,56 @@
+(venv) root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+source venv/bin/activate
+python3 << 'PYEOF'
+from app import app, db
+from models.assessment_publico import AssessmentPublico
+from models.lead import Lead
+
+with app.app_context():
+    # Verificar todos os leads
+    print("=== TODOS OS LEADS NO BANCO ===")
+    leads = Lead.query.all()
+    print(f"Total: {len(leads)}")
+    for lead in leads:
+        print(f"  Lead {lead.id}: {lead.nome} - Assessment #{lead.assessment_publico_id}")
+
+    print("\n=== VERIFICAR ASSESSMENTS 18 e 19 ===")
+    for assessment_id in [18, 19]:
+        assessment = AssessmentPublico.query.get(assessment_id)
+        if assessment:
+            print(f"\nAssessment #{assessment_id}:")
+            print(f"  Nome: {assessment.nome_respondente}")
+            if hasattr(assessment, 'lead') and assessment.lead:
+                print(f"  Lead ID: {assessment.lead.id}")
+                print(f"  Lead Nome: {assessment.lead.nome}")
+            else:
+                print(f"  Lead: Nenhum")
+PYEOF
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+=== TODOS OS LEADS NO BANCO ===
+Total: 1
+  Lead 1: Rodrigo Rocha - Assessment #17
+
+=== VERIFICAR ASSESSMENTS 18 e 19 ===
+<stdin>:15: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+
+Assessment #18:
+  Nome: Ricardo Souza
+  Lead: Nenhum
+
+Assessment #19:
+  Nome: Rolando Lero
+  Lead: Nenhum
+(venv) root@vlxweb12:/var/www/assessment# sudo -u postgres psql -d assessment_db -c "SELECT id, assessment_publico_id, nome, email, status FROM leads ORDER BY id;"
+ id | assessment_publico_id |     nome      |         email          |  status
+----+-----------------------+---------------+------------------------+-----------
+  1 |                    17 | Rodrigo Rocha | rodrigo@gruppen.com.br | contatado
+(1 row)
+
+(venv) root@vlxweb12:/var/www/assessment#
