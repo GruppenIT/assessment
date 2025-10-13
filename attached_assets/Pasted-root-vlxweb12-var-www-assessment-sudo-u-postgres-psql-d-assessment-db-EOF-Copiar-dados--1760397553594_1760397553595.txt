@@ -1,0 +1,78 @@
+root@vlxweb12:/var/www/assessment# sudo -u postgres psql -d assessment_db << 'EOF'
+-- Copiar dados
+INSERT INTO tipos_assessment (id, nome, versao, descricao, ordem, ativo, url_publica, email_destinatarios, data_criacao)
+SELECT id, nome, '1.0', descricao, 1, ativo, url_publica, email_destinatarios, data_criacao
+FROM assessment_tipos
+ON CONFLICT (id) DO UPDATE SET
+    nome = EXCLUDED.nome,
+    descricao = EXCLUDED.descricao,
+    ativo = EXCLUDED.ativo,
+    url_publica = EXCLUDED.url_publica,
+    email_destinatarios = EXCLUDED.email_destinatarios;
+SELECT 'Dados copiados com sucesso' AS resultado;
+EOF
+INSERT 0 5
+         resultado
+----------------------------
+ Dados copiados com sucesso
+(1 row)
+
+root@vlxweb12:/var/www/assessment# git pull origin main
+remote: Enumerating objects: 12, done.
+remote: Counting objects: 100% (12/12), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 7 (delta 5), reused 7 (delta 5), pack-reused 0 (from 0)
+Unpacking objects: 100% (7/7), 2.47 KiB | 2.47 MiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   53e0d85..8198df0  main       -> origin/main
+Updating 53e0d85..8198df0
+Fast-forward
+ .replit                                                                                                                               |  4 ++++
+ ...asted-root-vlxweb12-var-www-assessment-cd-var-www-assessment-1-Atualizar-c-digo-git-pull-origin-ma-1760397453595_1760397453596.txt | 79 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ models/tipo_assessment.py                                                                                                             |  2 +-
+ 3 files changed, 84 insertions(+), 1 deletion(-)
+ create mode 100644 attached_assets/Pasted-root-vlxweb12-var-www-assessment-cd-var-www-assessment-1-Atualizar-c-digo-git-pull-origin-ma-1760397453595_1760397453596.txt
+root@vlxweb12:/var/www/assessment# sudo supervisorctl restart assessment
+assessment: ERROR (not running)
+assessment: started
+root@vlxweb12:/var/www/assessment# venv/bin/python diagnosticar_assessment_criado.py
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+
+🔍 DIAGNÓSTICO DO ASSESSMENT CRIADO
+======================================================================
+
+📋 Assessment Público #93
+   tipo_assessment_id: 3
+   token: 345CuhGNQ7M5EUoMXEfmZ9eDVbqNnPcUSjMM_qAtdyY
+   data_inicio: 2025-10-13 23:03:21.441500
+   data_conclusao: 2025-10-13 23:03:37.880319
+
+👤 Dados do Respondente:
+   nome: Ricardo Souza
+   email: ricardo@ramotransp.com.br
+   empresa: Ramo Transportadora LTDA
+
+📊 Respostas:
+   Total de respostas: 7
+
+🔍 Tipo de Assessment:
+   ✓ Tipo encontrado: Avaliação de Resiliência de Infraestrutura de Backup
+   ID: 3
+   Email destinatários: rodrigo@gruppen.com.br
+
+🎯 Lead:
+   ✗ NENHUM LEAD CRIADO
+
+❓ Possíveis motivos:
+
+======================================================================
+
+root@vlxweb12:/var/www/assessment#
