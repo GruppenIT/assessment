@@ -41,11 +41,7 @@ $PYTHON_CMD <<EOF
 import sys
 import os
 
-# Carregar .env se existir
-if os.path.exists('.env'):
-    from dotenv import load_dotenv
-    load_dotenv()
-
+# Não usar dotenv aqui, o app.py já carrega
 from app import app
 from utils.email_utils import EmailSender
 
