@@ -229,10 +229,13 @@ def enviar_alerta_novo_lead(lead, tipo_assessment):
             return False
         
         # Montar corpo do e-mail
-        from flask import render_template
-        corpo_html = render_template('emails/novo_lead.html', 
-                                     lead=lead, 
-                                     tipo_assessment=tipo_assessment)
+        from flask import render_template, current_app
+        
+        # Criar contexto de requisição para renderizar template
+        with current_app.test_request_context():
+            corpo_html = render_template('emails/novo_lead.html', 
+                                         lead=lead, 
+                                         tipo_assessment=tipo_assessment)
         
         corpo_texto = f"""
 Novo Lead Capturado - {tipo_assessment.nome}

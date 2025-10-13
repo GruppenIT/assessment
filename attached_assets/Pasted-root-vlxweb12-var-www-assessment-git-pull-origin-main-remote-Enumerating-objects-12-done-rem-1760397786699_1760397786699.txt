@@ -1,0 +1,65 @@
+root@vlxweb12:/var/www/assessment# git pull origin main
+remote: Enumerating objects: 12, done.
+remote: Counting objects: 100% (12/12), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 7 (delta 4), reused 7 (delta 4), pack-reused 0 (from 0)
+Unpacking objects: 100% (7/7), 2.13 KiB | 1.07 MiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   5ef59cf..5473bc0  main       -> origin/main
+Updating 5ef59cf..5473bc0
+Fast-forward
+ attached_assets/Pasted-root-vlxweb12-var-www-assessment-git-pull-origin-main-remote-Enumerating-objects-14-done-rem-1760397699579_1760397699579.txt | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ templates/emails/novo_lead.html                                                                                                                     |  6 +++---
+ 2 files changed, 58 insertions(+), 3 deletions(-)
+ create mode 100644 attached_assets/Pasted-root-vlxweb12-var-www-assessment-git-pull-origin-main-remote-Enumerating-objects-14-done-rem-1760397699579_1760397699579.txt
+root@vlxweb12:/var/www/assessment# sudo supervisorctl restart assessment
+assessment: stopped
+assessment: started
+root@vlxweb12:/var/www/assessment# venv/bin/python -c "
+from app import app
+from models.lead import Lead
+from models.tipo_assessment import TipoAssessment
+from utils.email_utils import enviar_alerta_novo_lead
+with app.app_context():
+    lead = Lead.query.get(25)
+    tipo = TipoAssessment.query.get(3)
+
+    if lead and tipo:
+        print(f'📧 Enviando e-mail para: {tipo.email_destinatarios}')
+        print(f'   Lead: {lead.nome}')
+        print(f'   Pontuação: {lead.pontuacao_geral}%')
+        print()
+
+        resultado = enviar_alerta_novo_lead(lead, tipo)
+
+        if resultado:
+            print('✅ E-MAIL ENVIADO COM SUCESSO!')
+            print('   Verifique sua caixa de entrada em: rodrigo@gruppen.com.br')
+        else:
+            print('❌ Falha no envio - verifique os logs')
+    else:
+        print('❌ Lead ou tipo não encontrado')
+"
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+<string>:7: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+<string>:8: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+📧 Enviando e-mail para: rodrigo@gruppen.com.br
+   Lead: Ricardo Souza
+   Pontuação: 82.9%
+
+DEBUG:root:Logo path encontrado: logos/715b568be35740378f03d145aa7e0bf2.png
+ERROR:utils.email_utils:Erro ao enviar alerta de novo lead: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+❌ Falha no envio - verifique os logs
+root@vlxweb12:/var/www/assessment#
