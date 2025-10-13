@@ -48,6 +48,8 @@ class Lead(db.Model):
     @staticmethod
     def criar_de_assessment_publico(assessment_publico):
         """Cria um lead a partir de um assessment público"""
+        from models.assessment_tipo import AssessmentTipo
+        
         # Calcular pontuações
         pontuacao_geral = assessment_publico.calcular_pontuacao_geral()
         
@@ -59,6 +61,13 @@ class Lead(db.Model):
             pontuacao = assessment_publico.calcular_pontuacao_dominio(dominio.id)
             pontuacoes_dominios[dominio.nome] = round(pontuacao, 1)
         
+        # Buscar nome do tipo de assessment de forma robusta
+        tipo_assessment_nome = "Assessment Público"
+        if assessment_publico.tipo_assessment_id:
+            tipo = AssessmentTipo.query.get(assessment_publico.tipo_assessment_id)
+            if tipo:
+                tipo_assessment_nome = tipo.nome
+        
         # Criar lead
         lead = Lead(
             assessment_publico_id=assessment_publico.id,
@@ -67,7 +76,7 @@ class Lead(db.Model):
             telefone=assessment_publico.telefone_respondente,
             cargo=assessment_publico.cargo_respondente,
             empresa=assessment_publico.empresa_respondente,
-            tipo_assessment_nome=assessment_publico.tipo_assessment.nome,
+            tipo_assessment_nome=tipo_assessment_nome,
             pontuacao_geral=pontuacao_geral,
             pontuacoes_dominios=pontuacoes_dominios,
             status='novo'
