@@ -200,14 +200,25 @@ def adicionar_comentario(lead_id):
 @login_required
 @admin_required
 def excluir(lead_id):
-    """Excluir lead (apenas admin)"""
+    """Excluir lead e o assessment público associado (apenas admin)"""
     lead = Lead.query.get_or_404(lead_id)
+    nome_lead = lead.nome
     
     try:
-        # O histórico será excluído automaticamente (cascade)
+        # Buscar assessment público associado
+        assessment_publico = lead.assessment_publico
+        
+        # Excluir assessment público primeiro (se existir)
+        if assessment_publico:
+            logging.info(f'Excluindo assessment público #{assessment_publico.id} associado ao lead #{lead_id}')
+            db.session.delete(assessment_publico)
+        
+        # Excluir lead (o histórico será excluído automaticamente por cascade)
         db.session.delete(lead)
         db.session.commit()
-        flash(f'Lead "{lead.nome}" excluído com sucesso!', 'success')
+        
+        flash(f'Lead "{nome_lead}" e assessment público associado excluídos com sucesso!', 'success')
+        logging.info(f'Lead #{lead_id} e assessment público excluídos por {current_user.nome}')
     except Exception as e:
         db.session.rollback()
         logging.error(f'Erro ao excluir lead {lead_id}: {e}')

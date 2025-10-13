@@ -1,0 +1,49 @@
+root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+git pull origin main
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (1/1), done.
+remote: Total 4 (delta 3), reused 4 (delta 3), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 773 bytes | 773.00 KiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   1d1053e..5cdac16  main       -> origin/main
+Updating 1d1053e..5cdac16
+Fast-forward
+ models/tipo_assessment.py | 1 +
+ 1 file changed, 1 insertion(+)
+root@vlxweb12:/var/www/assessment# sudo supervisorctl restart assessment
+assessment: stopped
+assessment: started
+root@vlxweb12:/var/www/assessment# venv/bin/python -c "
+from app import app
+from models.assessment_publico import AssessmentPublico
+from models.lead import Lead
+with app.app_context():
+    # Buscar assessments públicos com tipo válido
+    assessments = AssessmentPublico.query.filter(
+        AssessmentPublico.tipo_assessment_id != None,
+        AssessmentPublico.data_conclusao != None
+    ).order_by(AssessmentPublico.id.desc()).limit(5).all()
+
+    print('Assessments públicos concluídos:')
+    for a in assessments:
+        lead = Lead.query.filter_by(assessment_publico_id=a.id).first()
+        status = '✓ COM LEAD' if lead else '✗ SEM LEAD'
+        print(f'  #{a.id} - Tipo ID:{a.tipo_assessment_id} - {status}')
+"
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+Assessments públicos concluídos:
+  #92 - Tipo ID:3 - ✗ SEM LEAD
+  #91 - Tipo ID:3 - ✗ SEM LEAD
+  #90 - Tipo ID:3 - ✗ SEM LEAD
+  #89 - Tipo ID:3 - ✗ SEM LEAD
+  #86 - Tipo ID:3 - ✗ SEM LEAD
+root@vlxweb12:/var/www/assessment#
