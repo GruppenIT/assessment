@@ -245,8 +245,18 @@ def dados_respondente(assessment_id):
                 # Enviar e-mail de notificação para destinatários configurados
                 try:
                     from utils.email_utils import enviar_alerta_novo_lead
-                    enviar_alerta_novo_lead(lead, tipo_assessment)
-                    logging.info(f"Alerta de novo lead enviado para tipo {tipo_assessment.nome}")
+                    
+                    # Buscar tipo_assessment através do assessment_publico
+                    tipo_para_email = assessment_publico.tipo_assessment if assessment_publico.tipo_assessment else tipo_assessment
+                    
+                    logging.info(f"Tentando enviar alerta de novo lead para tipo {tipo_para_email.nome}")
+                    resultado_email = enviar_alerta_novo_lead(lead, tipo_para_email)
+                    
+                    if resultado_email:
+                        logging.info(f"✓ Alerta de novo lead enviado com sucesso para tipo {tipo_para_email.nome}")
+                    else:
+                        logging.warning(f"✗ Falha ao enviar alerta de novo lead para tipo {tipo_para_email.nome}")
+                        
                 except Exception as email_error:
                     logging.error(f"Erro ao enviar alerta de e-mail: {str(email_error)}", exc_info=True)
                     # Não falhar o processo se houver erro no envio de e-mail
