@@ -320,6 +320,7 @@ def editar_tipo_assessment(tipo_id):
         descricao = request.form.get('descricao', '').strip()
         url_publica = request.form.get('url_publica') == 'on'
         cta_texto = request.form.get('cta_texto', '').strip()
+        email_destinatarios = request.form.get('email_destinatarios', '').strip()
         
         if not nome:
             flash('Nome é obrigatório', 'error')
@@ -340,6 +341,7 @@ def editar_tipo_assessment(tipo_id):
         tipo.descricao = descricao if descricao else None
         tipo.url_publica = url_publica
         tipo.cta_texto = cta_texto if cta_texto else None
+        tipo.email_destinatarios = email_destinatarios if email_destinatarios else None
         
         db.session.commit()
         

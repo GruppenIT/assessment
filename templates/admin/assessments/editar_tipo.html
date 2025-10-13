@@ -56,6 +56,19 @@
                             </div>
                         </div>
                         
+                        <div class="mb-3">
+                            <label for="email_destinatarios" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>E-mails para Notificação de Leads
+                            </label>
+                            <textarea class="form-control" id="email_destinatarios" name="email_destinatarios" rows="3"
+                                      placeholder="comercial@gruppen.com.br; vendas@gruppen.com.br">{{ tipo.email_destinatarios or '' }}</textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                E-mails que receberão alertas quando um lead preencher este assessment público. 
+                                Separe múltiplos e-mails por vírgula (,) ou ponto-e-vírgula (;)
+                            </div>
+                        </div>
+                        
                         <div class="mb-4">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="url_publica" name="url_publica" 

@@ -13,6 +13,7 @@ class AssessmentTipo(db.Model):
     ativo = db.Column(db.Boolean, default=True, comment='Se o tipo está ativo')
     url_publica = db.Column(db.Boolean, default=False, comment='Se o assessment possui URL pública')
     cta_texto = db.Column(db.Text, comment='Texto personalizado do CTA para este tipo de assessment')
+    email_destinatarios = db.Column(db.Text, comment='E-mails que receberão alertas de novos leads (separados por vírgula ou ponto-e-vírgula)')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')
     
     # Relacionamentos

@@ -241,6 +241,16 @@ def dados_respondente(assessment_id):
                 
                 db.session.commit()
                 logging.info(f"✓ Lead {lead.id} criado automaticamente para assessment público {assessment_publico.id}")
+                
+                # Enviar e-mail de notificação para destinatários configurados
+                try:
+                    from utils.email_utils import enviar_alerta_novo_lead
+                    enviar_alerta_novo_lead(lead, tipo_assessment)
+                    logging.info(f"Alerta de novo lead enviado para tipo {tipo_assessment.nome}")
+                except Exception as email_error:
+                    logging.error(f"Erro ao enviar alerta de e-mail: {str(email_error)}", exc_info=True)
+                    # Não falhar o processo se houver erro no envio de e-mail
+                
             except Exception as e:
                 logging.error(f"✗ ERRO ao criar lead automático para assessment {assessment_publico.id}: {str(e)}", exc_info=True)
                 # Não falhar o processo se houver erro na criação do lead

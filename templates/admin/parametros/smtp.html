@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações de E-mail SMTP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Cabeçalho -->
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title mb-2">
+                                <i class="fas fa-envelope me-2"></i>Configurações de E-mail SMTP
+                            </h3>
+                            <p class="card-text mb-0">Configure o servidor SMTP para envio de notificações por e-mail. Estas configurações são globais e afetam todas as notificações do sistema.</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="btn-group">
+                                <a href="{{ url_for('parametros.listar') }}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-cogs me-1"></i>Parâmetros
+                                </a>
+                                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-light btn-sm">
+                                    <i class="fas fa-arrow-left me-1"></i>Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('parametros.salvar_smtp') }}">
+        {{ smtp_form.hidden_tag() }}
+        
+        <div class="row">
+            <!-- Configurações do Servidor -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-server me-2"></i>
+                            Servidor SMTP
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Servidor -->
+                        <div class="mb-3">
+                            {{ smtp_form.smtp_server.label(class="form-label") }}
+                            {{ smtp_form.smtp_server(class="form-control") }}
+                            <div class="form-text small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Endereço do servidor SMTP (ex: gruppen-com-br.mail.protection.outlook.com)
+                            </div>
+                        </div>
+                        
+                        <!-- Porta -->
+                        <div class="mb-3">
+                            {{ smtp_form.smtp_port.label(class="form-label") }}
+                            {{ smtp_form.smtp_port(class="form-control", type="number") }}
+                            <div class="form-text small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Porta padrão: 587 (TLS) ou 465 (SSL)
+                            </div>
+                        </div>
+                        
+                        <!-- TLS/SSL -->
+                        <div class="mb-3 form-check">
+                            {{ smtp_form.smtp_use_tls(class="form-check-input") }}
+                            {{ smtp_form.smtp_use_tls.label(class="form-check-label") }}
+                            <div class="form-text small">
+                                <i class="fas fa-lock me-1"></i>
+                                Usar conexão criptografada (recomendado)
+                            </div>
+                        </div>
+                        
+                        <!-- Tipo de Autenticação -->
+                        <div class="mb-3">
+                            {{ smtp_form.smtp_auth_type.label(class="form-label") }}
+                            {{ smtp_form.smtp_auth_type(class="form-select", id="authType") }}
+                            <div class="form-text small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                OAuth2 é recomendado para Gmail e Microsoft 365 (senha básica será descontinuada em 2025)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Autenticação -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-key me-2"></i>
+                            Autenticação
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Autenticação Básica -->
+                        <div id="basicAuth">
+                            <h6 class="text-muted mb-3">Autenticação Básica</h6>
+                            
+                            <div class="mb-3">
+                                {{ smtp_form.smtp_username.label(class="form-label") }}
+                                {{ smtp_form.smtp_username(class="form-control") }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ smtp_form.smtp_password.label(class="form-label") }}
+                                {{ smtp_form.smtp_password(class="form-control") }}
+                                {% if smtp_config.smtp_password %}
+                                <div class="mt-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-check me-1"></i>
+                                        Senha configurada: ••••••••••••
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- OAuth2 -->
+                        <div id="oauth2Auth">
+                            <h6 class="text-muted mb-3">OAuth2 - Microsoft 365</h6>
+                            
+                            <div class="mb-3">
+                                {{ smtp_form.smtp_client_id.label(class="form-label") }}
+                                {{ smtp_form.smtp_client_id(class="form-control") }}
+                                {% if smtp_config.smtp_client_id %}
+                                <div class="mt-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-check me-1"></i>
+                                        Client ID configurado
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ smtp_form.smtp_client_secret.label(class="form-label") }}
+                                {{ smtp_form.smtp_client_secret(class="form-control") }}
+                                {% if smtp_config.smtp_client_secret %}
+                                <div class="mt-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-check me-1"></i>
+                                        Secret configurado: ••••••••••••
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ smtp_form.smtp_refresh_token.label(class="form-label") }}
+                                {{ smtp_form.smtp_refresh_token(class="form-control") }}
+                                {% if smtp_config.smtp_refresh_token %}
+                                <div class="mt-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-check me-1"></i>
+                                        Token configurado: ••••••••••••
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ smtp_form.smtp_tenant_id.label(class="form-label") }}
+                                {{ smtp_form.smtp_tenant_id(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remetente -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>
+                            Remetente
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ smtp_form.smtp_from_email.label(class="form-label") }}
+                                    {{ smtp_form.smtp_from_email(class="form-control", type="email") }}
+                                    <div class="form-text small">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        E-mail que aparecerá como remetente das notificações
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ smtp_form.smtp_from_name.label(class="form-label") }}
+                                    {{ smtp_form.smtp_from_name(class="form-control") }}
+                                    <div class="form-text small">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Nome que aparecerá como remetente (ex: Assessments)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão Salvar -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        {{ smtp_form.submit_smtp(class="btn btn-primary btn-lg px-5") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Status Atual -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Status das Configurações
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted mb-1">Servidor SMTP</h6>
+                                <p class="mb-0 fw-bold">
+                                    {% if smtp_config['smtp_server'] %}
+                                        {{ smtp_config['smtp_server'] }}:{{ smtp_config['smtp_port'] }}
+                                    {% else %}
+                                        <span class="text-muted">Não configurado</span>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    {% if smtp_config['smtp_use_tls'] %}
+                                        <i class="fas fa-lock me-1"></i>TLS/SSL ativo
+                                    {% else %}
+                                        <i class="fas fa-unlock me-1"></i>Sem criptografia
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted mb-1">Autenticação</h6>
+                                <p class="mb-0 fw-bold">
+                                    {% if smtp_config['smtp_auth_type'] == 'oauth2' %}
+                                        OAuth2 - Microsoft 365
+                                    {% else %}
+                                        Básica (usuário/senha)
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    {% if smtp_config['smtp_auth_type'] == 'oauth2' and smtp_config['smtp_client_id'] %}
+                                        <i class="fas fa-check text-success me-1"></i>Configurado
+                                    {% elif smtp_config['smtp_auth_type'] == 'basic' and smtp_config['smtp_password'] %}
+                                        <i class="fas fa-check text-success me-1"></i>Configurado
+                                    {% else %}
+                                        <i class="fas fa-times text-danger me-1"></i>Não configurado
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted mb-1">Remetente</h6>
+                                <p class="mb-0 fw-bold">
+                                    {% if smtp_config['smtp_from_name'] %}
+                                        {{ smtp_config['smtp_from_name'] }}
+                                    {% else %}
+                                        <span class="text-muted">Não configurado</span>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    {{ smtp_config['smtp_from_email'] or 'E-mail não definido' }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted mb-1">Status Geral</h6>
+                                <p class="mb-0 fw-bold">
+                                    {% if smtp_config['smtp_server'] and smtp_config['smtp_from_email'] %}
+                                        <span class="text-success">
+                                            <i class="fas fa-check me-1"></i>Configurado
+                                        </span>
+                                    {% else %}
+                                        <span class="text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Incompleto
+                                        </span>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">Sistema de e-mail</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Alternar entre autenticação básica e OAuth2
+document.addEventListener('DOMContentLoaded', function() {
+    const authType = document.getElementById('authType');
+    const basicAuth = document.getElementById('basicAuth');
+    const oauth2Auth = document.getElementById('oauth2Auth');
+    
+    function toggleAuth() {
+        if (authType.value === 'oauth2') {
+            basicAuth.style.display = 'none';
+            oauth2Auth.style.display = 'block';
+        } else {
+            basicAuth.style.display = 'block';
+            oauth2Auth.style.display = 'none';
+        }
+    }
+    
+    authType.addEventListener('change', toggleAuth);
+    toggleAuth(); // Executar ao carregar a página
+});
+</script>
+{% endblock %}

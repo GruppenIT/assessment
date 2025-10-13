@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Lead Capturado</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
+        <tr>
+            <td align="center" style="padding: 20px 10px;">
+                <!-- Container Principal -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                                🎯 Novo Lead Capturado!
+                            </h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Informações do Lead -->
+                    <tr>
+                        <td style="padding: 30px;">
+                            <h2 style="margin: 0 0 20px; color: #333333; font-size: 20px;">
+                                Informações do Lead
+                            </h2>
+                            
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px; margin-bottom: 8px;">
+                                        <strong style="color: #667eea;">📋 Assessment:</strong><br>
+                                        <span style="color: #333333; font-size: 16px;">{{ tipo_assessment.nome }}</span>
+                                    </td>
+                                </tr>
+                                
+                                <tr><td height="8"></td></tr>
+                                
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
+                                        <strong style="color: #667eea;">👤 Nome:</strong><br>
+                                        <span style="color: #333333; font-size: 16px;">{{ lead.nome }}</span>
+                                    </td>
+                                </tr>
+                                
+                                <tr><td height="8"></td></tr>
+                                
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
+                                        <strong style="color: #667eea;">📧 E-mail:</strong><br>
+                                        <a href="mailto:{{ lead.email }}" style="color: #667eea; text-decoration: none; font-size: 16px;">
+                                            {{ lead.email }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                
+                                {% if lead.telefone %}
+                                <tr><td height="8"></td></tr>
+                                
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
+                                        <strong style="color: #667eea;">📱 Telefone:</strong><br>
+                                        <a href="tel:{{ lead.telefone }}" style="color: #667eea; text-decoration: none; font-size: 16px;">
+                                            {{ lead.telefone }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                
+                                {% if lead.empresa %}
+                                <tr><td height="8"></td></tr>
+                                
+                                <tr>
+                                    <td style="padding: 12px; background-color: #f8f9fa; border-radius: 4px;">
+                                        <strong style="color: #667eea;">🏢 Empresa:</strong><br>
+                                        <span style="color: #333333; font-size: 16px;">{{ lead.empresa }}</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Pontuação -->
+                    <tr>
+                        <td style="padding: 0 30px 30px;">
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 20px; text-align: center;">
+                                <h3 style="margin: 0 0 10px; color: #ffffff; font-size: 18px;">
+                                    Pontuação Obtida
+                                </h3>
+                                <div style="font-size: 42px; font-weight: bold; color: #ffffff;">
+                                    {{ "%.1f"|format(lead.pontuacao_total) }}%
+                                </div>
+                                <p style="margin: 10px 0 0; color: #ffffff; opacity: 0.9; font-size: 14px;">
+                                    {% if lead.pontuacao_total >= 80 %}
+                                        🟢 Alto nível de maturidade
+                                    {% elif lead.pontuacao_total >= 50 %}
+                                        🟡 Nível médio de maturidade
+                                    {% else %}
+                                        🔴 Oportunidade de melhoria
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Resumo por Domínio -->
+                    {% if lead.respostas_publicas %}
+                    <tr>
+                        <td style="padding: 0 30px 30px;">
+                            <h3 style="margin: 0 0 15px; color: #333333; font-size: 18px;">
+                                📊 Resumo por Domínio
+                            </h3>
+                            
+                            {% set dominios_dict = {} %}
+                            {% for resposta in lead.respostas_publicas %}
+                                {% set dominio_nome = resposta.pergunta.dominio_versao.nome %}
+                                {% if dominio_nome not in dominios_dict %}
+                                    {% set _ = dominios_dict.update({dominio_nome: {'total': 0, 'count': 0}}) %}
+                                {% endif %}
+                                {% set _ = dominios_dict[dominio_nome].update({
+                                    'total': dominios_dict[dominio_nome]['total'] + resposta.valor,
+                                    'count': dominios_dict[dominio_nome]['count'] + 1
+                                }) %}
+                            {% endfor %}
+                            
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                {% for dominio, dados in dominios_dict.items() %}
+                                {% set percentual = (dados.total / (dados.count * 5) * 100) if dados.count > 0 else 0 %}
+                                <tr>
+                                    <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">
+                                        <div style="margin-bottom: 5px;">
+                                            <strong style="color: #333333;">{{ dominio }}</strong>
+                                            <span style="float: right; color: #667eea; font-weight: bold;">{{ "%.0f"|format(percentual) }}%</span>
+                                        </div>
+                                        <div style="background-color: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
+                                            <div style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); height: 100%; width: {{ percentual }}%;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    
+                    <!-- Call to Action -->
+                    <tr>
+                        <td style="padding: 0 30px 30px; text-align: center;">
+                            <p style="margin: 0 0 20px; color: #666666; font-size: 16px;">
+                                Este lead respondeu ao assessment e está aguardando contato.
+                            </p>
+                            <a href="{{ request.url_root }}admin/leads" 
+                               style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                                📋 Ver Detalhes no Sistema
+                            </a>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 20px 30px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                            <p style="margin: 0; color: #999999; font-size: 12px;">
+                                Este é um e-mail automático do sistema de assessments.<br>
+                                Data: {{ lead.data_criacao.strftime('%d/%m/%Y às %H:%M') if lead.data_criacao else 'N/A' }}
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

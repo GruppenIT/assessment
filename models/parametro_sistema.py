@@ -123,6 +123,73 @@ class ParametroSistema(db.Model):
             ParametroSistema.set_valor('openai_assistant_name', assistant_name, 'string',
                                      'Nome do Assistant GPT', 'integracao')
     
+    @staticmethod
+    def get_smtp_config():
+        """Recupera configurações SMTP"""
+        return {
+            'smtp_server': ParametroSistema.get_valor('smtp_server', ''),
+            'smtp_port': ParametroSistema.get_valor('smtp_port', '587'),
+            'smtp_use_tls': ParametroSistema.get_valor('smtp_use_tls', 'true') == 'true',
+            'smtp_auth_type': ParametroSistema.get_valor('smtp_auth_type', 'basic'),
+            'smtp_client_id': ParametroSistema.get_valor('smtp_client_id', ''),
+            'smtp_client_secret': ParametroSistema.get_valor('smtp_client_secret', ''),
+            'smtp_refresh_token': ParametroSistema.get_valor('smtp_refresh_token', ''),
+            'smtp_tenant_id': ParametroSistema.get_valor('smtp_tenant_id', ''),
+            'smtp_from_email': ParametroSistema.get_valor('smtp_from_email', ''),
+            'smtp_from_name': ParametroSistema.get_valor('smtp_from_name', 'Sistema de Assessments'),
+            'smtp_username': ParametroSistema.get_valor('smtp_username', ''),
+            'smtp_password': ParametroSistema.get_valor('smtp_password', ''),
+        }
+    
+    @staticmethod
+    def set_smtp_config(config):
+        """Define configurações SMTP"""
+        # Servidor e porta
+        if 'smtp_server' in config:
+            ParametroSistema.set_valor('smtp_server', config['smtp_server'], 'string',
+                                     'Servidor SMTP', 'email')
+        if 'smtp_port' in config:
+            ParametroSistema.set_valor('smtp_port', str(config['smtp_port']), 'string',
+                                     'Porta SMTP', 'email')
+        if 'smtp_use_tls' in config:
+            ParametroSistema.set_valor('smtp_use_tls', 'true' if config['smtp_use_tls'] else 'false', 'string',
+                                     'Usar TLS/SSL', 'email')
+        
+        # Tipo de autenticação
+        if 'smtp_auth_type' in config:
+            ParametroSistema.set_valor('smtp_auth_type', config['smtp_auth_type'], 'string',
+                                     'Tipo de Autenticação (basic ou oauth2)', 'email')
+        
+        # OAuth2 (Microsoft 365)
+        if 'smtp_client_id' in config and config['smtp_client_id']:
+            ParametroSistema.set_valor('smtp_client_id', config['smtp_client_id'], 'encrypted',
+                                     'Client ID OAuth2', 'email')
+        if 'smtp_client_secret' in config and config['smtp_client_secret']:
+            ParametroSistema.set_valor('smtp_client_secret', config['smtp_client_secret'], 'encrypted',
+                                     'Client Secret OAuth2', 'email')
+        if 'smtp_refresh_token' in config and config['smtp_refresh_token']:
+            ParametroSistema.set_valor('smtp_refresh_token', config['smtp_refresh_token'], 'encrypted',
+                                     'Refresh Token OAuth2', 'email')
+        if 'smtp_tenant_id' in config:
+            ParametroSistema.set_valor('smtp_tenant_id', config['smtp_tenant_id'], 'string',
+                                     'Tenant ID Microsoft', 'email')
+        
+        # Autenticação básica
+        if 'smtp_username' in config:
+            ParametroSistema.set_valor('smtp_username', config['smtp_username'], 'string',
+                                     'Usuário SMTP', 'email')
+        if 'smtp_password' in config and config['smtp_password']:
+            ParametroSistema.set_valor('smtp_password', config['smtp_password'], 'encrypted',
+                                     'Senha SMTP', 'email')
+        
+        # Remetente
+        if 'smtp_from_email' in config:
+            ParametroSistema.set_valor('smtp_from_email', config['smtp_from_email'], 'string',
+                                     'E-mail Remetente', 'email')
+        if 'smtp_from_name' in config:
+            ParametroSistema.set_valor('smtp_from_name', config['smtp_from_name'], 'string',
+                                     'Nome do Remetente', 'email')
+    
     def get_valor_display(self):
         """Retorna o valor para exibição (ofuscando dados sensíveis)"""
         if self.tipo == 'encrypted' and self.valor_criptografado:

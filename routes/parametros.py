@@ -7,7 +7,7 @@ from flask_login import login_required
 from app import db
 from utils.auth_utils import admin_required
 from models.parametro_sistema import ParametroSistema
-from forms.parametro_forms import ParametroSistemaForm, OpenAIConfigForm, AparenciaForm
+from forms.parametro_forms import ParametroSistemaForm, OpenAIConfigForm, AparenciaForm, SMTPConfigForm
 from models.logo import Logo
 from forms.admin_forms import LogoForm
 
@@ -170,3 +170,74 @@ def upload_logo():
                 flash(f'Erro no campo {field}: {error}', 'danger')
     
     return redirect(url_for('parametros.aparencia'))
+
+@parametros_bp.route('/smtp')
+@login_required
+@admin_required
+def smtp():
+    """Página de configurações de e-mail SMTP"""
+    
+    smtp_form = SMTPConfigForm()
+    
+    # Carregar configurações atuais
+    smtp_config = ParametroSistema.get_smtp_config()
+    
+    smtp_form.smtp_server.data = smtp_config['smtp_server']
+    smtp_form.smtp_port.data = int(smtp_config['smtp_port']) if smtp_config['smtp_port'] else 587
+    smtp_form.smtp_use_tls.data = smtp_config['smtp_use_tls']
+    smtp_form.smtp_auth_type.data = smtp_config['smtp_auth_type']
+    smtp_form.smtp_client_id.data = smtp_config['smtp_client_id']
+    smtp_form.smtp_tenant_id.data = smtp_config['smtp_tenant_id']
+    smtp_form.smtp_username.data = smtp_config['smtp_username']
+    smtp_form.smtp_from_email.data = smtp_config['smtp_from_email']
+    smtp_form.smtp_from_name.data = smtp_config['smtp_from_name']
+    
+    return render_template('admin/parametros/smtp.html',
+                         smtp_form=smtp_form,
+                         smtp_config=smtp_config)
+
+@parametros_bp.route('/salvar_smtp', methods=['POST'])
+@login_required
+@admin_required
+def salvar_smtp():
+    """Salva configurações SMTP"""
+    form = SMTPConfigForm()
+    
+    if form.validate_on_submit():
+        try:
+            config = {
+                'smtp_server': form.smtp_server.data,
+                'smtp_port': form.smtp_port.data,
+                'smtp_use_tls': form.smtp_use_tls.data,
+                'smtp_auth_type': form.smtp_auth_type.data,
+                'smtp_username': form.smtp_username.data,
+                'smtp_client_id': form.smtp_client_id.data,
+                'smtp_tenant_id': form.smtp_tenant_id.data,
+                'smtp_from_email': form.smtp_from_email.data,
+                'smtp_from_name': form.smtp_from_name.data,
+            }
+            
+            # Apenas atualizar senha se fornecida
+            if form.smtp_password.data:
+                config['smtp_password'] = form.smtp_password.data
+            
+            # Apenas atualizar client secret se fornecido
+            if form.smtp_client_secret.data:
+                config['smtp_client_secret'] = form.smtp_client_secret.data
+            
+            # Apenas atualizar refresh token se fornecido
+            if form.smtp_refresh_token.data:
+                config['smtp_refresh_token'] = form.smtp_refresh_token.data
+            
+            ParametroSistema.set_smtp_config(config)
+            
+            flash('Configurações de e-mail SMTP salvas com sucesso!', 'success')
+        except Exception as e:
+            flash(f'Erro ao salvar configurações SMTP: {str(e)}', 'danger')
+            db.session.rollback()
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'Erro no campo {field}: {error}', 'danger')
+    
+    return redirect(url_for('parametros.smtp'))
