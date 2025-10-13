@@ -1,0 +1,73 @@
+root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+git pull origin main
+remote: Enumerating objects: 17, done.
+remote: Counting objects: 100% (17/17), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 11 (delta 8), reused 10 (delta 7), pack-reused 0 (from 0)
+Unpacking objects: 100% (11/11), 3.53 KiB | 1.18 MiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   5cdac16..37bc198  main       -> origin/main
+Updating 5cdac16..37bc198
+Fast-forward
+ .replit                                                                                                                               |  4 ----
+ ...ted-root-vlxweb12-var-www-assessment-cd-var-www-assessment-git-pull-origin-main-remote-Enumerating-1760396455602_1760396455603.txt | 49 ++++++++++++++++++++++++++++++++++++++++++++++
+ limpar_assessments_publicos.py                                                                                                        | 76 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ replit.md                                                                                                                             |  1 +
+ routes/leads.py                                                                                                                       | 17 +++++++++++++---
+ 5 files changed, 140 insertions(+), 7 deletions(-)
+ create mode 100644 attached_assets/Pasted-root-vlxweb12-var-www-assessment-cd-var-www-assessment-git-pull-origin-main-remote-Enumerating-1760396455602_1760396455603.txt
+ create mode 100644 limpar_assessments_publicos.py
+root@vlxweb12:/var/www/assessment# venv/bin/python limpar_assessments_publicos.py --confirmar
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+
+======================================================================
+🗑️  LIMPEZA COMPLETA DE ASSESSMENTS PÚBLICOS E LEADS
+======================================================================
+
+📊 Registros encontrados:
+   Assessments Públicos: 70
+   Respostas Públicas: 231
+   Leads: 1
+   Histórico de Leads: 0
+
+🗑️  Excluindo dados...
+   ✓ 1 leads excluídos
+   ✓ 231 respostas públicas excluídas
+   ✓ 70 assessments públicos excluídos
+
+======================================================================
+✅ LIMPEZA CONCLUÍDA COM SUCESSO!
+======================================================================
+
+Agora você pode criar novos assessments públicos sem conflitos.
+
+root@vlxweb12:/var/www/assessment# sudo supervisorctl restart assessment
+assessment: stopped
+assessment: started
+root@vlxweb12:/var/www/assessment# venv/bin/python -c "
+from app import app
+from models.assessment_publico import AssessmentPublico
+from models.lead import Lead
+with app.app_context():
+    print(f'Assessments públicos: {AssessmentPublico.query.count()}')
+    print(f'Leads: {Lead.query.count()}')
+"
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+Assessments públicos: 0
+Leads: 0
+root@vlxweb12:/var/www/assessment# sudo supervisorctl tail -f assessment stdout | grep -E "lead|email|Tentando|Enviado"
