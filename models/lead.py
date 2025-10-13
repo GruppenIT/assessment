@@ -48,7 +48,7 @@ class Lead(db.Model):
     @staticmethod
     def criar_de_assessment_publico(assessment_publico):
         """Cria um lead a partir de um assessment público"""
-        from models.assessment_tipo import AssessmentTipo
+        from models.tipo_assessment import AssessmentTipo
         
         # Calcular pontuações
         pontuacao_geral = assessment_publico.calcular_pontuacao_geral()
