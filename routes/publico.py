@@ -246,14 +246,29 @@ def dados_respondente(assessment_id):
                 # Não falhar o processo se houver erro na criação do lead
                 db.session.rollback()
         
-        # Redirecionar para resultado
-        return redirect(url_for('publico.resultado', 
+        # Redirecionar para página de loading
+        return redirect(url_for('publico.aguardando_resultado', 
                               assessment_id=assessment_id,
                               token=assessment_publico.token))
     
     return render_template('publico/dados_respondente.html',
                          tipo_assessment=tipo_assessment,
                          form=form)
+
+@publico_bp.route('/<int:assessment_id>/aguardando/<token>')
+def aguardando_resultado(assessment_id, token):
+    """Página de loading enquanto gera o relatório"""
+    tipo_assessment = AssessmentTipo.query.get_or_404(assessment_id)
+    
+    assessment_publico = AssessmentPublico.query.filter_by(
+        tipo_assessment_id=assessment_id,
+        token=token
+    ).first_or_404()
+    
+    return render_template('publico/aguardando_resultado.html',
+                         assessment_id=assessment_id,
+                         token=token,
+                         tipo_assessment=tipo_assessment)
 
 @publico_bp.route('/<int:assessment_id>/resultado/<token>')
 def resultado(assessment_id, token):
