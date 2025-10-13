@@ -210,28 +210,39 @@ def dados_respondente(assessment_id):
         
         db.session.commit()
         
+        logging.info(f"Dados do respondente salvos para assessment público {assessment_publico.id}")
+        
         # Criar lead automaticamente a partir do assessment público
         from models.lead import Lead
         
         # Verificar se já existe lead para este assessment
         lead_existente = Lead.query.filter_by(assessment_publico_id=assessment_publico.id).first()
         
-        if not lead_existente:
+        if lead_existente:
+            logging.info(f"Lead já existe para assessment público {assessment_publico.id}, pulando criação")
+        else:
+            logging.info(f"Iniciando criação de lead para assessment público {assessment_publico.id}")
             try:
                 lead = Lead.criar_de_assessment_publico(assessment_publico)
+                logging.info(f"Lead objeto criado: {lead}")
+                
                 db.session.add(lead)
+                logging.info("Lead adicionado à sessão")
+                
                 db.session.flush()  # Garante que o lead tenha um ID antes de adicionar histórico
+                logging.info(f"Lead flushed com ID: {lead.id}")
                 
                 # Adicionar entrada no histórico
                 lead.adicionar_historico(
                     acao='criado',
                     detalhes=f'Lead criado automaticamente a partir do assessment público #{assessment_publico.id}'
                 )
+                logging.info("Histórico adicionado ao lead")
                 
                 db.session.commit()
-                logging.info(f"Lead criado automaticamente para assessment público {assessment_publico.id}")
+                logging.info(f"✓ Lead {lead.id} criado automaticamente para assessment público {assessment_publico.id}")
             except Exception as e:
-                logging.error(f"Erro ao criar lead automático: {e}")
+                logging.error(f"✗ ERRO ao criar lead automático para assessment {assessment_publico.id}: {str(e)}", exc_info=True)
                 # Não falhar o processo se houver erro na criação do lead
                 db.session.rollback()
         
