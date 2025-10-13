@@ -856,6 +856,16 @@ def gerar_relatorio_estatisticas(projeto):
     # CTA de Contato
     story.append(PageBreak())
     
+    # Buscar tipo de assessment do projeto para pegar o CTA personalizado
+    tipo_assessment = None
+    for projeto_assessment in projeto.assessments:
+        if projeto_assessment.versao_assessment_id:
+            tipo_assessment = projeto_assessment.versao_assessment.tipo
+            break
+        elif projeto_assessment.tipo_assessment_id:
+            tipo_assessment = projeto_assessment.tipo_assessment
+            break
+    
     # Criar um box de destaque para o CTA
     cta_style = ParagraphStyle(
         'CTAStyle',
@@ -876,15 +886,22 @@ def gerar_relatorio_estatisticas(projeto):
         spaceAfter=15
     )
     
-    # Título do CTA
-    story.append(Paragraph("QUER MELHORAR SEUS RESULTADOS?", cta_title_style))
+    # Usar CTA personalizado se existir, senão usar padrão
+    if tipo_assessment and tipo_assessment.cta_texto:
+        # CTA personalizado - usar pre-line para manter quebras de linha
+        cta_paragrafos = tipo_assessment.cta_texto.strip().split('\n')
+        for paragrafo in cta_paragrafos:
+            if paragrafo.strip():
+                story.append(Paragraph(paragrafo, cta_style))
+    else:
+        # CTA padrão
+        story.append(Paragraph("QUER MELHORAR SEUS RESULTADOS?", cta_title_style))
+        cta_text = """
+        A <b>Gruppen</b> e suas empresas especializadas podem ajudar você a evoluir 
+        nos controles deste assessment. Entre em contato conosco agora mesmo!
+        """
+        story.append(Paragraph(cta_text, cta_style))
     
-    # Texto do CTA
-    cta_text = """
-    A <b>Gruppen</b> e suas empresas especializadas podem ajudar você a evoluir 
-    nos controles deste assessment. Entre em contato conosco agora mesmo!
-    """
-    story.append(Paragraph(cta_text, cta_style))
     story.append(Spacer(1, 15))
     
     # Dados de contato em tabela

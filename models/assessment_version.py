@@ -12,6 +12,7 @@ class AssessmentTipo(db.Model):
     descricao = db.Column(db.Text, comment='Descrição do tipo de assessment')
     ativo = db.Column(db.Boolean, default=True, comment='Se o tipo está ativo')
     url_publica = db.Column(db.Boolean, default=False, comment='Se o assessment possui URL pública')
+    cta_texto = db.Column(db.Text, comment='Texto personalizado do CTA para este tipo de assessment')
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de criação')
     
     # Relacionamentos

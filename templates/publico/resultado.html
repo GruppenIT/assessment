@@ -452,11 +452,15 @@
             <div class="cta-icon">
                 <i class="fas fa-handshake"></i>
             </div>
+            {% if tipo_assessment.cta_texto %}
+            <div class="cta-text" style="white-space: pre-line;">{{ tipo_assessment.cta_texto }}</div>
+            {% else %}
             <h3 class="cta-title">Quer melhorar seus resultados?</h3>
             <p class="cta-text">
                 A <strong>Gruppen</strong> e suas empresas especializadas podem ajudar você a evoluir 
                 nos controles deste assessment. Entre em contato conosco agora mesmo!
             </p>
+            {% endif %}
             <div class="cta-buttons">
                 <a href="https://wa.me/5551989683228?text=Olá! Vi meu resultado do assessment e gostaria de saber como a Gruppen pode me ajudar." 
                    target="_blank" 
