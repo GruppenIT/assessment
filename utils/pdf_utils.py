@@ -9,7 +9,7 @@ from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.colors import Color, HexColor
 from reportlab.lib.units import inch, mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Image
 from reportlab.platypus.frames import Frame
 from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
 from reportlab.lib import colors
@@ -20,7 +20,7 @@ from models.assessment_version import AssessmentDominio
 from models.dominio import Dominio
 from models.pergunta import Pergunta
 from models.resposta import Resposta
-from app import db
+from app import db, app
 from sqlalchemy import func
 
 def gerar_relatorio_markdown(projeto):
@@ -348,6 +348,43 @@ def gerar_relatorio_estatisticas_visual(projeto):
     
     # Cabeçalho
     story.append(Paragraph("RELATÓRIO DE ESTATÍSTICAS", title_style))
+    story.append(Spacer(1, 15))
+    
+    # Barra de logos das empresas
+    try:
+        # Usar caminho absoluto baseado no root_path da aplicação
+        base_path = app.root_path if hasattr(app, 'root_path') else os.path.dirname(os.path.dirname(__file__))
+        logos_paths = [
+            os.path.join(base_path, 'static', 'img', 'gruppen.png'),
+            os.path.join(base_path, 'static', 'img', 'zerobox.png'),
+            os.path.join(base_path, 'static', 'img', 'firewall365.png'),
+            os.path.join(base_path, 'static', 'img', 'gsecdo.png')
+        ]
+        
+        logos_images = []
+        for logo_path in logos_paths:
+            if os.path.exists(logo_path):
+                img = Image(logo_path, width=80, height=25, kind='proportional')
+                logos_images.append(img)
+        
+        if logos_images:
+            # Criar tabela com logos em fundo preto
+            logo_table = Table([logos_images], colWidths=[100, 100, 100, 100])
+            logo_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ]))
+            story.append(logo_table)
+            story.append(Spacer(1, 20))
+    except Exception as e:
+        # Se falhar ao carregar logos, continua sem eles
+        pass
+    
     story.append(Paragraph(f"<b>Projeto:</b> {projeto.nome}", pergunta_style))
     story.append(Paragraph(f"<b>Cliente:</b> {projeto.cliente.nome}", info_style))
     story.append(Paragraph(f"<b>Data de Geração:</b> {datetime.now().strftime('%d/%m/%Y às %H:%M')}", info_style))
