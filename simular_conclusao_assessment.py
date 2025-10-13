@@ -25,8 +25,7 @@ def main():
         
         # Buscar um assessment público não concluído
         assessment = AssessmentPublico.query.filter(
-            AssessmentPublico.data_conclusao == None,
-            AssessmentPublico.url_publica == True
+            AssessmentPublico.data_conclusao == None
         ).first()
         
         if not assessment:
@@ -37,7 +36,6 @@ def main():
         print(f"\n📋 Assessment Público Selecionado: #{assessment.id}")
         print(f"   Tipo: {assessment.tipo_assessment.nome if assessment.tipo_assessment else 'N/A'}")
         print(f"   Token: {assessment.token}")
-        print(f"   URL Pública: {assessment.url_publica}")
         
         # Verificar se já tem dados do respondente
         if not assessment.nome_respondente or not assessment.email_respondente:
