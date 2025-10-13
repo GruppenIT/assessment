@@ -52,17 +52,10 @@ def main():
         print(f"   Empresa: {assessment.empresa_respondente}")
         
         # Verificar respostas
-        total_perguntas = len(assessment.get_perguntas())
-        total_respondidas = len(assessment.get_respostas())
+        total_respondidas = len(assessment.respostas)
         
         print(f"\n📊 Progresso:")
-        print(f"   Perguntas: {total_perguntas}")
-        print(f"   Respondidas: {total_respondidas}")
-        
-        if total_respondidas < total_perguntas:
-            print(f"\n⚠️  Assessment incompleto ({total_respondidas}/{total_perguntas} respondidas)")
-            print("   Este assessment precisa ser completado antes de gerar lead")
-            print("\n   Simulando conclusão...")
+        print(f"   Respostas registradas: {total_respondidas}")
         
         # Marcar como concluído
         assessment.data_conclusao = datetime.utcnow()
