@@ -91,12 +91,12 @@
                                     Pontuação Obtida
                                 </h3>
                                 <div style="font-size: 42px; font-weight: bold; color: #ffffff;">
-                                    {{ "%.1f"|format(lead.pontuacao_total) }}%
+                                    {{ "%.1f"|format(lead.pontuacao_geral) }}%
                                 </div>
                                 <p style="margin: 10px 0 0; color: #ffffff; opacity: 0.9; font-size: 14px;">
-                                    {% if lead.pontuacao_total >= 80 %}
+                                    {% if lead.pontuacao_geral >= 80 %}
                                         🟢 Alto nível de maturidade
-                                    {% elif lead.pontuacao_total >= 50 %}
+                                    {% elif lead.pontuacao_geral >= 50 %}
                                         🟡 Nível médio de maturidade
                                     {% else %}
                                         🔴 Oportunidade de melhoria

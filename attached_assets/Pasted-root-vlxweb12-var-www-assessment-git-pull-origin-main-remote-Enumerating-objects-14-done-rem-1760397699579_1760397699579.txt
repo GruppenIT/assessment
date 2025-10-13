@@ -1,0 +1,55 @@
+root@vlxweb12:/var/www/assessment# git pull origin main
+remote: Enumerating objects: 14, done.
+remote: Counting objects: 100% (14/14), done.
+remote: Compressing objects: 100% (6/6), done.
+remote: Total 10 (delta 7), reused 7 (delta 4), pack-reused 0 (from 0)
+Unpacking objects: 100% (10/10), 3.65 KiB | 935.00 KiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   8198df0..5ef59cf  main       -> origin/main
+Updating 8198df0..5ef59cf
+Fast-forward
+ .../Pasted-root-vlxweb12-var-www-assessment-sudo-u-postgres-psql-d-assessment-db-EOF-Copiar-dados--1760397553594_1760397553595.txt    | 78 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ ...asted-root-vlxweb12-var-www-assessment-venv-bin-python-c-from-app-import-app-db-from-models-assess-1760397628659_1760397628660.txt | 78 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ utils/email_utils.py                                                                                                                  |  2 +-
+ 3 files changed, 157 insertions(+), 1 deletion(-)
+ create mode 100644 attached_assets/Pasted-root-vlxweb12-var-www-assessment-sudo-u-postgres-psql-d-assessment-db-EOF-Copiar-dados--1760397553594_1760397553595.txt
+ create mode 100644 attached_assets/Pasted-root-vlxweb12-var-www-assessment-venv-bin-python-c-from-app-import-app-db-from-models-assess-1760397628659_1760397628660.txt
+root@vlxweb12:/var/www/assessment# sudo supervisorctl restart assessment
+assessment: stopped
+assessment: started
+root@vlxweb12:/var/www/assessment# venv/bin/python -c "
+from app import app
+from models.lead import Lead
+from models.tipo_assessment import TipoAssessment
+from utils.email_utils import enviar_alerta_novo_lead
+with app.app_context():
+    lead = Lead.query.get(25)
+    tipo = TipoAssessment.query.get(3)
+
+    if lead and tipo:
+        print(f'Tentando enviar e-mail para: {tipo.email_destinatarios}')
+        resultado = enviar_alerta_novo_lead(lead, tipo)
+
+        if resultado:
+            print('✅ E-MAIL ENVIADO COM SUCESSO!')
+        else:
+            print('❌ Falha no envio')
+    else:
+        print('Lead ou tipo não encontrado')
+"
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+<string>:7: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+<string>:8: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+Tentando enviar e-mail para: rodrigo@gruppen.com.br
+DEBUG:root:Logo path encontrado: logos/715b568be35740378f03d145aa7e0bf2.png
+ERROR:utils.email_utils:Erro ao enviar alerta de novo lead: 'models.lead.Lead object' has no attribute 'pontuacao_total'
+❌ Falha no envio
+root@vlxweb12:/var/www/assessment#
