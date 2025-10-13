@@ -1,0 +1,46 @@
+root@vlxweb12:/var/www/assessment# curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/deploy_email_notifications.sh | sudo bash
+==========================================
+DEPLOYMENT: Sistema de Notificações E-mail
+==========================================
+1. Atualizando código do repositório...
+remote: Enumerating objects: 62, done.
+remote: Counting objects: 100% (62/62), done.
+remote: Compressing objects: 100% (15/15), done.
+remote: Total 42 (delta 27), reused 41 (delta 26), pack-reused 0 (from 0)
+Unpacking objects: 100% (42/42), 156.69 KiB | 1.78 MiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   895eade..31a9a22  main       -> origin/main
+Updating 895eade..31a9a22
+Fast-forward
+ .replit                                                                                                                               |   4 +-
+ README_EMAIL_NOTIFICATIONS.md                                                                                                         | 280 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ .../Pasted-root-vlxweb12-var-www-assessment-psql-U-PGUSER-d-PGDATABASE-h-PGHOST-p-PGPORT-f-migration-1760389008206_1760389008207.txt  |  48 ++++++++++
+ attached_assets/image_1760390610726.png                                                                                               | Bin 0 -> 145855 bytes
+ deploy_email_notifications.sh                                                                                                         |  88 ++++++++++++++++++
+ forms/parametro_forms.py                                                                                                              |  91 ++++++++++++++++++-
+ migrations/add_email_destinatarios_to_assessment_tipos.sql                                                                            |  23 +++++
+ migrations/add_smtp_config.sql                                                                                                        |  22 +++++
+ models/assessment_version.py                                                                                                          |   1 +
+ models/parametro_sistema.py                                                                                                           |  67 ++++++++++++++
+ replit.md                                                                                                                             |   5 +-
+ routes/assessment_admin.py                                                                                                            |   2 +
+ routes/parametros.py                                                                                                                  |  75 +++++++++++++++-
+ routes/publico.py                                                                                                                     |  10 +++
+ templates/admin/assessments/editar_tipo.html                                                                                          |  13 +++
+ templates/admin/parametros/smtp.html                                                                                                  | 340 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ templates/emails/novo_lead.html                                                                                                       | 177 ++++++++++++++++++++++++++++++++++++
+ utils/email_utils.py                                                                                                                  | 297 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 18 files changed, 1535 insertions(+), 8 deletions(-)
+ create mode 100644 README_EMAIL_NOTIFICATIONS.md
+ create mode 100644 attached_assets/Pasted-root-vlxweb12-var-www-assessment-psql-U-PGUSER-d-PGDATABASE-h-PGHOST-p-PGPORT-f-migration-1760389008206_1760389008207.txt
+ create mode 100644 attached_assets/image_1760390610726.png
+ create mode 100644 deploy_email_notifications.sh
+ create mode 100644 migrations/add_email_destinatarios_to_assessment_tipos.sql
+ create mode 100644 migrations/add_smtp_config.sql
+ create mode 100644 templates/admin/parametros/smtp.html
+ create mode 100644 templates/emails/novo_lead.html
+ create mode 100644 utils/email_utils.py
+2. Adicionando coluna email_destinatarios na tabela assessment_tipos...
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+root@vlxweb12:/var/www/assessment#

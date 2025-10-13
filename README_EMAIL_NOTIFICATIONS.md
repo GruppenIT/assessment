@@ -59,18 +59,25 @@ Sistema completo de envio de e-mails SMTP com notificações automáticas quando
 
 ## 🔧 Deployment
 
-### 1. Executar Script de Deployment
+### 1. Executar Script de Deployment (On-Premise)
 
+**Opção A: Download e execução direta do GitHub**
 ```bash
+curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/deploy_email_notifications.sh | sudo bash
+```
+
+**Opção B: Executar localmente**
+```bash
+cd /var/www/assessment
 chmod +x deploy_email_notifications.sh
-./deploy_email_notifications.sh
+sudo ./deploy_email_notifications.sh
 ```
 
 O script irá:
 1. ✅ Atualizar código do Git
-2. ✅ Adicionar coluna `email_destinatarios` na tabela `assessment_tipos`
+2. ✅ Adicionar coluna `email_destinatarios` na tabela `assessment_tipos` (usa variáveis $PGUSER, $PGDATABASE, $PGHOST, $PGPORT)
 3. ✅ Instalar dependência `msal` (OAuth2 Microsoft 365)
-4. ✅ Reiniciar aplicação
+4. ✅ Reiniciar aplicação via Supervisor
 
 ### 2. Configurar SMTP
 
@@ -201,9 +208,20 @@ O e-mail enviado contém:
 
 ### Erro: "role root does not exist"
 
-Use credenciais corretas do PostgreSQL:
+**Causa**: O script tentou conectar ao PostgreSQL como usuário root.
+
+**Solução**: O script já foi corrigido para usar as variáveis de ambiente corretas ($PGUSER, $PGDATABASE, $PGHOST, $PGPORT). Execute novamente:
+
 ```bash
-psql -U $PGUSER -d $PGDATABASE -h $PGHOST -p $PGPORT < migration.sql
+curl -sSL https://raw.githubusercontent.com/GruppenIT/assessment/refs/heads/main/deploy_email_notifications.sh | sudo bash
+```
+
+Se ainda apresentar erro, verifique as variáveis de ambiente:
+```bash
+echo "PGUSER=$PGUSER"
+echo "PGDATABASE=$PGDATABASE"
+echo "PGHOST=$PGHOST"
+echo "PGPORT=$PGPORT"
 ```
 
 ### OAuth2 não funciona

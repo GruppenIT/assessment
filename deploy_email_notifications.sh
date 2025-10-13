@@ -4,6 +4,12 @@
 
 set -e  # Parar em caso de erro
 
+# Carregar variáveis de ambiente se existir arquivo .env
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+    echo "Variáveis de ambiente carregadas do .env"
+fi
+
 echo "=========================================="
 echo "DEPLOYMENT: Sistema de Notificações E-mail"
 echo "=========================================="
@@ -18,7 +24,7 @@ echo -e "${YELLOW}1. Atualizando código do repositório...${NC}"
 git pull origin main
 
 echo -e "${YELLOW}2. Adicionando coluna email_destinatarios na tabela assessment_tipos...${NC}"
-psql "$DATABASE_URL" <<'EOF'
+psql -U "$PGUSER" -d "$PGDATABASE" -h "$PGHOST" -p "$PGPORT" <<'EOF'
 DO $$ 
 BEGIN
     IF NOT EXISTS (
