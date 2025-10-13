@@ -4,6 +4,10 @@
 
 Sistema completo de envio de e-mails SMTP com notificações automáticas quando novos leads são capturados via assessment público.
 
+### ⚠️ Correção Crítica Aplicada (13/10/2025)
+
+**Bug OAuth2 CORRIGIDO**: A autenticação XOAUTH2 agora utiliza **base64 encoding** (padrão do protocolo) ao invés de hex encoding. Esta correção garante que o envio via Microsoft 365 OAuth2 funcione corretamente.
+
 ## 🚀 Funcionalidades Implementadas
 
 ### 1. **Configurações SMTP Centralizadas** (`/admin/parametros/smtp`)
