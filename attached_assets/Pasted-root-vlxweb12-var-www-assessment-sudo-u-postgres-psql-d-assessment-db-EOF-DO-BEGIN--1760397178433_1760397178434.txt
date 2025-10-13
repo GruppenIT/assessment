@@ -1,0 +1,69 @@
+root@vlxweb12:/var/www/assessment# sudo -u postgres psql -d assessment_db << 'EOF'
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'tipos_assessment'
+        AND column_name = 'email_destinatarios'
+    ) THEN
+        ALTER TABLE tipos_assessment
+        ADD COLUMN email_destinatarios TEXT;
+
+        COMMENT ON COLUMN tipos_assessment.email_destinatarios IS
+        'E-mails que receberão alertas de novos leads';
+
+        RAISE NOTICE 'Coluna adicionada em tipos_assessment';
+    ELSE
+        RAISE NOTICE 'Coluna já existe em tipos_assessment';
+    END IF;
+END $$;
+EOF
+NOTICE:  Coluna adicionada em tipos_assessment
+DO
+root@vlxweb12:/var/www/assessment# sudo -u postgres psql -d assessment_db -c "\d tipos_assessment" | grep email
+ email_destinatarios | text                        |           |          |
+root@vlxweb12:/var/www/assessment# sudo supervisorctl restart assessment
+assessment: stopped
+assessment: started
+root@vlxweb12:/var/www/assessment# venv/bin/python diagnosticar_assessment_criado.py
+ENV_LOADER: Carregadas variáveis de .env
+INFO:root:Blueprint de projetos registrado com sucesso
+INFO:root:Blueprint de assessments registrado com sucesso
+INFO:root:Blueprint de parâmetros registrado com sucesso
+INFO:root:Blueprint de assessment público registrado com sucesso
+INFO:root:Portal do cliente registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Configurações padrão inicializadas
+
+🔍 DIAGNÓSTICO DO ASSESSMENT CRIADO
+======================================================================
+
+📋 Assessment Público #93
+   tipo_assessment_id: 3
+   token: 345CuhGNQ7M5EUoMXEfmZ9eDVbqNnPcUSjMM_qAtdyY
+   data_inicio: 2025-10-13 23:03:21.441500
+   data_conclusao: 2025-10-13 23:03:37.880319
+
+👤 Dados do Respondente:
+   nome: Ricardo Souza
+   email: ricardo@ramotransp.com.br
+   empresa: Ramo Transportadora LTDA
+
+📊 Respostas:
+   Total de respostas: 7
+
+🔍 Tipo de Assessment:
+   ✗ Tipo NÃO encontrado (tipo_assessment é None)
+/var/www/assessment/diagnosticar_assessment_criado.py:40: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+  tipo = TipoAssessment.query.get(assessment.tipo_assessment_id)
+   ✗ Tipo ID 3 não existe no banco
+
+🎯 Lead:
+   ✗ NENHUM LEAD CRIADO
+
+❓ Possíveis motivos:
+   - Tipo de assessment inválido
+
+======================================================================
+
+root@vlxweb12:/var/www/assessment#
