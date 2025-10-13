@@ -45,5 +45,9 @@ args = "uv add reportlab flask-login wtforms flask-wtf"
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 38909
+externalPort = 3000
+
 [agent]
 integrations = ["python_openai==1.0.0", "python_database==1.0.0"]
