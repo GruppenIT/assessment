@@ -1,0 +1,48 @@
+root@vlxweb12:/var/www/assessment# psql -U $PGUSER -d $PGDATABASE -h $PGHOST -p $PGPORT -f migrations/add_cta_texto_to_assessment_tipos.sql
+psql: error: could not translate host name "-p" to address: Name or service not known
+root@vlxweb12:/var/www/assessment# psql -U $PGUSER -d $PGDATABASE -h $PGHOST -p $PGPORT << 'EOF'
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'assessment_tipos'
+        AND column_name = 'cta_texto'
+    ) THEN
+        ALTER TABLE assessment_tipos
+        ADD COLUMN cta_texto TEXT;
+
+        COMMENT ON COLUMN assessment_tipos.cta_texto IS 'Texto personalizado do CTA para este tipo de assessment';
+
+        RAISE NOTICE 'Coluna cta_texto adicionada com sucesso';
+    ELSE
+        RAISE NOTICE 'Coluna cta_texto já existe';
+    END IF;
+END $$;
+EOF
+psql: error: could not translate host name "-p" to address: Name or service not known
+root@vlxweb12:/var/www/assessment# # Usando DATABASE_URL diretamente
+psql "$DATABASE_URL" << 'EOF'
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'assessment_tipos'
+        AND column_name = 'cta_texto'
+    ) THEN
+        ALTER TABLE assessment_tipos
+        ADD COLUMN cta_texto TEXT;
+
+        COMMENT ON COLUMN assessment_tipos.cta_texto IS 'Texto personalizado do CTA para este tipo de assessment';
+
+        RAISE NOTICE 'Coluna cta_texto adicionada com sucesso';
+    ELSE
+        RAISE NOTICE 'Coluna cta_texto já existe';
+    END IF;
+END $$;
+EOF
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+root@vlxweb12:/var/www/assessment# psql "$DATABASE_URL" -c "ALTER TABLE assessment_tipos ADD COLUMN IF NOT EXISTS cta_texto TEXT;"
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+root@vlxweb12:/var/www/assessment#
