@@ -220,6 +220,7 @@ def dados_respondente(assessment_id):
             try:
                 lead = Lead.criar_de_assessment_publico(assessment_publico)
                 db.session.add(lead)
+                db.session.flush()  # Garante que o lead tenha um ID antes de adicionar histórico
                 
                 # Adicionar entrada no histórico
                 lead.adicionar_historico(
