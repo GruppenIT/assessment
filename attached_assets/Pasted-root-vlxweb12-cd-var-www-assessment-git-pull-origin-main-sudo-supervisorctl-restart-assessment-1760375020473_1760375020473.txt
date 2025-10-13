@@ -1,0 +1,32 @@
+root@vlxweb12:~# cd /var/www/assessment
+git pull origin main
+sudo supervisorctl restart assessment
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (1/1), done.
+remote: Total 4 (delta 3), reused 4 (delta 3), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 965 bytes | 482.00 KiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   50334a8..fd44842  main       -> origin/main
+Updating 50334a8..fd44842
+Fast-forward
+ routes/publico.py | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+assessment: stopped
+assessment: started
+root@vlxweb12:/var/www/assessment# sudo supervisorctl tail assessment stderr | g                                                                                                                                    rep -i "lead\|dados do respondente\|iniciando\|erro" | tail -20
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+INFO:root:Blueprint de leads registrado com sucesso
+root@vlxweb12:/var/www/assessment# sudo supervisorctl tail assessment stderr | g                                                                                                                                    rep -A 10 -B 10 "dados_respondente\|Lead criado\|Erro ao criar" | tail -50
+root@vlxweb12:/var/www/assessment# sudo -u postgres psql -d assessment_db -c "SELECT id, nome_respondente, email_respondente, data_conclusao FROM assessments_publicos ORDER BY id DESC LIMIT 3;"
+ id | nome_respondente |     email_respondente     |       data_conclusao
+----+------------------+---------------------------+----------------------------
+ 19 | Rolando Lero     | rolando@garros.com.fr     | 2025-10-13 17:02:29.953509
+ 18 | Ricardo Souza    | ricardo@ramotransp.com.br | 2025-10-13 15:19:14.792249
+ 17 | Rodrigo Rocha    | rodrigo@gruppen.com.br    | 2025-10-13 15:12:36.449848
+(3 rows)
+
+root@vlxweb12:/var/www/assessment#
