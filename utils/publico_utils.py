@@ -54,24 +54,16 @@ def gerar_recomendacoes_ia(assessment_publico, dominios_dados):
             {json.dumps(perguntas_respostas, indent=2, ensure_ascii=False)}
             
             **INSTRUÇÕES PARA RECOMENDAÇÃO:**
-            1. Analise as respostas considerando:
-               - Respostas "Não" (valor 0) indicam ausência total da prática
-               - Respostas "Parcial" (valor 3) indicam implementação parcial
-               - Respostas "Sim" (valor 5) indicam implementação completa
+            1. Identifique APENAS os 1-2 principais gaps (respostas "Não" ou "Parcial")
             
-            2. Identifique os principais gaps (respostas "Não" e "Parcial")
+            2. Forneça 1-2 ações prioritárias e práticas para melhorar
             
-            3. Forneça 2-3 recomendações práticas e objetivas focadas em:
-               - Priorizar ações para as áreas com resposta "Não"
-               - Melhorar áreas com resposta "Parcial"
-               - Fortalecer processos já implementados
+            3. Use linguagem direta e profissional
             
-            4. Use linguagem direta e profissional
-            
-            5. Estruture a resposta em um único parágrafo de 4-6 linhas
+            4. SEJA CONCISO: máximo de 2-3 linhas
             
             **FORMATO DE SAÍDA:**
-            Retorne apenas o texto da recomendação, sem título ou formatação markdown.
+            Retorne apenas o texto da recomendação em um único parágrafo curto, sem título ou formatação markdown.
             """
             
             # Chamar OpenAI
@@ -80,14 +72,14 @@ def gerar_recomendacoes_ia(assessment_publico, dominios_dados):
                 messages=[
                     {
                         "role": "system", 
-                        "content": f"Você é {openai_assistant.assistant_name}. Você gera recomendações práticas e diretas para melhorias em assessments de maturidade organizacional."
+                        "content": f"Você é {openai_assistant.assistant_name}. Você gera recomendações CURTAS, práticas e diretas (máximo 2-3 linhas) para melhorias em assessments de maturidade organizacional."
                     },
                     {
                         "role": "user", 
                         "content": prompt
                     }
                 ],
-                max_tokens=500,
+                max_tokens=200,
                 temperature=0.7
             )
             
