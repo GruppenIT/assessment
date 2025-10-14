@@ -153,33 +153,21 @@ class OpenAIAssistant:
                 
                 # Preparar prompt específico para análise de domínio
                 prompt = f"""
-                Como analista especializado em assessments de maturidade organizacional, analise o domínio abaixo:
+                Como analista especializado em assessments de maturidade organizacional, analise o domínio abaixo de forma CONCISA:
 
                 **DADOS DO DOMÍNIO (JSON):**
                 {json.dumps(dominio_data, indent=2, ensure_ascii=False)}
 
-                **INSTRUÇÕES CRÍTICAS PARA ANÁLISE:**
-                1. Escreva um parágrafo técnico como se você fosse o analista que avaliou pessoalmente as respostas
-                2. Mencione o nome do domínio e sua importância no contexto do assessment
-                3. **ANÁLISE INTEGRADA DE NOTAS E COMENTÁRIOS:**
-                   - Para cada questão, considere TANTO a nota quanto o comentário do respondente
-                   - Se um comentário menciona planos futuros, iniciativas em andamento, ou contexto adicional, INCLUA essas informações na análise
-                   - Use frases como "embora o cliente tenha mencionado que...", "conforme relatado pelo respondente...", "considerando que a organização planeja..."
-                   - Identifique contradições entre notas baixas e comentários que indicam melhorias planejadas
-                4. **CONTEXTUALIZAÇÃO BASEADA EM COMENTÁRIOS:**
-                   - Se comentários mencionam cronogramas (ex: "planejado para 2025"), incorpore isso nas recomendações
-                   - Se comentários explicam limitações atuais mas indicam progressos futuros, reconheça isso
-                   - Se comentários fornecem detalhes sobre implementações parciais, considere na avaliação
-                5. Identifique os principais pontos fortes baseado nas respostas com notas altas E comentários positivos
-                6. Identifique pontos fracos considerando notas baixas MAS também o contexto dos comentários
-                7. **RECOMENDAÇÕES CONTEXTUALIZADAS:**
-                   - Se um comentário indica que algo já está sendo planejado/implementado, ajuste a recomendação
-                   - Exemplo: "embora a política esteja planejada para conclusão em 2025, recomendamos acelerar o processo devido à criticidade..."
-                8. Forneça uma avaliação geral que INTEGRE notas numéricas com insights dos comentários
+                **INSTRUÇÕES PARA ANÁLISE OBJETIVA:**
+                1. Escreva UM ÚNICO PARÁGRAFO curto e direto (máximo 5-6 linhas)
+                2. Mencione o nome do domínio e pontuação obtida
+                3. Destaque apenas OS PRINCIPAIS pontos fortes ou fracos identificados
+                4. Se houver comentários relevantes que contextualizem a situação, mencione brevemente
+                5. Forneça UMA recomendação prioritária e acionável
 
                 **FORMATO DE SAÍDA:**
-                Retorne apenas o parágrafo de análise, sem explicações adicionais ou formatação markdown.
-                Use linguagem técnica, objetiva e profissional, como um consultor especializado que leu e analisou cada comentário individual.
+                Retorne apenas UM parágrafo conciso de análise, sem explicações adicionais ou formatação markdown.
+                Seja direto, técnico e objetivo. Máximo 80-100 palavras.
                 """
                 
                 logging.debug(f"Enviando prompt para OpenAI (tamanho: {len(prompt)} caracteres)")
@@ -187,10 +175,10 @@ class OpenAIAssistant:
                 response = self.client.chat.completions.create(
                     model="gpt-4o",  # newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
                     messages=[
-                        {"role": "system", "content": f"Você é o {self.assistant_name}. Analise domínios de assessments de maturidade organizacional com expertise técnica e visão analítica profunda."},
+                        {"role": "system", "content": f"Você é o {self.assistant_name}. Escreva análises concisas e objetivas para domínios de assessments."},
                         {"role": "user", "content": prompt}
                     ],
-                    max_tokens=1000,
+                    max_tokens=300,
                     temperature=0.7,
                     timeout=15  # Timeout mais curto ainda
                 )
