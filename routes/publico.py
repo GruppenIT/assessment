@@ -89,8 +89,19 @@ def responder_dominio(assessment_id, dominio_index):
     
     # Verificar se o índice é válido
     if dominio_index >= len(dominios_ids):
-        # Se todas as perguntas foram respondidas, ir para dados do respondente
-        return redirect(url_for('publico.dados_respondente', assessment_id=assessment_id))
+        # Se todas as perguntas foram respondidas, ir DIRETO para o resultado
+        assessment_publico_id = session_data['assessment_publico_id']
+        assessment_publico = AssessmentPublico.query.get_or_404(assessment_publico_id)
+        
+        # Marcar data de conclusão
+        if not assessment_publico.data_conclusao:
+            assessment_publico.data_conclusao = datetime.utcnow()
+            db.session.commit()
+        
+        # Redirecionar para página de loading com geração de IA
+        return redirect(url_for('publico.aguardando_resultado', 
+                              assessment_id=assessment_id,
+                              token=assessment_publico.token))
     
     dominio_id = dominios_ids[dominio_index]
     from models.assessment_version import AssessmentDominio
@@ -347,3 +358,87 @@ def resultado(assessment_id, token):
                          assessment_publico=assessment_publico,
                          pontuacao_geral=pontuacao_geral,
                          dominios_dados=dominios_dados)
+
+@publico_bp.route('/<int:assessment_id>/<token>/enviar-email', methods=['POST'])
+def enviar_resultado_email(assessment_id, token):
+    """Enviar resultado do assessment por email e criar lead"""
+    try:
+        # Buscar assessment público
+        assessment_publico = AssessmentPublico.query.filter_by(
+            tipo_assessment_id=assessment_id,
+            token=token
+        ).first_or_404()
+        
+        tipo_assessment = AssessmentTipo.query.get_or_404(assessment_id)
+        
+        # Obter email do formulário
+        email = request.form.get('email')
+        
+        if not email:
+            return jsonify({'success': False, 'message': 'Email é obrigatório'}), 400
+        
+        # Validar email básico
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return jsonify({'success': False, 'message': 'Email inválido'}), 400
+        
+        # Salvar email no assessment_publico
+        assessment_publico.email_respondente = email
+        db.session.commit()
+        
+        logging.info(f"Email {email} salvo para assessment público {assessment_publico.id}")
+        
+        # Criar lead se ainda não existir
+        from models.lead import Lead
+        lead_existente = Lead.query.filter_by(assessment_publico_id=assessment_publico.id).first()
+        
+        if not lead_existente:
+            try:
+                lead = Lead.criar_de_assessment_publico(assessment_publico)
+                db.session.add(lead)
+                db.session.flush()
+                
+                lead.adicionar_historico(
+                    acao='criado',
+                    detalhes=f'Lead criado a partir de solicitação de email do assessment público #{assessment_publico.id}'
+                )
+                
+                db.session.commit()
+                logging.info(f"✓ Lead {lead.id} criado com email {email}")
+                
+                # Enviar alerta para admins
+                from utils.email_utils import enviar_alerta_novo_lead
+                try:
+                    enviar_alerta_novo_lead(lead, tipo_assessment)
+                except Exception as e:
+                    logging.error(f"Erro ao enviar alerta de lead: {e}")
+                    
+            except Exception as e:
+                logging.error(f"Erro ao criar lead: {e}")
+                db.session.rollback()
+        else:
+            logging.info(f"Lead já existe para assessment público {assessment_publico.id}")
+        
+        # Enviar resultado por email
+        from utils.email_utils import enviar_resultado_assessment
+        
+        resultado_envio = enviar_resultado_assessment(assessment_publico, email, tipo_assessment)
+        
+        if resultado_envio:
+            return jsonify({
+                'success': True, 
+                'message': 'Resultado enviado com sucesso! Verifique sua caixa de entrada.'
+            })
+        else:
+            return jsonify({
+                'success': False, 
+                'message': 'Erro ao enviar email. Tente novamente.'
+            }), 500
+            
+    except Exception as e:
+        logging.error(f"Erro ao processar envio de email: {e}", exc_info=True)
+        return jsonify({
+            'success': False, 
+            'message': 'Erro ao processar solicitação'
+        }), 500

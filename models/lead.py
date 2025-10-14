@@ -10,11 +10,11 @@ class Lead(db.Model):
     assessment_publico_id = db.Column(db.Integer, db.ForeignKey('assessments_publicos.id'), nullable=False, unique=True, comment='Assessment público que gerou o lead')
     
     # Dados do lead (copiados do assessment público para facilitar queries)
-    nome = db.Column(db.String(200), nullable=False, comment='Nome do lead')
-    email = db.Column(db.String(200), nullable=False, comment='Email do lead')
-    telefone = db.Column(db.String(20), comment='Telefone do lead')
-    cargo = db.Column(db.String(100), comment='Cargo do lead')
-    empresa = db.Column(db.String(200), nullable=False, comment='Empresa do lead')
+    nome = db.Column(db.String(200), comment='Nome do lead (opcional)')
+    email = db.Column(db.String(200), nullable=False, comment='Email do lead (obrigatório)')
+    telefone = db.Column(db.String(20), comment='Telefone do lead (opcional)')
+    cargo = db.Column(db.String(100), comment='Cargo do lead (opcional)')
+    empresa = db.Column(db.String(200), comment='Empresa do lead (opcional)')
     
     # Dados do assessment
     tipo_assessment_nome = db.Column(db.String(200), comment='Nome do tipo de assessment')
@@ -43,7 +43,9 @@ class Lead(db.Model):
     historico = db.relationship('LeadHistorico', backref='lead', lazy=True, cascade='all, delete-orphan', order_by='LeadHistorico.data_registro.desc()')
     
     def __repr__(self):
-        return f'<Lead {self.id} - {self.nome} ({self.empresa})>'
+        nome_display = self.nome or self.email
+        empresa_display = f' ({self.empresa})' if self.empresa else ''
+        return f'<Lead {self.id} - {nome_display}{empresa_display}>'
     
     @staticmethod
     def criar_de_assessment_publico(assessment_publico):
@@ -68,14 +70,18 @@ class Lead(db.Model):
             if tipo:
                 tipo_assessment_nome = tipo.nome
         
-        # Criar lead
+        # Validar que pelo menos o email existe
+        if not assessment_publico.email_respondente:
+            raise ValueError("Email do respondente é obrigatório para criar lead")
+        
+        # Criar lead (campos opcionais podem ser None)
         lead = Lead(
             assessment_publico_id=assessment_publico.id,
-            nome=assessment_publico.nome_respondente,
+            nome=assessment_publico.nome_respondente or None,
             email=assessment_publico.email_respondente,
-            telefone=assessment_publico.telefone_respondente,
-            cargo=assessment_publico.cargo_respondente,
-            empresa=assessment_publico.empresa_respondente,
+            telefone=assessment_publico.telefone_respondente or None,
+            cargo=assessment_publico.cargo_respondente or None,
+            empresa=assessment_publico.empresa_respondente or None,
             tipo_assessment_nome=tipo_assessment_nome,
             pontuacao_geral=pontuacao_geral,
             pontuacoes_dominios=pontuacoes_dominios,

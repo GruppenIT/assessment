@@ -322,3 +322,92 @@ def validar_configuracao_smtp():
             return {'valido': False, 'mensagem': 'Usuário/senha SMTP não configurados'}
     
     return {'valido': True, 'mensagem': 'Configurações SMTP completas'}
+
+
+def enviar_resultado_assessment(assessment_publico, email_destino, tipo_assessment):
+    """
+    Envia resultado formatado do assessment por email
+    
+    Args:
+        assessment_publico: Objeto AssessmentPublico com respostas
+        email_destino: Email do destinatário
+        tipo_assessment: Objeto TipoAssessment
+    
+    Returns:
+        bool: True se enviado com sucesso, False caso contrário
+    """
+    try:
+        # Calcular pontuação geral
+        pontuacao_geral = assessment_publico.calcular_pontuacao_geral()
+        
+        # Obter domínios respondidos com pontuações
+        dominios_dados = []
+        for dominio in assessment_publico.get_dominios_respondidos():
+            pontuacao_dominio = assessment_publico.calcular_pontuacao_dominio(dominio.id)
+            
+            dominios_dados.append({
+                'dominio': dominio,
+                'pontuacao': pontuacao_dominio,
+                'recomendacao': None
+            })
+        
+        # Gerar recomendações com OpenAI
+        from utils.publico_utils import gerar_recomendacoes_ia
+        
+        try:
+            logger.info(f"Gerando recomendações IA para email do assessment público {assessment_publico.id}")
+            recomendacoes = gerar_recomendacoes_ia(assessment_publico, dominios_dados)
+            
+            for i, dominio_data in enumerate(dominios_dados):
+                if i < len(recomendacoes):
+                    dominio_data['recomendacao'] = recomendacoes[i]
+        except Exception as e:
+            logger.error(f"Erro ao gerar recomendações IA para email: {e}")
+            # Usar recomendações padrão
+            for dominio_data in dominios_dados:
+                pontuacao = dominio_data['pontuacao']
+                dominio_nome = dominio_data['dominio'].nome
+                dominio_data['recomendacao'] = (
+                    f"Com base na pontuação de {pontuacao:.0f}%, recomenda-se revisar e fortalecer "
+                    f"as práticas relacionadas a {dominio_nome}."
+                )
+        
+        # Montar corpo do e-mail
+        from flask import render_template, current_app
+        
+        with current_app.test_request_context():
+            corpo_html = render_template('emails/resultado_assessment.html',
+                                         assessment_publico=assessment_publico,
+                                         tipo_assessment=tipo_assessment,
+                                         pontuacao_geral=pontuacao_geral,
+                                         dominios_dados=dominios_dados)
+        
+        corpo_texto = f"""
+Resultado do Assessment - {tipo_assessment.nome}
+
+Pontuação Geral: {pontuacao_geral:.1f}%
+
+Obrigado por responder ao nosso assessment. Acesse o link abaixo para visualizar seu resultado completo.
+        """
+        
+        # Enviar e-mail
+        sender = EmailSender()
+        assunto = f"Resultado do seu Assessment - {tipo_assessment.nome}"
+        
+        resultado = sender.enviar_email(
+            destinatarios=email_destino,
+            assunto=assunto,
+            corpo_html=corpo_html,
+            corpo_texto=corpo_texto
+        )
+        
+        if resultado:
+            logger.info(f"Resultado do assessment enviado para {email_destino}")
+        else:
+            logger.error(f"Falha ao enviar resultado do assessment para {email_destino}")
+        
+        return resultado
+        
+    except Exception as e:
+        logger.error(f"Erro ao enviar resultado do assessment: {str(e)}")
+        return False

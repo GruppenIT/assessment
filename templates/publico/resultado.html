@@ -344,36 +344,12 @@
             </span>
         </div>
         
-        <!-- Informações do respondente -->
+        <!-- Data de conclusão -->
         <div class="info-respondente">
-            <h5 class="mb-3">
-                <i class="fas fa-user-circle me-2"></i>
-                Informações do Respondente
-            </h5>
-            <div class="row">
-                <div class="col-md-6 mb-2">
-                    <strong>Nome:</strong> {{ assessment_publico.nome_respondente }}
-                </div>
-                <div class="col-md-6 mb-2">
-                    <strong>Email:</strong> {{ assessment_publico.email_respondente }}
-                </div>
-                {% if assessment_publico.telefone_respondente %}
-                <div class="col-md-6 mb-2">
-                    <strong>Telefone:</strong> {{ assessment_publico.telefone_respondente }}
-                </div>
-                {% endif %}
-                {% if assessment_publico.cargo_respondente %}
-                <div class="col-md-6 mb-2">
-                    <strong>Cargo:</strong> {{ assessment_publico.cargo_respondente }}
-                </div>
-                {% endif %}
-                <div class="col-md-6 mb-2">
-                    <strong>Empresa:</strong> {{ assessment_publico.empresa_respondente }}
-                </div>
-                <div class="col-md-6 mb-2">
-                    <strong>Data:</strong> {{ assessment_publico.data_conclusao.strftime('%d/%m/%Y %H:%M') if assessment_publico.data_conclusao else 'N/A' }}
-                </div>
-            </div>
+            <p class="mb-0 text-center">
+                <i class="fas fa-calendar-check me-2"></i>
+                <strong>Avaliação concluída em:</strong> {{ assessment_publico.data_conclusao.strftime('%d/%m/%Y às %H:%M') if assessment_publico.data_conclusao else 'Agora' }}
+            </p>
         </div>
         
         <!-- Gráfico de radar -->
@@ -476,12 +452,58 @@
             </div>
         </div>
         
-        <!-- Botão de Impressão -->
+        <!-- Botão para Receber por Email -->
         <div class="text-center my-5">
-            <button onclick="window.print()" class="btn btn-print">
-                <i class="fas fa-print me-2"></i>
-                Imprimir Resultado
+            <button type="button" class="btn btn-print" data-bs-toggle="modal" data-bs-target="#emailModal">
+                <i class="fas fa-envelope me-2"></i>
+                📧 Receber Resultado por Email
             </button>
+            <p class="text-white-50 mt-3 small">
+                <i class="fas fa-info-circle me-1"></i>
+                Receba uma cópia formatada deste resultado no seu email
+            </p>
+        </div>
+    </div>
+    
+    <!-- Modal para solicitar email -->
+    <div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="emailModalLabel">
+                        <i class="fas fa-envelope me-2"></i>
+                        Receber Resultado por Email
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Informe seu email para receber uma cópia formatada e bonita deste resultado.
+                    </p>
+                    <form id="emailForm">
+                        <div class="mb-3">
+                            <label for="emailInput" class="form-label">Email *</label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="emailInput" 
+                                   name="email" 
+                                   placeholder="seu@email.com" 
+                                   required>
+                            <div class="invalid-feedback">
+                                Por favor, informe um email válido.
+                            </div>
+                        </div>
+                        <div id="emailAlert" class="alert d-none" role="alert"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="enviarEmailBtn">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Enviar
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -575,6 +597,81 @@
                     }
                 }
             }
+        });
+        
+        // JavaScript para envio de email via AJAX
+        document.getElementById('enviarEmailBtn').addEventListener('click', function() {
+            const emailInput = document.getElementById('emailInput');
+            const email = emailInput.value.trim();
+            const alertDiv = document.getElementById('emailAlert');
+            const btn = this;
+            
+            // Validar email
+            if (!email) {
+                emailInput.classList.add('is-invalid');
+                return;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                emailInput.classList.add('is-invalid');
+                return;
+            }
+            
+            emailInput.classList.remove('is-invalid');
+            
+            // Desabilitar botão durante envio
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+            
+            // Fazer requisição AJAX
+            const formData = new FormData();
+            formData.append('email', email);
+            
+            fetch('{{ url_for("publico.enviar_resultado_email", assessment_id=tipo_assessment.id, token=assessment_publico.token) }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar mensagem de sucesso
+                    alertDiv.className = 'alert alert-success';
+                    alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + data.message;
+                    alertDiv.classList.remove('d-none');
+                    
+                    // Limpar formulário
+                    emailInput.value = '';
+                    
+                    // Fechar modal após 2 segundos
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
+                        modal.hide();
+                        alertDiv.classList.add('d-none');
+                    }, 2000);
+                } else {
+                    // Mostrar mensagem de erro
+                    alertDiv.className = 'alert alert-danger';
+                    alertDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + data.message;
+                    alertDiv.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alertDiv.className = 'alert alert-danger';
+                alertDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Erro ao enviar email. Tente novamente.';
+                alertDiv.classList.remove('d-none');
+            })
+            .finally(() => {
+                // Reabilitar botão
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Enviar';
+            });
+        });
+        
+        // Limpar validação ao digitar
+        document.getElementById('emailInput').addEventListener('input', function() {
+            this.classList.remove('is-invalid');
         });
     </script>
 </body>

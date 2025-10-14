@@ -37,3 +37,14 @@ class DadosRespondentePubForm(FlaskForm):
     ])
     
     submit = SubmitField('Ver Resultado')
+
+class SolicitarResultadoEmailForm(FlaskForm):
+    """Formulário para solicitar resultado por email (apenas email)"""
+    
+    email = StringField('Email', validators=[
+        DataRequired(message='Email é obrigatório'),
+        Email(message='Email inválido'),
+        Length(max=200, message='Email muito longo')
+    ])
+    
+    submit = SubmitField('Receber por Email')
