@@ -106,6 +106,46 @@
                         </td>
                     </tr>
                     
+                    <!-- Perguntas e Respostas por Domínio -->
+                    {% if respostas_por_dominio %}
+                    <tr>
+                        <td style="padding: 0 30px 30px;">
+                            <h3 style="margin: 0 0 15px; color: #333333 !important; font-size: 18px;">
+                                📝 Respostas do Assessment
+                            </h3>
+                            
+                            {% for dominio_data in respostas_por_dominio %}
+                            <div style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden;">
+                                <!-- Cabeçalho do Domínio -->
+                                <div style="background-color: #f8f9fa; padding: 12px 15px; border-bottom: 2px solid #667eea;">
+                                    <strong style="color: #667eea !important; font-size: 16px;">{{ dominio_data.nome }}</strong>
+                                </div>
+                                
+                                <!-- Perguntas e Respostas -->
+                                <div style="padding: 15px;">
+                                    {% for resposta in dominio_data.respostas %}
+                                    <div style="margin-bottom: 12px; {% if not loop.last %}padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;{% endif %}">
+                                        <div style="color: #555555 !important; font-size: 14px; margin-bottom: 5px;">
+                                            <strong>{{ resposta.pergunta }}</strong>
+                                        </div>
+                                        <div style="color: #333333 !important; font-size: 14px; padding-left: 10px;">
+                                            {% if resposta.valor == 5 %}
+                                                ✅ <span style="color: #28a745 !important; font-weight: bold;">{{ resposta.resposta }}</span>
+                                            {% elif resposta.valor == 3 %}
+                                                🟡 <span style="color: #ffc107 !important; font-weight: bold;">{{ resposta.resposta }}</span>
+                                            {% else %}
+                                                ❌ <span style="color: #dc3545 !important; font-weight: bold;">{{ resposta.resposta }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    
                     <!-- Resumo por Domínio -->
                     {% if lead.respostas_publicas %}
                     <tr>

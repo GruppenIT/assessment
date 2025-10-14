@@ -228,6 +228,29 @@ def enviar_alerta_novo_lead(lead, tipo_assessment):
             logger.warning(f"Nenhum e-mail válido configurado para o tipo {tipo_assessment.nome}")
             return False
         
+        # Buscar assessment público e agrupar respostas por domínio
+        assessment_publico = lead.assessment_publico
+        respostas_por_dominio = []
+        
+        if assessment_publico:
+            # Agrupar respostas por domínio
+            dominios = {}
+            for resposta in assessment_publico.respostas:
+                dominio = resposta.pergunta.dominio_versao
+                if dominio.id not in dominios:
+                    dominios[dominio.id] = {
+                        'nome': dominio.nome,
+                        'respostas': []
+                    }
+                dominios[dominio.id]['respostas'].append({
+                    'pergunta': resposta.pergunta.texto,
+                    'resposta': resposta.get_texto_resposta(),
+                    'valor': resposta.valor
+                })
+            
+            # Converter para lista ordenada
+            respostas_por_dominio = list(dominios.values())
+        
         # Montar corpo do e-mail
         from flask import render_template, current_app
         
@@ -235,7 +258,8 @@ def enviar_alerta_novo_lead(lead, tipo_assessment):
         with current_app.test_request_context():
             corpo_html = render_template('emails/novo_lead.html', 
                                          lead=lead, 
-                                         tipo_assessment=tipo_assessment)
+                                         tipo_assessment=tipo_assessment,
+                                         respostas_por_dominio=respostas_por_dominio)
         
         corpo_texto = f"""
 Novo Lead Capturado - {tipo_assessment.nome}
