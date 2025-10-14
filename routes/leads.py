@@ -208,17 +208,18 @@ def excluir(lead_id):
         # Buscar assessment público associado
         assessment_publico = lead.assessment_publico
         
-        # Excluir assessment público primeiro (se existir)
+        # Excluir lead primeiro (o histórico será excluído automaticamente por cascade)
+        logging.info(f'Excluindo lead #{lead_id} e assessment público #{assessment_publico.id if assessment_publico else "N/A"}')
+        db.session.delete(lead)
+        
+        # Excluir assessment público depois (se existir)
         if assessment_publico:
-            logging.info(f'Excluindo assessment público #{assessment_publico.id} associado ao lead #{lead_id}')
             db.session.delete(assessment_publico)
         
-        # Excluir lead (o histórico será excluído automaticamente por cascade)
-        db.session.delete(lead)
         db.session.commit()
         
-        flash(f'Lead "{nome_lead}" e assessment público associado excluídos com sucesso!', 'success')
-        logging.info(f'Lead #{lead_id} e assessment público excluídos por {current_user.nome}')
+        flash(f'Lead "{nome_lead}" e dados associados excluídos com sucesso!', 'success')
+        logging.info(f'Lead #{lead_id} excluído por {current_user.nome}')
     except Exception as e:
         db.session.rollback()
         logging.error(f'Erro ao excluir lead {lead_id}: {e}')
