@@ -48,12 +48,18 @@ fi
 
 # 1. Verificar se estamos no diretório correto
 log_info "Verificando diretório do projeto..."
-if [ ! -d "routes" ] && [ ! -d "templates" ] && [ ! -f "app.py" ]; then
+log_info "Diretório atual: $(pwd)"
+
+# Verificar se pelo menos um dos arquivos/diretórios do projeto existe
+if [ -d "routes" ] || [ -d "templates" ] || [ -d "models" ] || [ -f "app.py" ] || [ -f "main.py" ]; then
+    log_info "✓ Diretório do projeto verificado"
+else
     log_error "Este script deve ser executado no diretório raiz do projeto!"
-    log_error "Certifique-se de estar em: /var/www/assessment (ou diretório do projeto)"
+    log_error "Certifique-se de estar em: /var/www/assessment"
+    log_error "Conteúdo atual do diretório:"
+    ls -la
     exit 1
 fi
-log_info "Diretório verificado: $(pwd)"
 
 # 2. Fazer backup do banco de dados
 log_info "Criando backup do banco de dados..."
