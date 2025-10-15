@@ -395,7 +395,7 @@ Obrigado por responder ao nosso assessment. Acesse o link abaixo para visualizar
         assunto = f"Resultado do seu Assessment - {tipo_assessment.nome}"
         
         resultado = sender.enviar_email(
-            destinatarios=email_destino,
+            destinatarios=[email_destino],  # Converter string para lista
             assunto=assunto,
             corpo_html=corpo_html,
             corpo_texto=corpo_texto
