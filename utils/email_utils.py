@@ -9,7 +9,9 @@ import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email import encoders
+import os
 import msal
 import requests
 from models.parametro_sistema import ParametroSistema
@@ -56,7 +58,7 @@ class EmailSender:
             logger.error(f"Erro ao obter token OAuth2: {str(e)}")
             return None
     
-    def _enviar_smtp_basico(self, destinatarios, assunto, corpo_html, corpo_texto=None, anexos=None):
+    def _enviar_smtp_basico(self, destinatarios, assunto, corpo_html, corpo_texto=None, anexos=None, inline_images=None):
         """Envia e-mail usando autenticação básica SMTP"""
         try:
             # Configurações
@@ -68,8 +70,15 @@ class EmailSender:
             remetente_email = self.config['smtp_from_email']
             remetente_nome = self.config['smtp_from_name']
             
-            # Criar mensagem
-            msg = MIMEMultipart('alternative')
+            # Criar mensagem com suporte para imagens inline
+            if inline_images:
+                msg = MIMEMultipart('related')
+                msg_alternative = MIMEMultipart('alternative')
+                msg.attach(msg_alternative)
+            else:
+                msg = MIMEMultipart('alternative')
+                msg_alternative = msg
+            
             msg['From'] = f"{remetente_nome} <{remetente_email}>"
             msg['To'] = ', '.join(destinatarios) if isinstance(destinatarios, list) else destinatarios
             msg['Subject'] = assunto
@@ -77,11 +86,20 @@ class EmailSender:
             # Adicionar corpo em texto plano (fallback)
             if corpo_texto:
                 part_texto = MIMEText(corpo_texto, 'plain', 'utf-8')
-                msg.attach(part_texto)
+                msg_alternative.attach(part_texto)
             
             # Adicionar corpo HTML
             part_html = MIMEText(corpo_html, 'html', 'utf-8')
-            msg.attach(part_html)
+            msg_alternative.attach(part_html)
+            
+            # Adicionar imagens inline se houver
+            if inline_images:
+                for img_data in inline_images:
+                    with open(img_data['path'], 'rb') as img_file:
+                        img = MIMEImage(img_file.read())
+                        img.add_header('Content-ID', f"<{img_data['cid']}>")
+                        img.add_header('Content-Disposition', 'inline', filename=img_data['filename'])
+                        msg.attach(img)
             
             # Adicionar anexos se houver
             if anexos:
@@ -110,7 +128,7 @@ class EmailSender:
             logger.error(f"Erro ao enviar e-mail via SMTP básico: {str(e)}")
             return False
     
-    def _enviar_oauth2(self, destinatarios, assunto, corpo_html, corpo_texto=None, anexos=None):
+    def _enviar_oauth2(self, destinatarios, assunto, corpo_html, corpo_texto=None, anexos=None, inline_images=None):
         """Envia e-mail usando OAuth2 (Microsoft 365)"""
         try:
             # Obter access token
@@ -125,8 +143,15 @@ class EmailSender:
             remetente_email = self.config['smtp_from_email']
             remetente_nome = self.config['smtp_from_name']
             
-            # Criar mensagem
-            msg = MIMEMultipart('alternative')
+            # Criar mensagem com suporte para imagens inline
+            if inline_images:
+                msg = MIMEMultipart('related')
+                msg_alternative = MIMEMultipart('alternative')
+                msg.attach(msg_alternative)
+            else:
+                msg = MIMEMultipart('alternative')
+                msg_alternative = msg
+            
             msg['From'] = f"{remetente_nome} <{remetente_email}>"
             msg['To'] = ', '.join(destinatarios) if isinstance(destinatarios, list) else destinatarios
             msg['Subject'] = assunto
@@ -134,11 +159,20 @@ class EmailSender:
             # Adicionar corpo em texto plano (fallback)
             if corpo_texto:
                 part_texto = MIMEText(corpo_texto, 'plain', 'utf-8')
-                msg.attach(part_texto)
+                msg_alternative.attach(part_texto)
             
             # Adicionar corpo HTML
             part_html = MIMEText(corpo_html, 'html', 'utf-8')
-            msg.attach(part_html)
+            msg_alternative.attach(part_html)
+            
+            # Adicionar imagens inline se houver
+            if inline_images:
+                for img_data in inline_images:
+                    with open(img_data['path'], 'rb') as img_file:
+                        img = MIMEImage(img_file.read())
+                        img.add_header('Content-ID', f"<{img_data['cid']}>")
+                        img.add_header('Content-Disposition', 'inline', filename=img_data['filename'])
+                        msg.attach(img)
             
             # Adicionar anexos se houver
             if anexos:
@@ -168,7 +202,7 @@ class EmailSender:
             logger.error(f"Erro ao enviar e-mail via OAuth2: {str(e)}")
             return False
     
-    def enviar_email(self, destinatarios, assunto, corpo_html, corpo_texto=None, anexos=None):
+    def enviar_email(self, destinatarios, assunto, corpo_html, corpo_texto=None, anexos=None, inline_images=None):
         """
         Envia e-mail usando a configuração apropriada (OAuth2 ou básica)
         
@@ -178,6 +212,7 @@ class EmailSender:
             corpo_html: Corpo do e-mail em HTML
             corpo_texto: Corpo do e-mail em texto plano (opcional, usado como fallback)
             anexos: Lista de dicionários com 'nome' e 'conteudo' (opcional)
+            inline_images: Lista de dicionários com 'path', 'cid' e 'filename' para imagens inline (opcional)
         
         Returns:
             bool: True se enviado com sucesso, False caso contrário
@@ -195,9 +230,9 @@ class EmailSender:
         auth_type = self.config['smtp_auth_type']
         
         if auth_type == 'oauth2':
-            return self._enviar_oauth2(destinatarios, assunto, corpo_html, corpo_texto, anexos)
+            return self._enviar_oauth2(destinatarios, assunto, corpo_html, corpo_texto, anexos, inline_images)
         else:
-            return self._enviar_smtp_basico(destinatarios, assunto, corpo_html, corpo_texto, anexos)
+            return self._enviar_smtp_basico(destinatarios, assunto, corpo_html, corpo_texto, anexos, inline_images)
 
 
 def enviar_alerta_novo_lead(lead, tipo_assessment):
@@ -401,6 +436,35 @@ Pontuação Geral: {pontuacao_geral:.1f}%
 Obrigado por responder ao nosso assessment. Acesse o link abaixo para visualizar seu resultado completo.
         """
         
+        # Preparar logos para anexar como imagens inline
+        from flask import current_app
+        logos_dir = os.path.join(current_app.root_path, 'static', 'img')
+        
+        inline_images = [
+            {
+                'path': os.path.join(logos_dir, 'gruppen.png'),
+                'cid': 'logo_gruppen',
+                'filename': 'gruppen.png'
+            },
+            {
+                'path': os.path.join(logos_dir, 'zerobox.png'),
+                'cid': 'logo_zerobox',
+                'filename': 'zerobox.png'
+            },
+            {
+                'path': os.path.join(logos_dir, 'firewall365.png'),
+                'cid': 'logo_firewall365',
+                'filename': 'firewall365.png'
+            },
+            {
+                'path': os.path.join(logos_dir, 'gsecdo.png'),
+                'cid': 'logo_gsecdo',
+                'filename': 'gsecdo.png'
+            }
+        ]
+        
+        logger.info(f"Logos preparados: {len(inline_images)} imagens")
+        
         # Enviar e-mail
         sender = EmailSender()
         assunto = f"Resultado do seu Assessment - {tipo_assessment.nome}"
@@ -413,7 +477,8 @@ Obrigado por responder ao nosso assessment. Acesse o link abaixo para visualizar
             destinatarios=[email_destino],  # Converter string para lista
             assunto=assunto,
             corpo_html=corpo_html,
-            corpo_texto=corpo_texto
+            corpo_texto=corpo_texto,
+            inline_images=inline_images  # Anexar logos
         )
         
         if resultado:
