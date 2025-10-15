@@ -1,0 +1,49 @@
+root@vlxweb12:/var/www/assessment# cd /var/www/assessment
+git pull origin main
+chmod +x diagnosticar_e_reiniciar.sh
+./diagnosticar_e_reiniciar.sh
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+==========================================
+Diagnóstico da Aplicação Assessment
+==========================================
+
+1. Procurando processos Python/Gunicorn...
+root        1320  0.0  0.2 109692 22784 ?        Ssl  Aug30   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+root      276484  0.0  0.3  38496 29176 ?        Ss   Oct02   2:48 /usr/bin/python3 /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+www-data  376786  0.0  0.3  33928 24896 ?        S    Oct14   0:08 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+www-data  383744  0.6  1.2 219956 104472 ?       Sl   15:08   0:08 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+www-data  383746  0.6  1.3 221780 105972 ?       Sl   15:08   0:08 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+www-data  383954  1.1  1.2 216564 100980 ?       Sl   15:29   0:02 /var/www/assessment/venv/bin/python3 /var/www/assessment/venv/bin/gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --reuse-port --reload wsgi:app
+
+2. Verificando portas em uso (5000-5010)...
+
+3. Verificando Supervisor...
+Supervisor instalado. Status:
+assessment                       RUNNING   pid 376786, uptime 21:37:27
+
+4. Verificando Systemd...
+Systemd instalado. Procurando serviços...
+Nenhum serviço 'assessment' encontrado
+Nenhum serviço 'flask' encontrado
+Nenhum serviço 'gunicorn' encontrado
+
+5. Procurando scripts de inicialização...
+Nenhum script init.d encontrado
+
+6. Verificando crontab...
+Nenhuma entrada no crontab
+Nenhuma entrada no crontab root
+
+==========================================
+Diagnóstico Concluído
+==========================================
+
+✗ Aplicação NÃO está rodando
+
+Para iniciar a aplicação, você pode usar:
+  cd /var/www/assessment
+  gunicorn --bind 0.0.0.0:5000 --daemon main:app
+
+root@vlxweb12:/var/www/assessment#
