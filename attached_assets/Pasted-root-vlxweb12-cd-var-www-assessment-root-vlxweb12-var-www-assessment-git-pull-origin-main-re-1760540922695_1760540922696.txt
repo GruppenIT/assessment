@@ -1,0 +1,34 @@
+root@vlxweb12:~# cd /var/www/assessment
+root@vlxweb12:/var/www/assessment# git pull origin main
+remote: Enumerating objects: 38, done.
+remote: Counting objects: 100% (38/38), done.
+remote: Compressing objects: 100% (7/7), done.
+remote: Total 23 (delta 17), reused 22 (delta 16), pack-reused 0 (from 0)
+Unpacking objects: 100% (23/23), 12.35 KiB | 632.00 KiB/s, done.
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+   828a287..c72c0c6  main       -> origin/main
+Updating 828a287..c72c0c6
+Fast-forward
+ .replit                                    |   4 ++++
+ DEPLOY_FLUXO_SEM_ATRITO.md                 | 182 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ deploy_fluxo_sem_atrito.sh                 | 143 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ forms/publico_forms.py                     |  11 ++++++++++
+ models/lead.py                             |  28 +++++++++++++++----------
+ replit.md                                  |   1 +
+ routes/publico.py                          |  99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ templates/emails/resultado_assessment.html | 126 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ templates/publico/resultado.html           | 163 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------
+ utils/email_utils.py                       |  89 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 10 files changed, 800 insertions(+), 46 deletions(-)
+ create mode 100644 DEPLOY_FLUXO_SEM_ATRITO.md
+ create mode 100755 deploy_fluxo_sem_atrito.sh
+ create mode 100644 templates/emails/resultado_assessment.html
+root@vlxweb12:/var/www/assessment# ./deploy_fluxo_sem_atrito.sh
+==================================================
+Deploy - Fluxo Sem Atrito (Assessments Públicos)
+==================================================
+
+[INFO] Verificando diretório do projeto...
+[ERRO] Este script deve ser executado no diretório raiz do projeto!
+root@vlxweb12:/var/www/assessment#

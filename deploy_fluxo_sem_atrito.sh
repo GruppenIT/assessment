@@ -36,12 +36,24 @@ log_error() {
     echo -e "${RED}[ERRO]${NC} $1"
 }
 
+# 0. Carregar variáveis de ambiente
+log_info "Carregando variáveis de ambiente..."
+if [ -f ".env" ]; then
+    log_info "Arquivo .env encontrado, carregando..."
+    export $(cat .env | grep -v '^#' | xargs)
+    log_info "Variáveis de ambiente carregadas"
+else
+    log_warn "Arquivo .env não encontrado"
+fi
+
 # 1. Verificar se estamos no diretório correto
 log_info "Verificando diretório do projeto..."
-if [ ! -f "app.py" ] || [ ! -f "models.py" ]; then
+if [ ! -d "routes" ] && [ ! -d "templates" ] && [ ! -f "app.py" ]; then
     log_error "Este script deve ser executado no diretório raiz do projeto!"
+    log_error "Certifique-se de estar em: /var/www/assessment (ou diretório do projeto)"
     exit 1
 fi
+log_info "Diretório verificado: $(pwd)"
 
 # 2. Fazer backup do banco de dados
 log_info "Criando backup do banco de dados..."
@@ -83,18 +95,30 @@ ALTER COLUMN empresa DROP NOT NULL;
 
 # Aplicar migração
 if [ -n "$DATABASE_URL" ]; then
+    log_info "Usando DATABASE_URL para conexão..."
     echo "$MIGRATION_SQL" | psql "$DATABASE_URL"
     log_info "Migrações aplicadas com sucesso"
+elif [ -n "$PGDATABASE" ]; then
+    log_info "Usando variáveis PG* para conexão..."
+    PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" <<EOF
+$MIGRATION_SQL
+EOF
+    log_info "Migrações aplicadas com sucesso"
 else
-    log_error "DATABASE_URL não encontrada. Não foi possível aplicar migrações."
-    log_warn "Execute manualmente:"
+    log_error "Variáveis de conexão ao banco não encontradas!"
+    log_error "Configure DATABASE_URL ou PGDATABASE/PGHOST/PGUSER/PGPASSWORD"
+    log_warn "Execute manualmente as seguintes migrações:"
     echo "$MIGRATION_SQL"
-    exit 1
+    log_warn "Continuando sem aplicar migrações..."
 fi
 
 # 5. Verificar estrutura da tabela
 log_info "Verificando estrutura da tabela leads..."
-psql "$DATABASE_URL" -c "\d leads" > /dev/null 2>&1 && log_info "Tabela leads verificada"
+if [ -n "$DATABASE_URL" ]; then
+    psql "$DATABASE_URL" -c "\d leads" > /dev/null 2>&1 && log_info "Tabela leads verificada"
+elif [ -n "$PGDATABASE" ]; then
+    PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c "\d leads" > /dev/null 2>&1 && log_info "Tabela leads verificada"
+fi
 
 # 6. Reiniciar aplicação
 log_info "Reiniciando aplicação..."
