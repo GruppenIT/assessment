@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from models.assessment_version import AssessmentTipo
 from models.dominio import Dominio
 from models.pergunta import Pergunta
@@ -421,7 +421,16 @@ def enviar_resultado_email(assessment_id, token):
             logging.info(f"Lead já existe para assessment público {assessment_publico.id}")
         
         # Enviar resultado por email
-        from utils.email_utils import enviar_resultado_assessment
+        from utils.email_utils import enviar_resultado_assessment, validar_configuracao_smtp
+        
+        # Validar configuração SMTP antes de tentar enviar
+        validacao_smtp = validar_configuracao_smtp()
+        if not validacao_smtp['valido']:
+            logging.error(f"Configuração SMTP inválida: {validacao_smtp['mensagem']}")
+            return jsonify({
+                'success': False,
+                'message': f'Configuração de email não está completa. Entre em contato com o suporte.'
+            }), 500
         
         resultado_envio = enviar_resultado_assessment(assessment_publico, email, tipo_assessment)
         
@@ -433,7 +442,7 @@ def enviar_resultado_email(assessment_id, token):
         else:
             return jsonify({
                 'success': False, 
-                'message': 'Erro ao enviar email. Tente novamente.'
+                'message': 'Não foi possível enviar o email no momento. Tente novamente em instantes.'
             }), 500
             
     except Exception as e:

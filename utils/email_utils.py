@@ -337,8 +337,17 @@ def enviar_resultado_assessment(assessment_publico, email_destino, tipo_assessme
         bool: True se enviado com sucesso, False caso contrário
     """
     try:
+        logger.info(f"Iniciando envio de resultado para {email_destino}")
+        
+        # Validar configuração SMTP primeiro
+        validacao = validar_configuracao_smtp()
+        if not validacao['valido']:
+            logger.error(f"Configuração SMTP inválida: {validacao['mensagem']}")
+            return False
+        
         # Calcular pontuação geral
         pontuacao_geral = assessment_publico.calcular_pontuacao_geral()
+        logger.info(f"Pontuação geral calculada: {pontuacao_geral}%")
         
         # Obter domínios respondidos com pontuações
         dominios_dados = []
@@ -350,6 +359,8 @@ def enviar_resultado_assessment(assessment_publico, email_destino, tipo_assessme
                 'pontuacao': pontuacao_dominio,
                 'recomendacao': None
             })
+        
+        logger.info(f"Total de domínios processados: {len(dominios_dados)}")
         
         # Gerar recomendações com OpenAI
         from utils.publico_utils import gerar_recomendacoes_ia
