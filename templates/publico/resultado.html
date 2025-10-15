@@ -227,8 +227,144 @@
             box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
         }
         
+        .email-inline-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px 30px;
+            margin: 40px 0 30px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        
+        .email-inline-title {
+            color: #0f4c75;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .email-inline-subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 25px;
+        }
+        
+        .email-input-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+        
+        .email-inline-field {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .email-inline-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .email-inline-field.is-invalid {
+            border-color: #dc3545;
+        }
+        
+        .email-inline-btn {
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .email-inline-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .email-inline-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .email-feedback {
+            margin-top: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            animation: slideDown 0.3s ease;
+        }
+        
+        .email-feedback.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .email-feedback.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .email-progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .email-progress-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         @media print {
-            .btn-print, .cta-container {
+            .btn-print, .cta-container, .email-inline-container {
                 display: none;
             }
             
@@ -238,6 +374,24 @@
             
             .dominio-card {
                 page-break-inside: avoid;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .email-input-wrapper {
+                flex-direction: column;
+            }
+            
+            .email-inline-btn {
+                width: 100%;
+            }
+            
+            .email-inline-title {
+                font-size: 22px;
+            }
+            
+            .email-inline-subtitle {
+                font-size: 14px;
             }
         }
         
@@ -423,6 +577,51 @@
             {% endfor %}
         </div>
         
+        <!-- Campo de Email Inline -->
+        <div class="email-inline-container">
+            <h4 class="email-inline-title">
+                <i class="fas fa-envelope me-2"></i>
+                Receba este resultado por email
+            </h4>
+            <p class="email-inline-subtitle">
+                Digite seu email para receber uma cópia formatada com análise completa
+            </p>
+            
+            <div class="email-input-wrapper">
+                <input type="email" 
+                       id="emailInlineInput" 
+                       class="email-inline-field" 
+                       placeholder="seu@email.com">
+                <button id="enviarEmailInlineBtn" class="email-inline-btn">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    Enviar
+                </button>
+            </div>
+            
+            <!-- Mensagem de feedback -->
+            <div id="emailFeedback" class="email-feedback d-none"></div>
+            
+            <!-- Barra de progresso -->
+            <div id="emailProgressContainer" class="email-progress-container d-none">
+                <div class="email-progress-content">
+                    <div class="spinner-border text-light mb-3" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <h5 class="text-white mb-2">
+                        <i class="fas fa-cog fa-spin me-2"></i>
+                        Aguarde...
+                    </h5>
+                    <p class="text-white-50 mb-0">Gerando e enviando seu relatório por email</p>
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div id="emailProgressBar" 
+                             class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                             role="progressbar" 
+                             style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- CTA de Contato -->
         <div class="cta-container">
             <div class="cta-icon">
@@ -449,60 +648,6 @@
                     <i class="fas fa-envelope me-2"></i>
                     comercial@gruppen.com.br
                 </a>
-            </div>
-        </div>
-        
-        <!-- Botão para Receber por Email -->
-        <div class="text-center my-5">
-            <button type="button" class="btn btn-print" data-bs-toggle="modal" data-bs-target="#emailModal">
-                <i class="fas fa-envelope me-2"></i>
-                📧 Receber Resultado por Email
-            </button>
-            <p class="text-white-50 mt-3 small">
-                <i class="fas fa-info-circle me-1"></i>
-                Receba uma cópia formatada deste resultado no seu email
-            </p>
-        </div>
-    </div>
-    
-    <!-- Modal para solicitar email -->
-    <div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="emailModalLabel">
-                        <i class="fas fa-envelope me-2"></i>
-                        Receber Resultado por Email
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted mb-3">
-                        Informe seu email para receber uma cópia formatada e bonita deste resultado.
-                    </p>
-                    <form id="emailForm">
-                        <div class="mb-3">
-                            <label for="emailInput" class="form-label">Email *</label>
-                            <input type="email" 
-                                   class="form-control" 
-                                   id="emailInput" 
-                                   name="email" 
-                                   placeholder="seu@email.com" 
-                                   required>
-                            <div class="invalid-feedback">
-                                Por favor, informe um email válido.
-                            </div>
-                        </div>
-                        <div id="emailAlert" class="alert d-none" role="alert"></div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="enviarEmailBtn">
-                        <i class="fas fa-paper-plane me-2"></i>
-                        Enviar
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -599,11 +744,13 @@
             }
         });
         
-        // JavaScript para envio de email via AJAX
-        document.getElementById('enviarEmailBtn').addEventListener('click', function() {
-            const emailInput = document.getElementById('emailInput');
+        // JavaScript para envio de email inline com barra de progresso
+        document.getElementById('enviarEmailInlineBtn').addEventListener('click', function() {
+            const emailInput = document.getElementById('emailInlineInput');
             const email = emailInput.value.trim();
-            const alertDiv = document.getElementById('emailAlert');
+            const feedbackDiv = document.getElementById('emailFeedback');
+            const progressContainer = document.getElementById('emailProgressContainer');
+            const progressBar = document.getElementById('emailProgressBar');
             const btn = this;
             
             // Validar email
@@ -619,10 +766,22 @@
             }
             
             emailInput.classList.remove('is-invalid');
+            feedbackDiv.classList.add('d-none');
             
-            // Desabilitar botão durante envio
+            // Mostrar barra de progresso
+            progressContainer.classList.remove('d-none');
+            progressBar.style.width = '0%';
+            
+            // Desabilitar botão
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+            
+            // Animar barra de progresso
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressBar.style.width = progress + '%';
+            }, 200);
             
             // Fazer requisição AJAX
             const formData = new FormData();
@@ -634,65 +793,71 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // Mostrar mensagem de sucesso no modal
-                    alertDiv.className = 'alert alert-success';
-                    alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + data.message;
-                    alertDiv.classList.remove('d-none');
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                setTimeout(() => {
+                    // Esconder barra de progresso
+                    progressContainer.classList.add('d-none');
                     
-                    // Limpar formulário
-                    emailInput.value = '';
-                    
-                    // Fechar modal após 3 segundos e mostrar notificação na página
-                    setTimeout(() => {
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
-                        modal.hide();
-                        alertDiv.classList.add('d-none');
-                        
-                        // Criar notificação de sucesso que fica visível na página
-                        const successToast = document.createElement('div');
-                        successToast.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3';
-                        successToast.style.zIndex = '9999';
-                        successToast.style.minWidth = '400px';
-                        successToast.innerHTML = `
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-check-circle me-3" style="font-size: 24px;"></i>
-                                <div>
-                                    <strong>Email enviado com sucesso! ✓</strong><br>
-                                    <small>Verifique sua caixa de entrada e spam em ${email}</small>
-                                </div>
-                            </div>
+                    if (data.success) {
+                        // Mostrar mensagem de sucesso
+                        feedbackDiv.className = 'email-feedback success';
+                        feedbackDiv.innerHTML = `
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Email enviado com sucesso!</strong><br>
+                            <small>Verifique sua caixa de entrada e spam em <strong>${email}</strong></small>
                         `;
-                        document.body.appendChild(successToast);
+                        feedbackDiv.classList.remove('d-none');
                         
-                        // Remover notificação após 8 segundos
+                        // Limpar campo
+                        emailInput.value = '';
+                        
+                        // Esconder mensagem após 8 segundos
                         setTimeout(() => {
-                            successToast.remove();
+                            feedbackDiv.classList.add('d-none');
                         }, 8000);
-                    }, 3000);
-                } else {
-                    // Mostrar mensagem de erro
-                    alertDiv.className = 'alert alert-danger';
-                    alertDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + data.message;
-                    alertDiv.classList.remove('d-none');
-                }
+                    } else {
+                        // Mostrar mensagem de erro
+                        feedbackDiv.className = 'email-feedback error';
+                        feedbackDiv.innerHTML = `
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>Erro ao enviar email</strong><br>
+                            <small>${data.message}</small>
+                        `;
+                        feedbackDiv.classList.remove('d-none');
+                    }
+                }, 500);
             })
             .catch(error => {
+                clearInterval(progressInterval);
+                progressContainer.classList.add('d-none');
+                
                 console.error('Erro:', error);
-                alertDiv.className = 'alert alert-danger';
-                alertDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Erro ao enviar email. Tente novamente.';
-                alertDiv.classList.remove('d-none');
+                feedbackDiv.className = 'email-feedback error';
+                feedbackDiv.innerHTML = `
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Erro ao enviar email</strong><br>
+                    <small>Ocorreu um erro inesperado. Tente novamente.</small>
+                `;
+                feedbackDiv.classList.remove('d-none');
             })
             .finally(() => {
                 // Reabilitar botão
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Enviar';
             });
         });
         
         // Limpar validação ao digitar
-        document.getElementById('emailInput').addEventListener('input', function() {
+        document.getElementById('emailInlineInput').addEventListener('input', function() {
             this.classList.remove('is-invalid');
+        });
+        
+        // Permitir enviar com Enter
+        document.getElementById('emailInlineInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('enviarEmailInlineBtn').click();
+            }
         });
     </script>
 </body>
