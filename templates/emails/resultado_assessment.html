@@ -97,8 +97,13 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Recomendação -->
+                                <!-- Descrição e Recomendação -->
                                 <div style="padding: 20px; background-color: #ffffff;">
+                                    {% if dominio_data.dominio.descricao %}
+                                    <p style="margin: 0 0 15px 0; color: #666666 !important; font-size: 14px; line-height: 1.6; font-style: italic; border-left: 3px solid #e0e0e0; padding-left: 12px;">
+                                        {{ dominio_data.dominio.descricao }}
+                                    </p>
+                                    {% endif %}
                                     <p style="margin: 0; color: #555555 !important; font-size: 15px; line-height: 1.7;">
                                         {{ dominio_data.recomendacao }}
                                     </p>
