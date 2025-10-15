@@ -635,7 +635,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Mostrar mensagem de sucesso
+                    // Mostrar mensagem de sucesso no modal
                     alertDiv.className = 'alert alert-success';
                     alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + data.message;
                     alertDiv.classList.remove('d-none');
@@ -643,12 +643,33 @@
                     // Limpar formulário
                     emailInput.value = '';
                     
-                    // Fechar modal após 2 segundos
+                    // Fechar modal após 3 segundos e mostrar notificação na página
                     setTimeout(() => {
                         const modal = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
                         modal.hide();
                         alertDiv.classList.add('d-none');
-                    }, 2000);
+                        
+                        // Criar notificação de sucesso que fica visível na página
+                        const successToast = document.createElement('div');
+                        successToast.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3';
+                        successToast.style.zIndex = '9999';
+                        successToast.style.minWidth = '400px';
+                        successToast.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-3" style="font-size: 24px;"></i>
+                                <div>
+                                    <strong>Email enviado com sucesso! ✓</strong><br>
+                                    <small>Verifique sua caixa de entrada e spam em ${email}</small>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(successToast);
+                        
+                        // Remover notificação após 8 segundos
+                        setTimeout(() => {
+                            successToast.remove();
+                        }, 8000);
+                    }, 3000);
                 } else {
                     // Mostrar mensagem de erro
                     alertDiv.className = 'alert alert-danger';

@@ -405,6 +405,10 @@ Obrigado por responder ao nosso assessment. Acesse o link abaixo para visualizar
         sender = EmailSender()
         assunto = f"Resultado do seu Assessment - {tipo_assessment.nome}"
         
+        logger.info(f"Tentando enviar email para: {email_destino}")
+        logger.info(f"Assunto: {assunto}")
+        logger.info(f"Número de domínios no email: {len(dominios_dados)}")
+        
         resultado = sender.enviar_email(
             destinatarios=[email_destino],  # Converter string para lista
             assunto=assunto,
@@ -413,9 +417,11 @@ Obrigado por responder ao nosso assessment. Acesse o link abaixo para visualizar
         )
         
         if resultado:
-            logger.info(f"Resultado do assessment enviado para {email_destino}")
+            logger.info(f"✓ SUCESSO: Email de resultado enviado para {email_destino}")
+            logger.info(f"✓ Assessment ID: {assessment_publico.id}, Tipo: {tipo_assessment.nome}")
         else:
-            logger.error(f"Falha ao enviar resultado do assessment para {email_destino}")
+            logger.error(f"✗ FALHA: Não foi possível enviar email para {email_destino}")
+            logger.error(f"✗ Verifique os logs do EmailSender acima para detalhes")
         
         return resultado
         
