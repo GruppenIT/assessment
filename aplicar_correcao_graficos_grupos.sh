@@ -8,6 +8,7 @@
 # 2. Proteção contra perguntas deletadas em assessments públicos
 # 3. Filtros robustos em get_dominios_respondidos e calcular_pontuacao_dominio
 # 4. Gráficos interativos com tooltips corretos e cores por pontuação
+# 5. CORREÇÃO CRÍTICA: Template Jinja2 com bloco content não fechado
 #
 # Data: 2025-10-17
 ###############################################################################
@@ -165,6 +166,44 @@ PYTHON_SCRIPT
 echo -e "${GREEN}✓ Correção 3 aplicada${NC}"
 echo ""
 
+# Aplicar correção 4: templates/admin/grupos_estatisticas.html - Fechar bloco content
+echo "🔧 Aplicando correção 4: CRÍTICO - Fechar bloco content no template Jinja2"
+
+python3 << 'PYTHON_SCRIPT'
+with open('templates/admin/grupos_estatisticas.html', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+# Verificar se já tem a correção (endblock antes de extra_js)
+if '</div>\n{% endblock %}\n\n{% block extra_js %}' not in content:
+    # Substituir
+    old_pattern = '</div>\n\n{% block extra_js %}'
+    new_pattern = '</div>\n{% endblock %}\n\n{% block extra_js %}'
+    
+    if old_pattern in content:
+        content = content.replace(old_pattern, new_pattern)
+        
+        with open('templates/admin/grupos_estatisticas.html', 'w', encoding='utf-8') as f:
+            f.write(content)
+        print("✓ CORREÇÃO CRÍTICA aplicada - bloco content fechado")
+    else:
+        print("⚠ Padrão não encontrado, verificando manualmente...")
+        # Tentar padrão alternativo
+        import re
+        pattern = r'(</div>\n)(\{% block extra_js %\})'
+        if re.search(pattern, content) and '{% endblock %}\n\n{% block extra_js %}' not in content:
+            content = re.sub(pattern, r'\1{% endblock %}\n\n\2', content)
+            with open('templates/admin/grupos_estatisticas.html', 'w', encoding='utf-8') as f:
+                f.write(content)
+            print("✓ CORREÇÃO CRÍTICA aplicada - bloco content fechado (padrão alternativo)")
+        else:
+            print("ℹ Correção já aplicada ou template diferente do esperado")
+else:
+    print("ℹ Correção já aplicada - bloco content está fechado")
+PYTHON_SCRIPT
+
+echo -e "${GREEN}✓ Correção 4 aplicada (CRÍTICA)${NC}"
+echo ""
+
 # Reiniciar o serviço
 echo "🔄 Reiniciando serviço..."
 if command -v supervisorctl &> /dev/null; then
@@ -189,6 +228,7 @@ echo "📝 Mudanças aplicadas:"
 echo "   1. Proteção contra tipos de assessment deletados"
 echo "   2. Proteção contra perguntas deletadas em calcular_pontuacao_dominio"
 echo "   3. Proteção contra perguntas deletadas em get_dominios_respondidos"
+echo "   4. 🔴 CRÍTICO: Correção de sintaxe Jinja2 - bloco content não fechado"
 echo ""
 echo "💾 Backup salvo em: $BACKUP_DIR"
 echo ""
