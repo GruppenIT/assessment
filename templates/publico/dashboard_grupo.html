@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Grupo {{ nome_grupo }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 0;
+        }
+        
+        .logo-bar {
+            background: #000000;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 20px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo-bar img {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+            flex: 1;
+            max-width: 180px;
+        }
+        
+        .content-wrapper {
+            padding: 40px 0;
+        }
+        
+        .breadcrumb-custom {
+            background: transparent;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        
+        .breadcrumb-custom a {
+            color: #fff;
+            text-decoration: none;
+        }
+        
+        .breadcrumb-custom a:hover {
+            text-decoration: underline;
+        }
+        
+        .dashboard-header {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .group-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+        
+        .group-subtitle {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+        }
+        
+        .stat-card.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .stat-value {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            text-transform: uppercase;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .chart-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin-bottom: 25px;
+        }
+        
+        .domain-list {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .domain-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .domain-item:last-child {
+            border-bottom: none;
+        }
+        
+        .domain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .domain-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        
+        .domain-score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .domain-bar {
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .domain-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.6s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 15px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .domain-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #999;
+        }
+        
+        .footer {
+            background: #000000;
+            color: #999;
+            padding: 30px 20px;
+            margin-top: 40px;
+            text-align: center;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .footer-links {
+            margin-bottom: 15px;
+        }
+        
+        .footer-links a {
+            color: #ccc;
+            text-decoration: none;
+            margin: 0 15px;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: #fff;
+        }
+        
+        .footer-copyright {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .footer-brand {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .group-title {
+                font-size: 28px;
+            }
+            
+            .stats-row {
+                flex-direction: column;
+            }
+            
+            .domain-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .footer-links {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .footer-links a {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra de Logos -->
+    <div class="logo-bar">
+        <img src="{{ url_for('static', filename='img/gruppen.png') }}" alt="Gruppen">
+        <img src="{{ url_for('static', filename='img/zerobox.png') }}" alt="Zerobox">
+        <img src="{{ url_for('static', filename='img/firewall365.png') }}" alt="Firewall365">
+        <img src="{{ url_for('static', filename='img/gsecdo.png') }}" alt="GSecDo">
+    </div>
+    
+    <div class="container content-wrapper">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb-custom" aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('publico.listar_grupos') }}">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar para Grupos
+                    </a>
+                </li>
+            </ol>
+        </nav>
+        
+        <!-- Cabeçalho do Dashboard -->
+        <div class="dashboard-header">
+            <h1 class="group-title">
+                <i class="fas fa-users me-3"></i>
+                {{ nome_grupo }}
+            </h1>
+            <p class="group-subtitle">
+                {{ tipo_assessment.nome if tipo_assessment else 'Assessment Público' }}
+            </p>
+            
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value">{{ pontuacao_geral_media }}%</div>
+                    <div class="stat-label">Pontuação Média</div>
+                </div>
+                <div class="stat-card secondary">
+                    <div class="stat-value">{{ total_assessments }}</div>
+                    <div class="stat-label">Assessments Respondidos</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráfico de Barras -->
+        <div class="chart-container">
+            <h2 class="chart-title">
+                <i class="fas fa-chart-bar me-2"></i>
+                Médias por Domínio
+            </h2>
+            <div style="position: relative; height: 400px;">
+                <canvas id="dominiosChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Lista Detalhada de Domínios -->
+        <div class="domain-list">
+            <h2 class="chart-title">
+                <i class="fas fa-list me-2"></i>
+                Detalhamento por Domínio
+            </h2>
+            
+            {% for dominio_data in dominios_medias %}
+            <div class="domain-item">
+                <div class="domain-header">
+                    <span class="domain-name">{{ dominio_data.dominio.nome }}</span>
+                    <span class="domain-score">{{ dominio_data.media }}%</span>
+                </div>
+                
+                <div class="domain-bar">
+                    <div class="domain-bar-fill" style="width: {{ dominio_data.media }}%">
+                        {{ dominio_data.media }}%
+                    </div>
+                </div>
+                
+                <div class="domain-meta">
+                    <span>
+                        <i class="fas fa-chart-line me-1"></i>
+                        Variação: {{ dominio_data.pontuacao_min }}% - {{ dominio_data.pontuacao_max }}%
+                    </span>
+                    <span>
+                        <i class="fas fa-clipboard-check me-1"></i>
+                        {{ dominio_data.total_respostas }} respostas
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Rodapé -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="https://www.gruppen.com.br" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-home me-1"></i>www.gruppen.com.br
+                </a>
+                <a href="https://www.gruppen.com.br/empresa/" target="_blank" rel="noopener noreferrer">Sobre Nós</a>
+                <a href="https://www.gruppen.com.br/empresa/#contato" target="_blank" rel="noopener noreferrer">Contato</a>
+            </div>
+            <div class="footer-copyright">
+                © 2025 <span class="footer-brand">Gruppen Serviços de Informática LTDA</span>. Todos os direitos reservados.
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Dados dos domínios
+        const dominiosData = {{ dominios_medias | tojson }};
+        
+        // Preparar dados para o gráfico
+        const labels = dominiosData.map(d => d.dominio.nome);
+        const data = dominiosData.map(d => d.media);
+        
+        // Criar gráfico de barras
+        const ctx = document.getElementById('dominiosChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Média (%)',
+                    data: data,
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return 'Média: ' + context.parsed.y.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

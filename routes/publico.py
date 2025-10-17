@@ -10,6 +10,111 @@ import logging
 
 publico_bp = Blueprint('publico', __name__, url_prefix='/public')
 
+@publico_bp.route('/grupos')
+def listar_grupos():
+    """Listar todos os grupos de assessments públicos"""
+    from sqlalchemy import func
+    
+    # Buscar grupos únicos com contagem de assessments
+    grupos = db.session.query(
+        AssessmentPublico.grupo,
+        func.count(AssessmentPublico.id).label('total_assessments'),
+        func.count(func.distinct(AssessmentPublico.tipo_assessment_id)).label('tipos_diferentes')
+    ).filter(
+        AssessmentPublico.grupo.isnot(None),
+        AssessmentPublico.data_conclusao.isnot(None)
+    ).group_by(
+        AssessmentPublico.grupo
+    ).order_by(
+        func.count(AssessmentPublico.id).desc()
+    ).all()
+    
+    # Preparar dados para o template
+    grupos_dados = []
+    for grupo_tuple in grupos:
+        grupo_nome = grupo_tuple[0]
+        total = grupo_tuple[1]
+        tipos = grupo_tuple[2]
+        
+        # Buscar primeiro assessment do grupo para pegar o tipo
+        primeiro_assessment = AssessmentPublico.query.filter_by(
+            grupo=grupo_nome
+        ).first()
+        
+        grupos_dados.append({
+            'nome': grupo_nome,
+            'total_assessments': total,
+            'tipos_diferentes': tipos,
+            'tipo_assessment': primeiro_assessment.tipo_assessment if primeiro_assessment else None
+        })
+    
+    return render_template('publico/grupos.html', grupos=grupos_dados)
+
+@publico_bp.route('/grupos/<string:nome_grupo>')
+def dashboard_grupo(nome_grupo):
+    """Dashboard com estatísticas médias de um grupo específico"""
+    from sqlalchemy import func
+    from models.assessment_version import AssessmentDominio
+    
+    # Buscar assessments do grupo
+    assessments = AssessmentPublico.query.filter_by(
+        grupo=nome_grupo
+    ).filter(
+        AssessmentPublico.data_conclusao.isnot(None)
+    ).all()
+    
+    if not assessments:
+        flash(f'Nenhum assessment encontrado para o grupo "{nome_grupo}".', 'warning')
+        return redirect(url_for('publico.listar_grupos'))
+    
+    # Obter informações gerais do grupo
+    total_assessments = len(assessments)
+    tipo_assessment = assessments[0].tipo_assessment
+    
+    # Calcular pontuação geral média do grupo
+    pontuacoes_gerais = [a.calcular_pontuacao_geral() for a in assessments]
+    pontuacao_geral_media = sum(pontuacoes_gerais) / len(pontuacoes_gerais) if pontuacoes_gerais else 0
+    
+    # Obter todos os domínios respondidos
+    dominios_dict = {}
+    
+    for assessment in assessments:
+        dominios = assessment.get_dominios_respondidos()
+        for dominio in dominios:
+            pontuacao = assessment.calcular_pontuacao_dominio(dominio.id)
+            
+            if dominio.id not in dominios_dict:
+                dominios_dict[dominio.id] = {
+                    'dominio': dominio,
+                    'pontuacoes': []
+                }
+            
+            dominios_dict[dominio.id]['pontuacoes'].append(pontuacao)
+    
+    # Calcular médias por domínio
+    dominios_medias = []
+    for dominio_id, dados in dominios_dict.items():
+        pontuacoes = dados['pontuacoes']
+        media = sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0
+        
+        dominios_medias.append({
+            'dominio': dados['dominio'],
+            'media': round(media, 1),
+            'total_respostas': len(pontuacoes),
+            'pontuacao_min': round(min(pontuacoes), 1) if pontuacoes else 0,
+            'pontuacao_max': round(max(pontuacoes), 1) if pontuacoes else 0
+        })
+    
+    # Ordenar por média decrescente
+    dominios_medias.sort(key=lambda x: x['media'], reverse=True)
+    
+    return render_template('publico/dashboard_grupo.html',
+                         nome_grupo=nome_grupo,
+                         total_assessments=total_assessments,
+                         tipo_assessment=tipo_assessment,
+                         pontuacao_geral_media=round(pontuacao_geral_media, 1),
+                         dominios_medias=dominios_medias)
+
 @publico_bp.route('/<int:assessment_id>')
 def iniciar_assessment(assessment_id):
     """Página inicial do assessment público"""
@@ -50,11 +155,15 @@ def iniciar_assessment(assessment_id):
     
     # Inicializar ou obter dados da sessão
     if session_key not in session:
+        # Capturar parâmetro group da URL (ex: ?group=turma2024)
+        grupo = request.args.get('group')
+        
         # Criar novo assessment público no banco
         assessment_publico = AssessmentPublico(
             tipo_assessment_id=assessment_id,
             token=AssessmentPublico.gerar_token(),
-            ip_address=request.remote_addr
+            ip_address=request.remote_addr,
+            grupo=grupo
         )
         db.session.add(assessment_publico)
         db.session.commit()
