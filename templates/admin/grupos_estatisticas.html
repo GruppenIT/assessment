@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Estatísticas do Grupo {{ grupo_nome }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-primary mb-1">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Estatísticas do Grupo: <span class="badge bg-primary">{{ grupo_nome }}</span>
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Análise detalhada dos resultados médios dos assessments deste grupo
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin.listar_grupos') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar aos Grupos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estatísticas Gerais -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Total de Assessments</h6>
+                    <h2 class="text-primary mb-0">{{ estatisticas.total_assessments }}</h2>
+                    <small class="text-muted">respostas completas</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Pontuação Média</h6>
+                    <h2 class="mb-0" style="color: {% if estatisticas.pontuacao_media_geral >= 80 %}#28a745{% elif estatisticas.pontuacao_media_geral >= 60 %}#ffc107{% else %}#dc3545{% endif %};">
+                        {{ estatisticas.pontuacao_media_geral }}%
+                    </h2>
+                    <small class="text-muted">
+                        <i class="fas fa-arrow-down me-1"></i>{{ estatisticas.pontuacao_minima }}% 
+                        <i class="fas fa-arrow-up ms-2 me-1"></i>{{ estatisticas.pontuacao_maxima }}%
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Primeira Resposta</h6>
+                    <h6 class="text-info mb-0">{{ estatisticas.primeira_resposta.strftime('%d/%m/%Y') }}</h6>
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>{{ estatisticas.primeira_resposta.strftime('%H:%M') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Última Resposta</h6>
+                    <h6 class="text-success mb-0">{{ estatisticas.ultima_resposta.strftime('%d/%m/%Y') }}</h6>
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>{{ estatisticas.ultima_resposta.strftime('%H:%M') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tipos de Assessment Utilizados -->
+    {% if tipos_utilizados %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Tipos de Assessment Utilizados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for tipo_data in tipos_utilizados %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <strong>{{ tipo_data.tipo.nome }}</strong>
+                                </div>
+                                <div>
+                                    <span class="badge bg-primary">{{ tipo_data.quantidade }} respostas</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Estatísticas por Domínio -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Estatísticas Médias por Domínio
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if dominios_estatisticas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Domínio</th>
+                                    <th class="text-center">Média</th>
+                                    <th class="text-center">Mínima</th>
+                                    <th class="text-center">Máxima</th>
+                                    <th class="text-center">Respostas</th>
+                                    <th>Barra de Progresso</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in dominios_estatisticas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.dominio.nome }}</strong>
+                                        {% if item.dominio.descricao %}
+                                        <br><small class="text-muted">{{ item.dominio.descricao[:80] }}{% if item.dominio.descricao|length > 80 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <h5 class="mb-0" style="color: {% if item.media >= 80 %}#28a745{% elif item.media >= 60 %}#ffc107{% else %}#dc3545{% endif %};">
+                                            {{ item.media }}%
+                                        </h5>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger">{{ item.minima }}%</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">{{ item.maxima }}%</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">{{ item.total_respostas }}</span>
+                                    </td>
+                                    <td style="width: 30%;">
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar {% if item.media >= 80 %}bg-success{% elif item.media >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ item.media }}%;" 
+                                                 aria-valuenow="{{ item.media }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ item.media }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nenhum domínio respondido encontrado.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Legenda de cores -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Legenda de Pontuações</h6>
+                    <div class="d-flex gap-4 flex-wrap">
+                        <div>
+                            <span class="badge bg-success me-2">80% - 100%</span>
+                            <small class="text-muted">Excelente</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-warning me-2">60% - 79%</span>
+                            <small class="text-muted">Bom</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-danger me-2">0% - 59%</span>
+                            <small class="text-muted">Precisa Melhorar</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

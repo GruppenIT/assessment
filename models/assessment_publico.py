@@ -22,6 +22,7 @@ class AssessmentPublico(db.Model):
     data_inicio = db.Column(db.DateTime, default=datetime.utcnow, comment='Data de início do assessment')
     data_conclusao = db.Column(db.DateTime, comment='Data de conclusão do assessment')
     ip_address = db.Column(db.String(50), comment='IP do respondente')
+    grupo = db.Column(db.String(100), comment='Grupo/Campanha do assessment (parâmetro ?group=xyz)')
     
     # Relacionamentos
     respostas = db.relationship('RespostaPublica', backref='assessment_publico', lazy=True, cascade='all, delete-orphan')
@@ -82,7 +83,8 @@ class AssessmentPublico(db.Model):
             'empresa_respondente': self.empresa_respondente,
             'data_inicio': self.data_inicio.isoformat() if self.data_inicio else None,
             'data_conclusao': self.data_conclusao.isoformat() if self.data_conclusao else None,
-            'pontuacao_geral': self.calcular_pontuacao_geral()
+            'pontuacao_geral': self.calcular_pontuacao_geral(),
+            'grupo': self.grupo
         }
 
 

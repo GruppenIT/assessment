@@ -50,11 +50,15 @@ def iniciar_assessment(assessment_id):
     
     # Inicializar ou obter dados da sessão
     if session_key not in session:
+        # Capturar parâmetro de grupo da URL (se houver)
+        grupo = request.args.get('group', None)
+        
         # Criar novo assessment público no banco
         assessment_publico = AssessmentPublico(
             tipo_assessment_id=assessment_id,
             token=AssessmentPublico.gerar_token(),
-            ip_address=request.remote_addr
+            ip_address=request.remote_addr,
+            grupo=grupo
         )
         db.session.add(assessment_publico)
         db.session.commit()
