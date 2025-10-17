@@ -715,12 +715,13 @@ def estatisticas_grupo(grupo_nome):
         tipos_utilizados = {}
         for assessment in assessments:
             tipo = assessment.tipo_assessment
-            if tipo.id not in tipos_utilizados:
+            if tipo and tipo.id not in tipos_utilizados:
                 tipos_utilizados[tipo.id] = {
                     'tipo': tipo,
                     'quantidade': 0
                 }
-            tipos_utilizados[tipo.id]['quantidade'] += 1
+            if tipo:
+                tipos_utilizados[tipo.id]['quantidade'] += 1
         
         return render_template('admin/grupos_estatisticas.html',
                              grupo_nome=grupo_nome,

@@ -51,7 +51,7 @@ class AssessmentPublico(db.Model):
     
     def calcular_pontuacao_dominio(self, dominio_id):
         """Calcula a pontuação de um domínio específico (0-100)"""
-        respostas_dominio = [r for r in self.respostas if r.pergunta.dominio_versao_id == dominio_id]
+        respostas_dominio = [r for r in self.respostas if r.pergunta and r.pergunta.dominio_versao_id == dominio_id]
         
         if not respostas_dominio:
             return 0
@@ -66,7 +66,9 @@ class AssessmentPublico(db.Model):
     
     def get_dominios_respondidos(self):
         """Retorna lista de domínios que foram respondidos (versão versionada)"""
-        dominios_ids = set(r.pergunta.dominio_versao_id for r in self.respostas)
+        dominios_ids = set(r.pergunta.dominio_versao_id for r in self.respostas if r.pergunta)
+        if not dominios_ids:
+            return []
         from models.assessment_version import AssessmentDominio
         return AssessmentDominio.query.filter(AssessmentDominio.id.in_(dominios_ids)).all()
     
