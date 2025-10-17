@@ -10,7 +10,6 @@ class AssessmentPublico(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tipo_assessment_id = db.Column(db.Integer, db.ForeignKey('tipos_assessment.id'), nullable=False, comment='Tipo de assessment')
     token = db.Column(db.String(64), unique=True, nullable=False, comment='Token único para acessar resultado')
-    grupo = db.Column(db.String(100), comment='Grupo do assessment (campanhas, turmas, departamentos, etc.)')
     
     # Dados do respondente (opcionais até o final do assessment)
     nome_respondente = db.Column(db.String(200), comment='Nome completo do respondente')
@@ -76,7 +75,6 @@ class AssessmentPublico(db.Model):
             'id': self.id,
             'tipo_assessment_id': self.tipo_assessment_id,
             'token': self.token,
-            'grupo': self.grupo,
             'nome_respondente': self.nome_respondente,
             'email_respondente': self.email_respondente,
             'telefone_respondente': self.telefone_respondente,
