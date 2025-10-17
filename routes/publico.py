@@ -54,12 +54,11 @@ def iniciar_assessment(assessment_id):
         grupo = request.args.get('group', None)
         
         # Criar novo assessment público no banco
-        assessment_publico = AssessmentPublico(
-            tipo_assessment_id=assessment_id,
-            token=AssessmentPublico.gerar_token(),
-            ip_address=request.remote_addr,
-            grupo=grupo
-        )
+        assessment_publico = AssessmentPublico()
+        assessment_publico.tipo_assessment_id = assessment_id
+        assessment_publico.token = AssessmentPublico.gerar_token()
+        assessment_publico.ip_address = request.remote_addr
+        assessment_publico.grupo = grupo
         db.session.add(assessment_publico)
         db.session.commit()
         
@@ -148,11 +147,10 @@ def responder_dominio(assessment_id, dominio_index):
                     resposta_existente.valor = valor_int
                     resposta_existente.data_resposta = datetime.utcnow()
                 else:
-                    resposta = RespostaPublica(
-                        assessment_publico_id=assessment_publico_id,
-                        pergunta_id=pergunta.id,
-                        valor=valor_int
-                    )
+                    resposta = RespostaPublica()
+                    resposta.assessment_publico_id = assessment_publico_id
+                    resposta.pergunta_id = pergunta.id
+                    resposta.valor = valor_int
                     db.session.add(resposta)
         
         db.session.commit()
