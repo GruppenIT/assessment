@@ -57,9 +57,5 @@ externalPort = 3001
 localPort = 43751
 externalPort = 3000
 
-[[ports]]
-localPort = 46555
-externalPort = 3003
-
 [agent]
 integrations = ["python_openai==1.0.0", "python_database==1.0.0"]
