@@ -114,13 +114,41 @@
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-layer-group me-2"></i>
                         Estatísticas Médias por Domínio
                     </h5>
+                    <div class="btn-group" role="group" aria-label="Tipo de visualização">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" onclick="changeChartType('bar')" id="btn-bar">
+                            <i class="fas fa-chart-bar me-1"></i>Barras Verticais
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeChartType('horizontalBar')" id="btn-horizontalBar">
+                            <i class="fas fa-grip-lines me-1"></i>Barras Horizontais
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="changeChartType('radar')" id="btn-radar">
+                            <i class="fas fa-chart-area me-1"></i>Radar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleTable()" id="btn-table">
+                            <i class="fas fa-table me-1"></i>Tabela
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body p-0">
+                
+                <!-- Gráfico -->
+                <div class="card-body" id="chart-container" style="display: block;">
+                    {% if dominios_estatisticas %}
+                    <canvas id="dominiosChart" style="max-height: 400px;"></canvas>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nenhum domínio respondido encontrado.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Tabela -->
+                <div class="card-body p-0" id="table-container" style="display: none;">
                     {% if dominios_estatisticas %}
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
@@ -210,4 +238,178 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+// Dados dos domínios para os gráficos
+const dominiosData = {
+    labels: [
+        {% for item in dominios_estatisticas %}
+        "{{ item.dominio.nome }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    medias: [
+        {% for item in dominios_estatisticas %}
+        {{ item.media }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    minimas: [
+        {% for item in dominios_estatisticas %}
+        {{ item.minima }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    maximas: [
+        {% for item in dominios_estatisticas %}
+        {{ item.maxima }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+};
+
+// Função para determinar cor baseada no valor
+function getColor(value) {
+    if (value >= 80) return '#28a745'; // Verde (Excelente)
+    if (value >= 60) return '#ffc107'; // Amarelo (Bom)
+    return '#dc3545'; // Vermelho (Precisa Melhorar)
+}
+
+// Criar array de cores para cada domínio
+const backgroundColors = dominiosData.medias.map(value => getColor(value));
+
+let currentChart = null;
+let currentType = 'bar';
+
+// Função para criar/atualizar gráfico
+function createChart(type) {
+    const ctx = document.getElementById('dominiosChart');
+    if (!ctx) return;
+    
+    // Destruir gráfico anterior se existir
+    if (currentChart) {
+        currentChart.destroy();
+    }
+    
+    let chartConfig = {
+        type: type === 'horizontalBar' ? 'bar' : type,
+        data: {
+            labels: dominiosData.labels,
+            datasets: [{
+                label: 'Média (%)',
+                data: dominiosData.medias,
+                backgroundColor: type === 'radar' ? 'rgba(54, 162, 235, 0.2)' : backgroundColors,
+                borderColor: type === 'radar' ? 'rgb(54, 162, 235)' : backgroundColors,
+                borderWidth: type === 'radar' ? 2 : 1,
+                fill: type === 'radar',
+                pointBackgroundColor: type === 'radar' ? backgroundColors : undefined,
+                pointBorderColor: type === 'radar' ? backgroundColors : undefined,
+                pointRadius: type === 'radar' ? 5 : undefined,
+                pointHoverRadius: type === 'radar' ? 7 : undefined
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: type === 'radar',
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let value;
+                            if (currentType === 'radar') {
+                                value = context.parsed.r;
+                            } else if (currentType === 'horizontalBar') {
+                                value = context.parsed.x;
+                            } else {
+                                value = context.parsed.y;
+                            }
+                            return context.dataset.label + ': ' + value + '%';
+                        }
+                    }
+                }
+            },
+            scales: type === 'radar' ? {
+                r: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
+                }
+            } : {
+                y: type === 'horizontalBar' ? {
+                    beginAtZero: true,
+                    max: 100
+                } : {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                },
+                x: type === 'horizontalBar' ? {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                } : {}
+            }
+        }
+    };
+    
+    // Configuração específica para barras horizontais
+    if (type === 'horizontalBar') {
+        chartConfig.options.indexAxis = 'y';
+    }
+    
+    currentChart = new Chart(ctx, chartConfig);
+}
+
+// Função para mudar tipo de gráfico
+function changeChartType(type) {
+    currentType = type;
+    
+    // Atualizar botões ativos
+    document.querySelectorAll('.btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('btn-' + type).classList.add('active');
+    
+    // Mostrar gráfico, esconder tabela
+    document.getElementById('chart-container').style.display = 'block';
+    document.getElementById('table-container').style.display = 'none';
+    
+    // Criar novo gráfico
+    createChart(type);
+}
+
+// Função para alternar para tabela
+function toggleTable() {
+    // Atualizar botões ativos
+    document.querySelectorAll('.btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('btn-table').classList.add('active');
+    
+    // Mostrar tabela, esconder gráfico
+    document.getElementById('chart-container').style.display = 'none';
+    document.getElementById('table-container').style.display = 'block';
+}
+
+// Inicializar gráfico ao carregar a página
+{% if dominios_estatisticas %}
+document.addEventListener('DOMContentLoaded', function() {
+    createChart('bar');
+});
+{% endif %}
+</script>
 {% endblock %}
