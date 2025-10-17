@@ -642,13 +642,18 @@ def estatisticas_grupo(grupo_nome):
     from models.assessment_version import AssessmentDominio
     from sqlalchemy import func
     
+    logging.info(f"===== ACESSANDO ESTATÍSTICAS DO GRUPO: '{grupo_nome}' =====")
+    
     try:
         # Buscar todos os assessments concluídos deste grupo
+        logging.info(f"Buscando assessments para o grupo '{grupo_nome}'")
         assessments = AssessmentPublico.query.filter_by(
             grupo=grupo_nome
         ).filter(
             AssessmentPublico.data_conclusao.isnot(None)
         ).all()
+        
+        logging.info(f"Encontrados {len(assessments)} assessments concluídos")
         
         if not assessments:
             flash(f'Nenhum assessment concluído encontrado para o grupo "{grupo_nome}".', 'warning')
