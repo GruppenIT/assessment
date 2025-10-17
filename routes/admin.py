@@ -642,77 +642,90 @@ def estatisticas_grupo(grupo_nome):
     from models.assessment_version import AssessmentDominio
     from sqlalchemy import func
     
-    # Buscar todos os assessments concluídos deste grupo
-    assessments = AssessmentPublico.query.filter_by(
-        grupo=grupo_nome
-    ).filter(
-        AssessmentPublico.data_conclusao.isnot(None)
-    ).all()
-    
-    if not assessments:
-        flash(f'Nenhum assessment concluído encontrado para o grupo "{grupo_nome}".', 'warning')
-        return redirect(url_for('admin.listar_grupos'))
-    
-    # Calcular estatísticas gerais
-    pontuacoes_gerais = [a.calcular_pontuacao_geral() for a in assessments]
-    pontuacao_media_geral = sum(pontuacoes_gerais) / len(pontuacoes_gerais) if pontuacoes_gerais else 0
-    
-    # Identificar todos os domínios únicos respondidos
-    dominios_dict = {}
-    
-    for assessment in assessments:
-        for dominio in assessment.get_dominios_respondidos():
-            if dominio.id not in dominios_dict:
-                dominios_dict[dominio.id] = {
-                    'dominio': dominio,
-                    'pontuacoes': []
-                }
-            
-            pontuacao_dominio = assessment.calcular_pontuacao_dominio(dominio.id)
-            dominios_dict[dominio.id]['pontuacoes'].append(pontuacao_dominio)
-    
-    # Calcular médias por domínio
-    dominios_estatisticas = []
-    for dominio_data in dominios_dict.values():
-        pontuacoes = dominio_data['pontuacoes']
-        media = sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0
-        minima = min(pontuacoes) if pontuacoes else 0
-        maxima = max(pontuacoes) if pontuacoes else 0
+    try:
+        # Buscar todos os assessments concluídos deste grupo
+        assessments = AssessmentPublico.query.filter_by(
+            grupo=grupo_nome
+        ).filter(
+            AssessmentPublico.data_conclusao.isnot(None)
+        ).all()
         
-        dominios_estatisticas.append({
-            'dominio': dominio_data['dominio'],
-            'media': round(media, 1),
-            'minima': round(minima, 1),
-            'maxima': round(maxima, 1),
-            'total_respostas': len(pontuacoes)
-        })
+        if not assessments:
+            flash(f'Nenhum assessment concluído encontrado para o grupo "{grupo_nome}".', 'warning')
+            return redirect(url_for('admin.listar_grupos'))
+        
+        # Calcular estatísticas gerais
+        pontuacoes_gerais = [a.calcular_pontuacao_geral() for a in assessments]
+        pontuacao_media_geral = sum(pontuacoes_gerais) / len(pontuacoes_gerais) if pontuacoes_gerais else 0
+        
+        # Identificar todos os domínios únicos respondidos
+        dominios_dict = {}
+        
+        for assessment in assessments:
+            try:
+                for dominio in assessment.get_dominios_respondidos():
+                    if dominio.id not in dominios_dict:
+                        dominios_dict[dominio.id] = {
+                            'dominio': dominio,
+                            'pontuacoes': []
+                        }
+                    
+                    pontuacao_dominio = assessment.calcular_pontuacao_dominio(dominio.id)
+                    dominios_dict[dominio.id]['pontuacoes'].append(pontuacao_dominio)
+            except Exception as e:
+                logging.error(f"Erro ao processar domínios do assessment {assessment.id}: {e}")
+                logging.error(f"Assessment tem {len(assessment.respostas)} respostas")
+                continue
+        
+        # Calcular médias por domínio
+        dominios_estatisticas = []
+        for dominio_data in dominios_dict.values():
+            pontuacoes = dominio_data['pontuacoes']
+            media = sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0
+            minima = min(pontuacoes) if pontuacoes else 0
+            maxima = max(pontuacoes) if pontuacoes else 0
+            
+            dominios_estatisticas.append({
+                'dominio': dominio_data['dominio'],
+                'media': round(media, 1),
+                'minima': round(minima, 1),
+                'maxima': round(maxima, 1),
+                'total_respostas': len(pontuacoes)
+            })
+        
+        # Ordenar por média decrescente
+        dominios_estatisticas.sort(key=lambda x: x['media'], reverse=True)
+        
+        # Estatísticas adicionais
+        estatisticas = {
+            'total_assessments': len(assessments),
+            'pontuacao_media_geral': round(pontuacao_media_geral, 1),
+            'pontuacao_minima': round(min(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
+            'pontuacao_maxima': round(max(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
+            'primeira_resposta': min(a.data_conclusao for a in assessments if a.data_conclusao),
+            'ultima_resposta': max(a.data_conclusao for a in assessments if a.data_conclusao)
+        }
+        
+        # Tipos de assessment utilizados
+        tipos_utilizados = {}
+        for assessment in assessments:
+            tipo = assessment.tipo_assessment
+            if tipo.id not in tipos_utilizados:
+                tipos_utilizados[tipo.id] = {
+                    'tipo': tipo,
+                    'quantidade': 0
+                }
+            tipos_utilizados[tipo.id]['quantidade'] += 1
+        
+        return render_template('admin/grupos_estatisticas.html',
+                             grupo_nome=grupo_nome,
+                             estatisticas=estatisticas,
+                             dominios_estatisticas=dominios_estatisticas,
+                             tipos_utilizados=list(tipos_utilizados.values()))
     
-    # Ordenar por média decrescente
-    dominios_estatisticas.sort(key=lambda x: x['media'], reverse=True)
-    
-    # Estatísticas adicionais
-    estatisticas = {
-        'total_assessments': len(assessments),
-        'pontuacao_media_geral': round(pontuacao_media_geral, 1),
-        'pontuacao_minima': round(min(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
-        'pontuacao_maxima': round(max(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
-        'primeira_resposta': min(a.data_conclusao for a in assessments if a.data_conclusao),
-        'ultima_resposta': max(a.data_conclusao for a in assessments if a.data_conclusao)
-    }
-    
-    # Tipos de assessment utilizados
-    tipos_utilizados = {}
-    for assessment in assessments:
-        tipo = assessment.tipo_assessment
-        if tipo.id not in tipos_utilizados:
-            tipos_utilizados[tipo.id] = {
-                'tipo': tipo,
-                'quantidade': 0
-            }
-        tipos_utilizados[tipo.id]['quantidade'] += 1
-    
-    return render_template('admin/grupos_estatisticas.html',
-                         grupo_nome=grupo_nome,
-                         estatisticas=estatisticas,
-                         dominios_estatisticas=dominios_estatisticas,
-                         tipos_utilizados=list(tipos_utilizados.values()))
+    except Exception as e:
+        logging.error(f"Erro ao exibir estatísticas do grupo '{grupo_nome}': {e}")
+        import traceback
+        logging.error(traceback.format_exc())
+        flash(f'Erro ao carregar estatísticas do grupo "{grupo_nome}". Por favor, contate o administrador.', 'danger')
+        return redirect(url_for('admin.listar_grupos'))
