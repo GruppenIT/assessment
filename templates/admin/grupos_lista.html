@@ -225,25 +225,54 @@
 </div>
 {% endblock %}
 
+<!-- Modal Confirmar Exclusão -->
+<div class="modal fade" id="modalConfirmarExclusao" tabindex="-1" aria-labelledby="modalConfirmarExclusaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalConfirmarExclusaoLabel">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o grupo <strong id="nomeGrupoExclusao"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta ação é irreversível e excluirá TODOS os assessments públicos deste grupo, incluindo respostas e leads associados.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Cancelar
+                </button>
+                <form method="POST" id="formExcluirGrupo" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir Grupo
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
 {% block scripts %}
 <script>
 function confirmarExclusao(grupoNome, tipoId) {
-    if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?\n\nEsta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
-        // Criar formulário com CSRF token
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
-        
-        // Adicionar CSRF token
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrf_token';
-        csrfInput.value = '{{ csrf_token() }}';
-        form.appendChild(csrfInput);
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
+    // Atualizar nome do grupo no modal
+    document.getElementById('nomeGrupoExclusao').textContent = grupoNome;
+    
+    // Atualizar action do formulário
+    document.getElementById('formExcluirGrupo').action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
+    
+    // Abrir modal
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmarExclusao'));
+    modal.show();
 }
 </script>
 {% endblock %}
