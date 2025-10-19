@@ -14,7 +14,8 @@
                         Estatísticas do Grupo: <span class="badge bg-primary">{{ grupo_nome }}</span>
                     </h2>
                     <p class="text-muted mb-0">
-                        Análise detalhada dos resultados médios dos assessments deste grupo
+                        <i class="fas fa-file-alt me-2"></i>Tipo de Assessment: <strong>{{ tipo_nome }}</strong> |
+                        Análise detalhada dos resultados médios
                     </p>
                 </div>
                 <div class="d-flex gap-2">
@@ -451,7 +452,7 @@ function toggleTable() {
 // Função para atualizar dados via AJAX
 async function atualizarEstatisticas() {
     try {
-        const response = await fetch('{{ url_for("admin.estatisticas_grupo_api", grupo_nome=grupo_nome) }}');
+        const response = await fetch('{{ url_for("admin.estatisticas_grupo_api", grupo_nome=grupo_nome, tipo_id=tipo_id) }}');
         if (!response.ok) return;
         
         const data = await response.json();

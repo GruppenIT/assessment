@@ -32,7 +32,8 @@
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 <strong>Como funciona?</strong> Grupos são criados automaticamente quando assessments públicos são acessados com o parâmetro <code>?group=nome_do_grupo</code> na URL. 
-                Exemplo: <code>/public/1?group=campanha_marketing</code>
+                Cada combinação de <strong>TAG + TIPO DE ASSESSMENT</strong> cria um grupo único.<br>
+                Exemplo: <code>/public/3?group=teste</code> e <code>/public/7?group=teste</code> são grupos <strong>separados</strong> (mesmo nome, tipos diferentes).
             </div>
         </div>
     </div>
@@ -63,9 +64,9 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center">
-                    <h3 class="text-info mb-0">{{ (grupos|map(attribute='tipos_diferentes')|list)|max if grupos else 0 }}</h3>
+                    <h3 class="text-info mb-0">{{ grupos|map(attribute='tipo_nome')|unique|list|length }}</h3>
                     <p class="text-muted mb-0">
-                        <i class="fas fa-file-alt me-1"></i>Tipos Diferentes (Máx)
+                        <i class="fas fa-file-alt me-1"></i>Tipos de Assessment
                     </p>
                 </div>
             </div>
@@ -88,8 +89,8 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th>Grupo</th>
+                                    <th>Tipo de Assessment</th>
                                     <th class="text-center">Assessments</th>
-                                    <th class="text-center">Tipos Diferentes</th>
                                     <th>Última Atividade</th>
                                     <th class="text-end">Ações</th>
                                 </tr>
@@ -102,11 +103,13 @@
                                             <i class="fas fa-tag me-2"></i>{{ grupo.nome }}
                                         </strong>
                                     </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-primary">{{ grupo.total_assessments }}</span>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-file-alt me-1"></i>{{ grupo.tipo_nome }}
+                                        </span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-info">{{ grupo.tipos_diferentes }}</span>
+                                        <span class="badge bg-primary">{{ grupo.total_assessments }}</span>
                                     </td>
                                     <td>
                                         {% if grupo.ultima_atividade %}
@@ -119,7 +122,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ url_for('admin.estatisticas_grupo', grupo_nome=grupo.nome) }}" 
+                                        <a href="{{ url_for('admin.estatisticas_grupo', grupo_nome=grupo.nome, tipo_id=grupo.tipo_id) }}" 
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-chart-bar me-1"></i>Ver Estatísticas
                                         </a>
