@@ -124,38 +124,6 @@
         {% endif %}
     </div>
     
-    <!-- Tipos de Assessment Utilizados -->
-    {% if tipos_utilizados %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-file-alt me-2"></i>
-                        Tipos de Assessment Utilizados
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row" id="tipos-utilizados">
-                        {% for tipo_data in tipos_utilizados %}
-                        <div class="col-md-6 mb-2">
-                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                <div>
-                                    <strong>{{ tipo_data.tipo.nome }}</strong>
-                                </div>
-                                <div>
-                                    <span class="badge bg-primary">{{ tipo_data.quantidade }} respostas</span>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    
     <!-- Estatísticas por Domínio -->
     <div class="row">
         <div class="col-12">
@@ -486,23 +454,6 @@ async function atualizarEstatisticas() {
         document.getElementById('pontuacao-maxima').textContent = data.estatisticas.pontuacao_maxima + '%';
         document.getElementById('primeira-resposta').textContent = data.estatisticas.primeira_resposta;
         document.getElementById('ultima-resposta').textContent = data.estatisticas.ultima_resposta;
-        
-        // Atualizar tipos utilizados
-        const tiposContainer = document.getElementById('tipos-utilizados');
-        if (tiposContainer && data.tipos_utilizados.length > 0) {
-            tiposContainer.innerHTML = data.tipos_utilizados.map(tipo => `
-                <div class="col-md-6 mb-2">
-                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                        <div>
-                            <strong>${tipo.nome}</strong>
-                        </div>
-                        <div>
-                            <span class="badge bg-primary">${tipo.quantidade} respostas</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
         
         // Atualizar dados dos gráficos
         dominiosData.labels = data.dominios_estatisticas.map(d => d.nome);

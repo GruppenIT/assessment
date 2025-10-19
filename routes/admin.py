@@ -782,22 +782,9 @@ def calcular_estatisticas_grupo(grupo_nome, tipo_assessment_id):
         'ultima_resposta': max(a.data_conclusao for a in assessments if a.data_conclusao)
     }
     
-    # Tipos de assessment utilizados
-    tipos_utilizados = {}
-    for assessment in assessments:
-        tipo = assessment.tipo_assessment
-        if tipo and tipo.id not in tipos_utilizados:
-            tipos_utilizados[tipo.id] = {
-                'tipo': tipo,
-                'quantidade': 0
-            }
-        if tipo:
-            tipos_utilizados[tipo.id]['quantidade'] += 1
-    
     return {
         'estatisticas': estatisticas,
-        'dominios_estatisticas': dominios_estatisticas,
-        'tipos_utilizados': list(tipos_utilizados.values())
+        'dominios_estatisticas': dominios_estatisticas
     }
 
 @admin_bp.route('/grupos/geral/<int:tipo_id>')
@@ -828,8 +815,7 @@ def estatisticas_grupo_geral(tipo_id):
                              tipo_id=tipo_id,
                              tipo_nome=tipo.nome,
                              estatisticas=dados['estatisticas'],
-                             dominios_estatisticas=dados['dominios_estatisticas'],
-                             tipos_utilizados=dados['tipos_utilizados'])
+                             dominios_estatisticas=dados['dominios_estatisticas'])
     
     except Exception as e:
         logging.error(f"Erro ao exibir estatísticas do grupo geral (tipo {tipo_id}): {e}")
@@ -865,8 +851,7 @@ def estatisticas_grupo(grupo_nome, tipo_id):
                              tipo_id=tipo_id,
                              tipo_nome=tipo.nome,
                              estatisticas=dados['estatisticas'],
-                             dominios_estatisticas=dados['dominios_estatisticas'],
-                             tipos_utilizados=dados['tipos_utilizados'])
+                             dominios_estatisticas=dados['dominios_estatisticas'])
     
     except Exception as e:
         logging.error(f"Erro ao exibir estatísticas do grupo '{grupo_nome}' (tipo {tipo_id}): {e}")
@@ -899,13 +884,6 @@ def estatisticas_grupo_geral_api(tipo_id):
                 'total_respostas': item['total_respostas']
             })
         
-        tipos_json = []
-        for item in dados['tipos_utilizados']:
-            tipos_json.append({
-                'nome': item['tipo'].nome,
-                'quantidade': item['quantidade']
-            })
-        
         # Converter datas para string
         estatisticas_json = dados['estatisticas'].copy()
         if estatisticas_json.get('primeira_resposta'):
@@ -915,8 +893,7 @@ def estatisticas_grupo_geral_api(tipo_id):
         
         return jsonify({
             'estatisticas': estatisticas_json,
-            'dominios_estatisticas': dominios_json,
-            'tipos_utilizados': tipos_json
+            'dominios_estatisticas': dominios_json
         })
     
     except Exception as e:
@@ -947,13 +924,6 @@ def estatisticas_grupo_api(grupo_nome, tipo_id):
                 'total_respostas': item['total_respostas']
             })
         
-        tipos_json = []
-        for item in dados['tipos_utilizados']:
-            tipos_json.append({
-                'nome': item['tipo'].nome,
-                'quantidade': item['quantidade']
-            })
-        
         # Converter datas para string
         estatisticas_json = dados['estatisticas'].copy()
         if estatisticas_json.get('primeira_resposta'):
@@ -963,8 +933,7 @@ def estatisticas_grupo_api(grupo_nome, tipo_id):
         
         return jsonify({
             'estatisticas': estatisticas_json,
-            'dominios_estatisticas': dominios_json,
-            'tipos_utilizados': tipos_json
+            'dominios_estatisticas': dominios_json
         })
     
     except Exception as e:
