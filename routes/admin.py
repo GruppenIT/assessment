@@ -602,59 +602,131 @@ def reset_respondente_2fa(respondente_id):
 @login_required
 @admin_required
 def listar_grupos():
-    """Listar todos os grupos únicos de assessments públicos (agrupados por TAG + TIPO)"""
-    from models.assessment_publico import AssessmentPublico
-    from sqlalchemy import func
+    """Listar todos os grupos únicos de assessments públicos (agrupados por TAG + TIPO)
     
-    # Buscar todos os grupos únicos (não nulos) com contagem
-    # MUDANÇA CONCEITUAL: Agrupamento por (grupo, tipo_assessment_id)
-    grupos_query = db.session.query(
+    Inclui grupos "Geral" para cada tipo de assessment com todas as respostas.
+    Suporta filtros por tipo_id e tag.
+    """
+    from models.assessment_publico import AssessmentPublico
+    from sqlalchemy import func, or_
+    
+    # Obter filtros da query string
+    filtro_tipo_id = request.args.get('tipo_id', type=int)
+    filtro_tag = request.args.get('tag', '').strip()
+    
+    # === GRUPOS GERAIS: Um para cada tipo de assessment (todas as respostas) ===
+    grupos_gerais_query = db.session.query(
+        AssessmentPublico.tipo_assessment_id,
+        func.count(AssessmentPublico.id).label('total_assessments'),
+        func.max(AssessmentPublico.data_conclusao).label('ultima_atividade')
+    ).filter(
+        AssessmentPublico.data_conclusao.isnot(None)
+    )
+    
+    # Aplicar filtro de tipo se especificado
+    if filtro_tipo_id:
+        grupos_gerais_query = grupos_gerais_query.filter(
+            AssessmentPublico.tipo_assessment_id == filtro_tipo_id
+        )
+    
+    grupos_gerais_query = grupos_gerais_query.group_by(
+        AssessmentPublico.tipo_assessment_id
+    ).order_by(
+        func.max(AssessmentPublico.data_conclusao).desc()
+    ).all()
+    
+    # === GRUPOS ESPECÍFICOS: Agrupados por (tag, tipo) ===
+    grupos_especificos_query = db.session.query(
         AssessmentPublico.grupo,
         AssessmentPublico.tipo_assessment_id,
         func.count(AssessmentPublico.id).label('total_assessments'),
         func.max(AssessmentPublico.data_conclusao).label('ultima_atividade')
     ).filter(
         AssessmentPublico.grupo.isnot(None),
-        AssessmentPublico.data_conclusao.isnot(None)  # Apenas assessments concluídos
-    ).group_by(
+        AssessmentPublico.data_conclusao.isnot(None)
+    )
+    
+    # Aplicar filtros
+    if filtro_tipo_id:
+        grupos_especificos_query = grupos_especificos_query.filter(
+            AssessmentPublico.tipo_assessment_id == filtro_tipo_id
+        )
+    if filtro_tag:
+        grupos_especificos_query = grupos_especificos_query.filter(
+            AssessmentPublico.grupo.ilike(f'%{filtro_tag}%')
+        )
+    
+    grupos_especificos_query = grupos_especificos_query.group_by(
         AssessmentPublico.grupo,
         AssessmentPublico.tipo_assessment_id
     ).order_by(
         func.max(AssessmentPublico.data_conclusao).desc()
     ).all()
     
-    # Converter para lista de dicionários com dados do tipo
+    # Converter para lista unificada
     grupos = []
-    for grupo, tipo_id, total, ultima in grupos_query:
-        # Buscar informações do tipo de assessment
+    
+    # Adicionar grupos gerais
+    for tipo_id, total, ultima in grupos_gerais_query:
         tipo = AssessmentTipo.query.get(tipo_id)
-        
         grupos.append({
-            'nome': grupo,
+            'nome': None,  # None indica grupo geral
+            'nome_exibicao': '📊 GERAL',
             'tipo_id': tipo_id,
             'tipo_nome': tipo.nome if tipo else 'Desconhecido',
             'total_assessments': total,
-            'ultima_atividade': ultima
+            'ultima_atividade': ultima,
+            'is_geral': True
         })
     
-    return render_template('admin/grupos_lista.html', grupos=grupos)
+    # Adicionar grupos específicos (com tag)
+    for grupo, tipo_id, total, ultima in grupos_especificos_query:
+        tipo = AssessmentTipo.query.get(tipo_id)
+        grupos.append({
+            'nome': grupo,
+            'nome_exibicao': grupo,
+            'tipo_id': tipo_id,
+            'tipo_nome': tipo.nome if tipo else 'Desconhecido',
+            'total_assessments': total,
+            'ultima_atividade': ultima,
+            'is_geral': False
+        })
+    
+    # Buscar todos os tipos disponíveis para o filtro
+    todos_tipos = AssessmentTipo.query.filter_by(ativo=True).order_by(AssessmentTipo.nome).all()
+    
+    return render_template('admin/grupos_lista.html', 
+                         grupos=grupos,
+                         todos_tipos=todos_tipos,
+                         filtro_tipo_id=filtro_tipo_id,
+                         filtro_tag=filtro_tag)
 
 def calcular_estatisticas_grupo(grupo_nome, tipo_assessment_id):
     """Função auxiliar para calcular estatísticas de um grupo (reutilizável)
     
     MUDANÇA CONCEITUAL: Agora filtra por (grupo + tipo_assessment_id)
+    
+    Args:
+        grupo_nome: Nome do grupo/tag. Se None, calcula para TODAS as respostas do tipo (grupo geral)
+        tipo_assessment_id: ID do tipo de assessment
     """
     from models.assessment_publico import AssessmentPublico
     from models.assessment_version import AssessmentDominio
     from sqlalchemy import func
     
-    # Buscar todos os assessments concluídos deste grupo + tipo
-    assessments = AssessmentPublico.query.filter_by(
-        grupo=grupo_nome,
+    # Buscar todos os assessments concluídos
+    query = AssessmentPublico.query.filter_by(
         tipo_assessment_id=tipo_assessment_id
     ).filter(
         AssessmentPublico.data_conclusao.isnot(None)
-    ).all()
+    )
+    
+    # Se grupo_nome for especificado, filtrar por ele
+    # Se for None, retorna TODAS as respostas do tipo (grupo geral)
+    if grupo_nome is not None:
+        query = query.filter_by(grupo=grupo_nome)
+    
+    assessments = query.all()
     
     if not assessments:
         return None
@@ -728,6 +800,44 @@ def calcular_estatisticas_grupo(grupo_nome, tipo_assessment_id):
         'tipos_utilizados': list(tipos_utilizados.values())
     }
 
+@admin_bp.route('/grupos/geral/<int:tipo_id>')
+@login_required
+@admin_required
+def estatisticas_grupo_geral(tipo_id):
+    """Exibir estatísticas gerais de um tipo de assessment (TODAS as respostas, com ou sem tag)"""
+    logging.info(f"===== ACESSANDO ESTATÍSTICAS DO GRUPO GERAL (Tipo: {tipo_id}) =====")
+    
+    try:
+        # Buscar informações do tipo
+        tipo = AssessmentTipo.query.get(tipo_id)
+        if not tipo:
+            flash(f'Tipo de assessment #{tipo_id} não encontrado.', 'danger')
+            return redirect(url_for('admin.listar_grupos'))
+        
+        # grupo_nome=None para grupo geral
+        dados = calcular_estatisticas_grupo(None, tipo_id)
+        
+        if not dados:
+            flash(f'Nenhum assessment concluído encontrado para o tipo "{tipo.nome}".', 'warning')
+            return redirect(url_for('admin.listar_grupos'))
+        
+        return render_template('admin/grupos_estatisticas.html',
+                             grupo_nome=None,
+                             grupo_exibicao='📊 GERAL',
+                             is_geral=True,
+                             tipo_id=tipo_id,
+                             tipo_nome=tipo.nome,
+                             estatisticas=dados['estatisticas'],
+                             dominios_estatisticas=dados['dominios_estatisticas'],
+                             tipos_utilizados=dados['tipos_utilizados'])
+    
+    except Exception as e:
+        logging.error(f"Erro ao exibir estatísticas do grupo geral (tipo {tipo_id}): {e}")
+        import traceback
+        logging.error(traceback.format_exc())
+        flash(f'Erro ao carregar estatísticas do grupo geral. Por favor, contate o administrador.', 'danger')
+        return redirect(url_for('admin.listar_grupos'))
+
 @admin_bp.route('/grupos/<string:grupo_nome>/<int:tipo_id>')
 @login_required
 @admin_required
@@ -750,6 +860,8 @@ def estatisticas_grupo(grupo_nome, tipo_id):
         
         return render_template('admin/grupos_estatisticas.html',
                              grupo_nome=grupo_nome,
+                             grupo_exibicao=grupo_nome,
+                             is_geral=False,
                              tipo_id=tipo_id,
                              tipo_nome=tipo.nome,
                              estatisticas=dados['estatisticas'],
@@ -762,6 +874,54 @@ def estatisticas_grupo(grupo_nome, tipo_id):
         logging.error(traceback.format_exc())
         flash(f'Erro ao carregar estatísticas do grupo "{grupo_nome}". Por favor, contate o administrador.', 'danger')
         return redirect(url_for('admin.listar_grupos'))
+
+@admin_bp.route('/grupos/geral/<int:tipo_id>/api')
+@login_required
+@admin_required
+def estatisticas_grupo_geral_api(tipo_id):
+    """API para retornar estatísticas do grupo geral em JSON (para auto-refresh)"""
+    from flask import jsonify
+    
+    try:
+        dados = calcular_estatisticas_grupo(None, tipo_id)
+        
+        if not dados:
+            return jsonify({'error': 'Nenhum assessment encontrado'}), 404
+        
+        # Converter objetos para dicionários serializáveis
+        dominios_json = []
+        for item in dados['dominios_estatisticas']:
+            dominios_json.append({
+                'nome': item['dominio'].nome,
+                'media': item['media'],
+                'minima': item['minima'],
+                'maxima': item['maxima'],
+                'total_respostas': item['total_respostas']
+            })
+        
+        tipos_json = []
+        for item in dados['tipos_utilizados']:
+            tipos_json.append({
+                'nome': item['tipo'].nome,
+                'quantidade': item['quantidade']
+            })
+        
+        # Converter datas para string
+        estatisticas_json = dados['estatisticas'].copy()
+        if estatisticas_json.get('primeira_resposta'):
+            estatisticas_json['primeira_resposta'] = estatisticas_json['primeira_resposta'].strftime('%d/%m/%Y %H:%M')
+        if estatisticas_json.get('ultima_resposta'):
+            estatisticas_json['ultima_resposta'] = estatisticas_json['ultima_resposta'].strftime('%d/%m/%Y %H:%M')
+        
+        return jsonify({
+            'estatisticas': estatisticas_json,
+            'dominios_estatisticas': dominios_json,
+            'tipos_utilizados': tipos_json
+        })
+    
+    except Exception as e:
+        logging.error(f"Erro ao buscar estatísticas API do grupo geral (tipo {tipo_id}): {e}")
+        return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/grupos/<string:grupo_nome>/<int:tipo_id>/api')
 @login_required
@@ -810,3 +970,42 @@ def estatisticas_grupo_api(grupo_nome, tipo_id):
     except Exception as e:
         logging.error(f"Erro ao buscar estatísticas API do grupo '{grupo_nome}': {e}")
         return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/grupos/<string:grupo_nome>/<int:tipo_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def excluir_grupo(grupo_nome, tipo_id):
+    """Excluir todos os assessments públicos de um grupo específico (TAG + TIPO)"""
+    from models.assessment_publico import AssessmentPublico, RespostaPublica
+    from models.lead import Lead
+    
+    try:
+        # Buscar todos os assessments deste grupo + tipo
+        assessments = AssessmentPublico.query.filter_by(
+            grupo=grupo_nome,
+            tipo_assessment_id=tipo_id
+        ).all()
+        
+        if not assessments:
+            flash(f'Nenhum assessment encontrado para o grupo "{grupo_nome}".', 'warning')
+            return redirect(url_for('admin.listar_grupos'))
+        
+        total_excluidos = len(assessments)
+        
+        # Excluir cada assessment (cascata excluirá respostas e leads associados)
+        for assessment in assessments:
+            db.session.delete(assessment)
+        
+        db.session.commit()
+        
+        flash(f'Grupo "{grupo_nome}" excluído com sucesso! {total_excluidos} assessment(s) removido(s).', 'success')
+        logging.info(f'Admin {current_user.nome} excluiu grupo "{grupo_nome}" (tipo {tipo_id}): {total_excluidos} assessments')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f'Erro ao excluir grupo "{grupo_nome}" (tipo {tipo_id}): {e}')
+        import traceback
+        logging.error(traceback.format_exc())
+        flash('Erro ao excluir grupo. Por favor, tente novamente.', 'danger')
+    
+    return redirect(url_for('admin.listar_grupos'))
