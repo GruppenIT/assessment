@@ -633,101 +633,110 @@ def listar_grupos():
     
     return render_template('admin/grupos_lista.html', grupos=grupos)
 
+def calcular_estatisticas_grupo(grupo_nome):
+    """Função auxiliar para calcular estatísticas de um grupo (reutilizável)"""
+    from models.assessment_publico import AssessmentPublico
+    from models.assessment_version import AssessmentDominio
+    from sqlalchemy import func
+    
+    # Buscar todos os assessments concluídos deste grupo
+    assessments = AssessmentPublico.query.filter_by(
+        grupo=grupo_nome
+    ).filter(
+        AssessmentPublico.data_conclusao.isnot(None)
+    ).all()
+    
+    if not assessments:
+        return None
+    
+    # Calcular estatísticas gerais
+    pontuacoes_gerais = [a.calcular_pontuacao_geral() for a in assessments]
+    pontuacao_media_geral = sum(pontuacoes_gerais) / len(pontuacoes_gerais) if pontuacoes_gerais else 0
+    
+    # Identificar todos os domínios únicos respondidos
+    dominios_dict = {}
+    
+    for assessment in assessments:
+        try:
+            for dominio in assessment.get_dominios_respondidos():
+                if dominio.id not in dominios_dict:
+                    dominios_dict[dominio.id] = {
+                        'dominio': dominio,
+                        'pontuacoes': []
+                    }
+                
+                pontuacao_dominio = assessment.calcular_pontuacao_dominio(dominio.id)
+                dominios_dict[dominio.id]['pontuacoes'].append(pontuacao_dominio)
+        except Exception as e:
+            logging.error(f"Erro ao processar domínios do assessment {assessment.id}: {e}")
+            continue
+    
+    # Calcular médias por domínio
+    dominios_estatisticas = []
+    for dominio_data in dominios_dict.values():
+        pontuacoes = dominio_data['pontuacoes']
+        media = sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0
+        minima = min(pontuacoes) if pontuacoes else 0
+        maxima = max(pontuacoes) if pontuacoes else 0
+        
+        dominios_estatisticas.append({
+            'dominio': dominio_data['dominio'],
+            'media': round(media, 1),
+            'minima': round(minima, 1),
+            'maxima': round(maxima, 1),
+            'total_respostas': len(pontuacoes)
+        })
+    
+    # Ordenar por média decrescente
+    dominios_estatisticas.sort(key=lambda x: x['media'], reverse=True)
+    
+    # Estatísticas adicionais
+    estatisticas = {
+        'total_assessments': len(assessments),
+        'pontuacao_media_geral': round(pontuacao_media_geral, 1),
+        'pontuacao_minima': round(min(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
+        'pontuacao_maxima': round(max(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
+        'primeira_resposta': min(a.data_conclusao for a in assessments if a.data_conclusao),
+        'ultima_resposta': max(a.data_conclusao for a in assessments if a.data_conclusao)
+    }
+    
+    # Tipos de assessment utilizados
+    tipos_utilizados = {}
+    for assessment in assessments:
+        tipo = assessment.tipo_assessment
+        if tipo and tipo.id not in tipos_utilizados:
+            tipos_utilizados[tipo.id] = {
+                'tipo': tipo,
+                'quantidade': 0
+            }
+        if tipo:
+            tipos_utilizados[tipo.id]['quantidade'] += 1
+    
+    return {
+        'estatisticas': estatisticas,
+        'dominios_estatisticas': dominios_estatisticas,
+        'tipos_utilizados': list(tipos_utilizados.values())
+    }
+
 @admin_bp.route('/grupos/<string:grupo_nome>')
 @login_required
 @admin_required
 def estatisticas_grupo(grupo_nome):
     """Exibir estatísticas médias de um grupo específico"""
-    from models.assessment_publico import AssessmentPublico
-    from models.assessment_version import AssessmentDominio
-    from sqlalchemy import func
-    
     logging.info(f"===== ACESSANDO ESTATÍSTICAS DO GRUPO: '{grupo_nome}' =====")
     
     try:
-        # Buscar todos os assessments concluídos deste grupo
-        logging.info(f"Buscando assessments para o grupo '{grupo_nome}'")
-        assessments = AssessmentPublico.query.filter_by(
-            grupo=grupo_nome
-        ).filter(
-            AssessmentPublico.data_conclusao.isnot(None)
-        ).all()
+        dados = calcular_estatisticas_grupo(grupo_nome)
         
-        logging.info(f"Encontrados {len(assessments)} assessments concluídos")
-        
-        if not assessments:
+        if not dados:
             flash(f'Nenhum assessment concluído encontrado para o grupo "{grupo_nome}".', 'warning')
             return redirect(url_for('admin.listar_grupos'))
         
-        # Calcular estatísticas gerais
-        pontuacoes_gerais = [a.calcular_pontuacao_geral() for a in assessments]
-        pontuacao_media_geral = sum(pontuacoes_gerais) / len(pontuacoes_gerais) if pontuacoes_gerais else 0
-        
-        # Identificar todos os domínios únicos respondidos
-        dominios_dict = {}
-        
-        for assessment in assessments:
-            try:
-                for dominio in assessment.get_dominios_respondidos():
-                    if dominio.id not in dominios_dict:
-                        dominios_dict[dominio.id] = {
-                            'dominio': dominio,
-                            'pontuacoes': []
-                        }
-                    
-                    pontuacao_dominio = assessment.calcular_pontuacao_dominio(dominio.id)
-                    dominios_dict[dominio.id]['pontuacoes'].append(pontuacao_dominio)
-            except Exception as e:
-                logging.error(f"Erro ao processar domínios do assessment {assessment.id}: {e}")
-                logging.error(f"Assessment tem {len(assessment.respostas)} respostas")
-                continue
-        
-        # Calcular médias por domínio
-        dominios_estatisticas = []
-        for dominio_data in dominios_dict.values():
-            pontuacoes = dominio_data['pontuacoes']
-            media = sum(pontuacoes) / len(pontuacoes) if pontuacoes else 0
-            minima = min(pontuacoes) if pontuacoes else 0
-            maxima = max(pontuacoes) if pontuacoes else 0
-            
-            dominios_estatisticas.append({
-                'dominio': dominio_data['dominio'],
-                'media': round(media, 1),
-                'minima': round(minima, 1),
-                'maxima': round(maxima, 1),
-                'total_respostas': len(pontuacoes)
-            })
-        
-        # Ordenar por média decrescente
-        dominios_estatisticas.sort(key=lambda x: x['media'], reverse=True)
-        
-        # Estatísticas adicionais
-        estatisticas = {
-            'total_assessments': len(assessments),
-            'pontuacao_media_geral': round(pontuacao_media_geral, 1),
-            'pontuacao_minima': round(min(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
-            'pontuacao_maxima': round(max(pontuacoes_gerais), 1) if pontuacoes_gerais else 0,
-            'primeira_resposta': min(a.data_conclusao for a in assessments if a.data_conclusao),
-            'ultima_resposta': max(a.data_conclusao for a in assessments if a.data_conclusao)
-        }
-        
-        # Tipos de assessment utilizados
-        tipos_utilizados = {}
-        for assessment in assessments:
-            tipo = assessment.tipo_assessment
-            if tipo and tipo.id not in tipos_utilizados:
-                tipos_utilizados[tipo.id] = {
-                    'tipo': tipo,
-                    'quantidade': 0
-                }
-            if tipo:
-                tipos_utilizados[tipo.id]['quantidade'] += 1
-        
         return render_template('admin/grupos_estatisticas.html',
                              grupo_nome=grupo_nome,
-                             estatisticas=estatisticas,
-                             dominios_estatisticas=dominios_estatisticas,
-                             tipos_utilizados=list(tipos_utilizados.values()))
+                             estatisticas=dados['estatisticas'],
+                             dominios_estatisticas=dados['dominios_estatisticas'],
+                             tipos_utilizados=dados['tipos_utilizados'])
     
     except Exception as e:
         logging.error(f"Erro ao exibir estatísticas do grupo '{grupo_nome}': {e}")
@@ -735,3 +744,51 @@ def estatisticas_grupo(grupo_nome):
         logging.error(traceback.format_exc())
         flash(f'Erro ao carregar estatísticas do grupo "{grupo_nome}". Por favor, contate o administrador.', 'danger')
         return redirect(url_for('admin.listar_grupos'))
+
+@admin_bp.route('/grupos/<string:grupo_nome>/api')
+@login_required
+@admin_required
+def estatisticas_grupo_api(grupo_nome):
+    """API para retornar estatísticas de um grupo em JSON (para auto-refresh)"""
+    from flask import jsonify
+    
+    try:
+        dados = calcular_estatisticas_grupo(grupo_nome)
+        
+        if not dados:
+            return jsonify({'error': 'Nenhum assessment encontrado'}), 404
+        
+        # Converter objetos para dicionários serializáveis
+        dominios_json = []
+        for item in dados['dominios_estatisticas']:
+            dominios_json.append({
+                'nome': item['dominio'].nome,
+                'media': item['media'],
+                'minima': item['minima'],
+                'maxima': item['maxima'],
+                'total_respostas': item['total_respostas']
+            })
+        
+        tipos_json = []
+        for item in dados['tipos_utilizados']:
+            tipos_json.append({
+                'nome': item['tipo'].nome,
+                'quantidade': item['quantidade']
+            })
+        
+        # Converter datas para string
+        estatisticas_json = dados['estatisticas'].copy()
+        if estatisticas_json.get('primeira_resposta'):
+            estatisticas_json['primeira_resposta'] = estatisticas_json['primeira_resposta'].strftime('%d/%m/%Y %H:%M')
+        if estatisticas_json.get('ultima_resposta'):
+            estatisticas_json['ultima_resposta'] = estatisticas_json['ultima_resposta'].strftime('%d/%m/%Y %H:%M')
+        
+        return jsonify({
+            'estatisticas': estatisticas_json,
+            'dominios_estatisticas': dominios_json,
+            'tipos_utilizados': tipos_json
+        })
+    
+    except Exception as e:
+        logging.error(f"Erro ao buscar estatísticas API do grupo '{grupo_nome}': {e}")
+        return jsonify({'error': str(e)}), 500

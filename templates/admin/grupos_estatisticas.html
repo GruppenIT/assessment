@@ -32,7 +32,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body text-center">
                     <h6 class="text-muted mb-2">Total de Assessments</h6>
-                    <h2 class="text-primary mb-0">{{ estatisticas.total_assessments }}</h2>
+                    <h2 class="text-primary mb-0" id="total-assessments">{{ estatisticas.total_assessments }}</h2>
                     <small class="text-muted">respostas completas</small>
                 </div>
             </div>
@@ -42,12 +42,12 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body text-center">
                     <h6 class="text-muted mb-2">Pontuação Média</h6>
-                    <h2 class="mb-0" style="color: {% if estatisticas.pontuacao_media_geral >= 80 %}#28a745{% elif estatisticas.pontuacao_media_geral >= 60 %}#ffc107{% else %}#dc3545{% endif %};">
+                    <h2 class="mb-0" id="pontuacao-media" style="color: {% if estatisticas.pontuacao_media_geral >= 80 %}#28a745{% elif estatisticas.pontuacao_media_geral >= 60 %}#ffc107{% else %}#dc3545{% endif %};">
                         {{ estatisticas.pontuacao_media_geral }}%
                     </h2>
                     <small class="text-muted">
-                        <i class="fas fa-arrow-down me-1"></i>{{ estatisticas.pontuacao_minima }}% 
-                        <i class="fas fa-arrow-up ms-2 me-1"></i>{{ estatisticas.pontuacao_maxima }}%
+                        <i class="fas fa-arrow-down me-1"></i><span id="pontuacao-minima">{{ estatisticas.pontuacao_minima }}%</span>
+                        <i class="fas fa-arrow-up ms-2 me-1"></i><span id="pontuacao-maxima">{{ estatisticas.pontuacao_maxima }}%</span>
                     </small>
                 </div>
             </div>
@@ -57,9 +57,9 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body text-center">
                     <h6 class="text-muted mb-2">Primeira Resposta</h6>
-                    <h6 class="text-info mb-0">{{ estatisticas.primeira_resposta.strftime('%d/%m/%Y') }}</h6>
+                    <h6 class="text-info mb-0" id="primeira-resposta">{{ estatisticas.primeira_resposta.strftime('%d/%m/%Y %H:%M') }}</h6>
                     <small class="text-muted">
-                        <i class="fas fa-clock me-1"></i>{{ estatisticas.primeira_resposta.strftime('%H:%M') }}
+                        <i class="fas fa-clock me-1"></i>
                     </small>
                 </div>
             </div>
@@ -69,9 +69,9 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body text-center">
                     <h6 class="text-muted mb-2">Última Resposta</h6>
-                    <h6 class="text-success mb-0">{{ estatisticas.ultima_resposta.strftime('%d/%m/%Y') }}</h6>
+                    <h6 class="text-success mb-0" id="ultima-resposta">{{ estatisticas.ultima_resposta.strftime('%d/%m/%Y %H:%M') }}</h6>
                     <small class="text-muted">
-                        <i class="fas fa-clock me-1"></i>{{ estatisticas.ultima_resposta.strftime('%H:%M') }}
+                        <i class="fas fa-clock me-1"></i>
                     </small>
                 </div>
             </div>
@@ -90,7 +90,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row" id="tipos-utilizados">
                         {% for tipo_data in tipos_utilizados %}
                         <div class="col-md-6 mb-2">
                             <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
@@ -421,10 +421,81 @@ function toggleTable() {
     document.getElementById('table-container').style.display = 'block';
 }
 
+// Função para atualizar dados via AJAX
+async function atualizarEstatisticas() {
+    try {
+        const response = await fetch('{{ url_for("admin.estatisticas_grupo_api", grupo_nome=grupo_nome) }}');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        
+        // Atualizar estatísticas gerais
+        document.getElementById('total-assessments').textContent = data.estatisticas.total_assessments;
+        document.getElementById('pontuacao-media').textContent = data.estatisticas.pontuacao_media_geral + '%';
+        document.getElementById('pontuacao-minima').textContent = data.estatisticas.pontuacao_minima + '%';
+        document.getElementById('pontuacao-maxima').textContent = data.estatisticas.pontuacao_maxima + '%';
+        document.getElementById('primeira-resposta').textContent = data.estatisticas.primeira_resposta;
+        document.getElementById('ultima-resposta').textContent = data.estatisticas.ultima_resposta;
+        
+        // Atualizar tipos utilizados
+        const tiposContainer = document.getElementById('tipos-utilizados');
+        if (tiposContainer && data.tipos_utilizados.length > 0) {
+            tiposContainer.innerHTML = data.tipos_utilizados.map(tipo => `
+                <div class="col-md-6 mb-2">
+                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                        <div>
+                            <strong>${tipo.nome}</strong>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">${tipo.quantidade} respostas</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Atualizar dados dos gráficos
+        dominiosData.labels = data.dominios_estatisticas.map(d => d.nome);
+        dominiosData.medias = data.dominios_estatisticas.map(d => d.media);
+        dominiosData.minimas = data.dominios_estatisticas.map(d => d.minima);
+        dominiosData.maximas = data.dominios_estatisticas.map(d => d.maxima);
+        
+        // Recriar gráfico se estiver visível (não em modo tabela)
+        if (document.getElementById('chart-container').style.display !== 'none') {
+            createChart(currentType);
+        }
+        
+        // Atualizar tabela se estiver visível
+        if (document.getElementById('table-container').style.display !== 'none') {
+            const tbody = document.querySelector('#table-container tbody');
+            if (tbody) {
+                tbody.innerHTML = data.dominios_estatisticas.map(d => {
+                    const badgeClass = d.media >= 80 ? 'bg-success' : (d.media >= 60 ? 'bg-warning' : 'bg-danger');
+                    return `
+                        <tr>
+                            <td><strong>${d.nome}</strong></td>
+                            <td><span class="badge ${badgeClass}">${d.media}%</span></td>
+                            <td>${d.minima}%</td>
+                            <td>${d.maxima}%</td>
+                            <td>${d.total_respostas}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro ao atualizar estatísticas:', error);
+    }
+}
+
 // Inicializar gráfico ao carregar a página
 {% if dominios_estatisticas %}
 document.addEventListener('DOMContentLoaded', function() {
     createChart('bar');
+    
+    // Auto-refresh a cada 5 segundos
+    setInterval(atualizarEstatisticas, 5000);
 });
 {% endif %}
 </script>
