@@ -1,0 +1,62 @@
+root@vlxweb12:/var/www/assessment# ./RESOLVER_CONFLITO_E_ATUALIZAR.sh
+======================================================================
+RESOLVER CONFLITO E ATUALIZAR CÓDIGO
+======================================================================
+
+✓ Backup: backups/resolve_conflict_20251019_163446
+
+🔧 Resolvendo merge conflict...
+Updated 0 paths from the index
+✓ Conflito resolvido
+
+🔧 Fazendo commit...
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 1 and 3 different commits each, respectively.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        RESOLVER_CONFLITO_E_ATUALIZAR.sh
+        app.py.backup_1756498913
+        app.py.safe_backup
+        backup_20250829_201219/
+        backup_20250829_201746/
+        backups/
+        env
+        limpar_dados_publicos.py.backup
+        routes/auth.py.backup_1756498913
+        routes/auth.py.definitivo_backup
+        routes/auth.py.emergency_backup
+        routes/auth.py.hasattr_backup
+        routes/auth.py.minimal_backup
+        routes/projeto.py.backup_1756498913
+        routes/publico.py.bak
+        routes/respondente.py.backup_1756498913
+        templates/admin/grupos_lista.html.old
+        templates/auth/perfil.html.backup
+        templates/auth/perfil.html.definitivo_backup
+        templates/auth/perfil.html.emergency_backup
+        templates/auth/perfil.html.hasattr_backup
+        templates/auth/perfil_erro.html
+        templates/auth/perfil_simples.html
+
+nothing added to commit but untracked files present (use "git add" to track)
+✓ Commit feito
+
+🔄 Puxando atualizações...
+From https://github.com/GruppenIT/assessment
+ * branch            main       -> FETCH_HEAD
+hint: You have divergent branches and need to specify how to reconcile them.
+hint: You can do so by running one of the following commands sometime before
+hint: your next pull:
+hint:
+hint:   git config pull.rebase false  # merge
+hint:   git config pull.rebase true   # rebase
+hint:   git config pull.ff only       # fast-forward only
+hint:
+hint: You can replace "git config" with "git config --global" to set a default
+hint: preference for all repositories. You can also pass --rebase, --no-rebase,
+hint: or --ff-only on the command line to override the configured default per
+hint: invocation.
+fatal: Need to specify how to reconcile divergent branches.
+root@vlxweb12:/var/www/assessment#
