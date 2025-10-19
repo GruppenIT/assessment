@@ -225,44 +225,17 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
-// Renderizar CSRF token em variável JavaScript
-const CSRF_TOKEN = '{{ csrf_token() }}';
-console.log('DEBUG: CSRF Token carregado:', CSRF_TOKEN.substring(0, 20) + '...');
-
 function confirmarExclusao(grupoNome, tipoId) {
-    console.log('DEBUG: confirmarExclusao chamada');
-    console.log('  - Grupo:', grupoNome);
-    console.log('  - Tipo ID:', tipoId);
-    
     if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?\n\nEsta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
-        console.log('DEBUG: Usuário confirmou exclusão');
-        
-        // Criar formulário
+        // Criar formulário e submeter
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
-        
-        console.log('DEBUG: Action URL:', form.action);
-        
-        // Adicionar CSRF token usando a variável renderizada
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrf_token';
-        csrfInput.value = CSRF_TOKEN;  // Usar variável em vez de template literal
-        form.appendChild(csrfInput);
-        
-        console.log('DEBUG: CSRF token adicionado ao form');
-        
         document.body.appendChild(form);
-        console.log('DEBUG: Submetendo formulário...');
         form.submit();
-    } else {
-        console.log('DEBUG: Usuário cancelou');
     }
 }
-
-console.log('DEBUG: Script carregado, função disponível:', typeof confirmarExclusao);
 </script>
 {% endblock %}

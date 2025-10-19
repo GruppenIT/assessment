@@ -101,13 +101,6 @@ class AssessmentVersao(db.Model):
             Pergunta.ativo == True
         ).count()
     
-    def get_total_dominios(self):
-        """Retorna o total de domínios ativos nesta versão"""
-        return AssessmentDominio.query.filter_by(
-            versao_id=self.id,
-            ativo=True
-        ).count()
-    
     def get_dominios_ativos(self):
         """Retorna domínios ativos desta versão ordenados"""
         return AssessmentDominio.query.filter_by(
