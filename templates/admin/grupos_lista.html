@@ -229,10 +229,18 @@
 <script>
 function confirmarExclusao(grupoNome, tipoId) {
     if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?\n\nEsta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
-        // Criar formulário e submeter
+        // Criar formulário com CSRF token
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
+        
+        // Adicionar CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+        
         document.body.appendChild(form);
         form.submit();
     }

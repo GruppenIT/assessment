@@ -1,0 +1,317 @@
+root@vlxweb12:/var/www/assessment# cat /tmp/troubleshoot_excluir_grupo_*.txt
+
+======================================================================
+1. INFORMAÇÕES DO AMBIENTE
+======================================================================
+
+[INFO] Diretório: /var/www/assessment
+[INFO] Data/Hora: Sun Oct 19 04:22:08 PM UTC 2025
+[INFO] Usuário: root
+
+======================================================================
+2. STATUS DO GIT
+======================================================================
+
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Unmerged paths:
+  (use "git restore --staged <file>..." to unstage)
+  (use "git add <file>..." to mark resolution)
+        both modified:   templates/admin/grupos_lista.html
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        app.py.backup_1756498913
+        app.py.safe_backup
+        backup_20250829_201219/
+        backup_20250829_201746/
+        backups/
+        env
+        limpar_dados_publicos.py.backup
+        routes/auth.py.backup_1756498913
+        routes/auth.py.definitivo_backup
+        routes/auth.py.emergency_backup
+        routes/auth.py.hasattr_backup
+        routes/auth.py.minimal_backup
+        routes/projeto.py.backup_1756498913
+        routes/publico.py.bak
+        routes/respondente.py.backup_1756498913
+        templates/admin/grupos_lista.html.old
+        templates/auth/perfil.html.backup
+        templates/auth/perfil.html.definitivo_backup
+        templates/auth/perfil.html.emergency_backup
+        templates/auth/perfil.html.hasattr_backup
+        templates/auth/perfil_erro.html
+        templates/auth/perfil_simples.html
+
+no changes added to commit (use "git add" and/or "git commit -a")
+[INFO] Último commit:
+add2815 Add troubleshooting guides and scripts for group deletion issues
+
+======================================================================
+3. VERIFICAR ROTA DE EXCLUSÃO
+======================================================================
+
+[INFO] Procurando rota 'excluir_grupo' em routes/admin.py...
+[OK] Rota excluir_grupo encontrada:
+977:def excluir_grupo(grupo_nome, tipo_id):
+[INFO] Conteúdo da rota:
+def excluir_grupo(grupo_nome, tipo_id):
+    """Excluir todos os assessments públicos de um grupo específico (TAG + TIPO)"""
+    from models.assessment_publico import AssessmentPublico, RespostaPublica
+    from models.lead import Lead
+
+    try:
+        # Buscar todos os assessments deste grupo + tipo
+        assessments = AssessmentPublico.query.filter_by(
+            grupo=grupo_nome,
+            tipo_assessment_id=tipo_id
+        ).all()
+
+        if not assessments:
+            flash(f'Nenhum assessment encontrado para o grupo "{grupo_nome}".', 'warning')
+            return redirect(url_for('admin.listar_grupos'))
+
+        total_excluidos = len(assessments)
+
+        # Excluir cada assessment (cascata excluirá respostas e leads associados)
+        for assessment in assessments:
+            db.session.delete(assessment)
+
+        db.session.commit()
+
+        flash(f'Grupo "{grupo_nome}" excluído com sucesso! {total_excluidos} assessment(s) removido(s).', 'success')
+        logging.info(f'Admin {current_user.nome} excluiu grupo "{grupo_nome}" (tipo {tipo_id}): {total_excluidos} assessments')
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f'Erro ao excluir grupo "{grupo_nome}" (tipo {tipo_id}): {e}')
+        import traceback
+
+======================================================================
+4. VERIFICAR REGISTRO DA ROTA
+======================================================================
+
+[INFO] Procurando @admin_bp.route com /delete...
+[OK] Rota registrada:
+974:@admin_bp.route('/grupos/<string:grupo_nome>/<int:tipo_id>/delete', methods=['POST'])
+
+======================================================================
+5. VERIFICAR FUNÇÃO JAVASCRIPT confirmarExclusao()
+======================================================================
+
+[INFO] Procurando função confirmarExclusao em templates/admin/grupos_lista.html...
+[OK] Função JavaScript encontrada:
+function confirmarExclusao(grupoNome, tipoId) {
+<<<<<<< Updated upstream
+    if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?\n\nEsta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
+        // Criar formulário e submeter
+=======
+    console.log('DEBUG: confirmarExclusao chamada');
+    console.log('  - Grupo:', grupoNome);
+    console.log('  - Tipo ID:', tipoId);
+
+    if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?
+
+Esta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
+        console.log('DEBUG: Usuário confirmou exclusão');
+
+        // Criar formulário
+>>>>>>> Stashed changes
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
+        document.body.appendChild(form);
+        form.submit();
+
+======================================================================
+6. VERIFICAR BOTÃO DE EXCLUSÃO
+======================================================================
+
+[INFO] Procurando botão com onclick='confirmarExclusao...'...
+[OK] Botão encontrado:
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick='confirmarExclusao({{ grupo.nome|tojson }}, {{ grupo.tipo_id }})'>
+                                                <i class="fas fa-trash me-1"></i>Excluir
+                                            </button>
+
+======================================================================
+7. VERIFICAR CSRF TOKEN NO FORM
+======================================================================
+
+[INFO] Procurando hidden input com csrf_token...
+[WARN] CSRF token pode estar ausente no template!
+
+======================================================================
+8. VERIFICAR GRUPOS EXISTENTES NO BANCO
+======================================================================
+
+[INFO] Consultando grupos no banco de dados...
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+
+======================================================================
+9. VERIFICAR LOGS RECENTES DO FLASK
+======================================================================
+
+[INFO] Últimas 50 linhas do log do Flask...
+[WARN] Não foi possível encontrar o arquivo de log
+
+======================================================================
+10. STATUS DO SERVIÇO
+======================================================================
+
+[INFO] Status via Supervisor:
+assessment                       RUNNING   pid 416374, uptime 0:00:38
+
+======================================================================
+11. TESTE DE ROTA (SIMULAÇÃO)
+======================================================================
+
+[INFO] Tentando acessar /admin/grupos para verificar se a página carrega...
+[ERRO] Página retorna código: 000ERRO
+
+======================================================================
+12. PRÓXIMOS PASSOS - TESTE MANUAL NO NAVEGADOR
+======================================================================
+
+
+INSTRUÇÕES PARA TESTE MANUAL:
+
+1. Abra o navegador e acesse /admin/grupos
+2. Abra o Console JavaScript (F12 → Console)
+3. Clique no botão "Excluir" de qualquer grupo
+4. Observe se aparece algum erro no console
+
+POSSÍVEIS ERROS NO CONSOLE:
+
+a) "confirmarExclusao is not defined"
+   → A função JavaScript não está carregada
+   → Verifique se o template tem a função no <script>
+
+b) "Cannot read property 'value' of null"
+   → O campo csrf_token não existe
+   → Verifique se há <input type="hidden" name="csrf_token" ...>
+
+c) "405 Method Not Allowed"
+   → A rota existe mas não aceita POST
+   → Verifique se @admin_bp.route tem methods=['POST']
+
+d) "404 Not Found"
+   → A rota não existe
+   → Verifique se a rota está registrada corretamente
+
+e) Nada acontece (sem erro)
+   → Pode ser problema com aspas no onclick
+   → Verifique se onclick usa aspas simples: onclick='...'
+
+VERIFICAR NO CÓDIGO-FONTE DA PÁGINA (Ctrl+U):
+
+1. Procure por "function confirmarExclusao"
+   → Deve estar presente no <script>
+
+2. Procure por onclick no botão Excluir
+   → Deve ser: onclick='confirmarExclusao("nome_grupo", tipo_id)'
+   → Verifique se o nome do grupo tem aspas duplas dentro
+
+3. Procure por <input type="hidden" name="csrf_token"
+   → Deve existir dentro de um <form> ou no final do body
+
+COPIAR E COLAR NO CONSOLE DO NAVEGADOR (para testar manualmente):
+
+// Verificar se a função existe
+console.log(typeof confirmarExclusao);  // Deve retornar "function"
+
+// Verificar CSRF token
+console.log(document.querySelector('input[name="csrf_token"]'));  // Deve retornar um elemento
+
+// Testar função manualmente (substitua 'teste' e 1 por valores reais)
+confirmarExclusao('teste', 1);
+
+
+======================================================================
+13. ARQUIVOS MODIFICADOS (não commitados)
+======================================================================
+
+UU templates/admin/grupos_lista.html
+?? app.py.backup_1756498913
+?? app.py.safe_backup
+?? backup_20250829_201219/
+?? backup_20250829_201746/
+?? backups/
+?? env
+?? limpar_dados_publicos.py.backup
+?? routes/auth.py.backup_1756498913
+?? routes/auth.py.definitivo_backup
+?? routes/auth.py.emergency_backup
+?? routes/auth.py.hasattr_backup
+?? routes/auth.py.minimal_backup
+?? routes/projeto.py.backup_1756498913
+?? routes/publico.py.bak
+?? routes/respondente.py.backup_1756498913
+?? templates/admin/grupos_lista.html.old
+?? templates/auth/perfil.html.backup
+?? templates/auth/perfil.html.definitivo_backup
+?? templates/auth/perfil.html.emergency_backup
+?? templates/auth/perfil.html.hasattr_backup
+?? templates/auth/perfil_erro.html
+?? templates/auth/perfil_simples.html
+
+======================================================================
+14. COMPARAR routes/admin.py COM VERSÃO DO GIT
+======================================================================
+
+[INFO] Diferenças no arquivo routes/admin.py:
+
+======================================================================
+15. COMPARAR templates/admin/grupos_lista.html COM VERSÃO DO GIT
+======================================================================
+
+[INFO] Diferenças no arquivo templates/admin/grupos_lista.html:
+diff --cc templates/admin/grupos_lista.html
+index ea03c5a,4006487..0000000
+--- a/templates/admin/grupos_lista.html
++++ b/templates/admin/grupos_lista.html
+@@@ -227,9 -227,21 +227,22 @@@
+
+  {% block scripts %}
+  <script>
+ -// Renderizar CSRF token em variável JavaScript
+ -const CSRF_TOKEN = '{{ csrf_token() }}';
+ -console.log('DEBUG: CSRF Token carregado:', CSRF_TOKEN.substring(0, 20) + '...');
+ -
+  function confirmarExclusao(grupoNome, tipoId) {
+++<<<<<<< Updated upstream
+ +    if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?\n\nEsta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
+ +        // Criar formulário e submeter
+++=======
++     console.log('DEBUG: confirmarExclusao chamada');
++     console.log('  - Grupo:', grupoNome);
++     console.log('  - Tipo ID:', tipoId);
++
++     if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?
++
++ Esta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
++         console.log('DEBUG: Usuário confirmou exclusão');
++
++         // Criar formulário
+++>>>>>>> Stashed changes
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
+
+======================================================================
+SUMÁRIO DO DIAGNÓSTICO
+======================================================================
+
+Relatório completo salvo em: /tmp/troubleshoot_excluir_grupo_20251019_162208.txt
+ENVIE ESTE ARQUIVO PARA ANÁLISE:
+  cat /tmp/troubleshoot_excluir_grupo_20251019_162208.txt
+OU copie o conteúdo e cole na conversa.
+
+======================================================================
+FIM DO DIAGNÓSTICO
+======================================================================
+
+root@vlxweb12:/var/www/assessment#
