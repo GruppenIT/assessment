@@ -1,0 +1,74 @@
+root@vlxweb12:/var/www/assessment# ./troubleshoot_excluir_grupo.sh
+======================================================================
+TROUBLESHOOTING: Botão Excluir Grupo
+======================================================================
+
+[1/6] Verificando arquivo do template...
+✓ Arquivo encontrado
+
+[2/6] Verificando função JavaScript confirmarExclusao...
+✓ Função JavaScript encontrada
+
+Código da função:
+function confirmarExclusao(grupoNome, tipoId) {
+    if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?\n\nEsta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
+        // Criar formulário e submeter
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
+
+        // Adicionar CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+
+[3/6] Verificando CSRF token no JavaScript...
+✓ CSRF token encontrado no código
+
+[4/6] Verificando rota de exclusão em routes/admin.py...
+✓ Função excluir_grupo encontrada
+✓ Rota registrada corretamente
+
+Decorador da rota:
+@admin_bp.route('/grupos/<string:grupo_nome>/<int:tipo_id>/delete', methods=['POST'])
+
+[5/6] Verificando sintaxe do onclick no botão...
+✓ Usando aspas simples (correto)
+
+Código do botão:
+                                                    onclick='confirmarExclusao({{ grupo.nome|tojson }}, {{ grupo.tipo_id }})'>
+                                                <i class="fas fa-trash me-1"></i>Excluir
+                                            </button>
+                                            {% endif %}
+
+[6/6] Verificando serviço...
+✓ Serviço assessment está RUNNING (Supervisor)
+
+======================================================================
+DIAGNÓSTICO COMPLETO
+======================================================================
+
+PRÓXIMOS PASSOS:
+
+1. Abra o navegador e acesse /admin/grupos
+2. Pressione F12 para abrir o Console do desenvolvedor
+3. Clique no botão 'Excluir'
+4. Verifique se aparece algum erro no Console
+
+Erros comuns no Console:
+  • 'confirmarExclusao is not defined' = função JavaScript não carregou
+  • '403 Forbidden' ou 'CSRF' = problema com token CSRF
+  • '404 Not Found' = rota não existe ou URL incorreta
+  • Nenhum erro = JavaScript não está sendo executado
+
+Para ver os logs do servidor em tempo real:
+  tail -f /var/log/supervisor/assessment-stderr.log
+  # OU
+  journalctl -u assessment -f
+
+root@vlxweb12:/var/www/assessment#
