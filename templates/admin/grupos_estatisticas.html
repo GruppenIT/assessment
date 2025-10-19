@@ -497,14 +497,57 @@ async function atualizarEstatisticas() {
             const tbody = document.querySelector('#table-container tbody');
             if (tbody) {
                 tbody.innerHTML = data.dominios_estatisticas.map(d => {
-                    const badgeClass = d.media >= 80 ? 'bg-success' : (d.media >= 60 ? 'bg-warning' : 'bg-danger');
+                    // Determinar cor baseada na média
+                    let mediaColor;
+                    if (d.media >= 80) {
+                        mediaColor = '#28a745';
+                    } else if (d.media >= 60) {
+                        mediaColor = '#ffc107';
+                    } else {
+                        mediaColor = '#dc3545';
+                    }
+                    
+                    // Determinar classe da barra de progresso
+                    let progressBarClass;
+                    if (d.media >= 80) {
+                        progressBarClass = 'bg-success';
+                    } else if (d.media >= 60) {
+                        progressBarClass = 'bg-warning';
+                    } else {
+                        progressBarClass = 'bg-danger';
+                    }
+                    
                     return `
                         <tr>
-                            <td><strong>${d.nome}</strong></td>
-                            <td><span class="badge ${badgeClass}">${d.media}%</span></td>
-                            <td>${d.minima}%</td>
-                            <td>${d.maxima}%</td>
-                            <td>${d.total_respostas}</td>
+                            <td>
+                                <strong>${d.nome}</strong>
+                            </td>
+                            <td class="text-center">
+                                <h5 class="mb-0" style="color: ${mediaColor};">
+                                    ${d.media}%
+                                </h5>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger">${d.minima}%</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success">${d.maxima}%</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info">${d.total_respostas}</span>
+                            </td>
+                            <td style="width: 30%;">
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar ${progressBarClass}" 
+                                         role="progressbar" 
+                                         style="width: ${d.media}%;" 
+                                         aria-valuenow="${d.media}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        ${d.media}%
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 }).join('');
