@@ -1,0 +1,132 @@
+################################################################################
+# INSTRUÇÕES: COPIAR E COLAR NO SERVIDOR
+################################################################################
+
+COPIE E COLE OS COMANDOS ABAIXO NO SEU SERVIDOR (/var/www/assessment):
+
+================================================================================
+CRIAR O SCRIPT:
+================================================================================
+
+cat > RESOLVER_CONFLITO_E_ATUALIZAR.sh << 'EOF_SCRIPT'
+#!/bin/bash
+
+###############################################################################
+# Script: Resolver Conflito do Git e Atualizar Código
+###############################################################################
+
+set -e
+
+# Cores
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo "======================================================================"
+echo "RESOLVER CONFLITO E ATUALIZAR CÓDIGO"
+echo "======================================================================"
+echo ""
+
+if [ ! -f "app.py" ]; then
+    echo -e "${RED}Erro: Execute no diretório /var/www/assessment${NC}"
+    exit 1
+fi
+
+echo -e "${BLUE}📁 Diretório: $(pwd)${NC}"
+echo ""
+
+# Fazer backup
+BACKUP_DIR="backups/resolve_conflict_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+cp templates/admin/grupos_lista.html "$BACKUP_DIR/" 2>/dev/null || true
+echo -e "${GREEN}✓ Backup criado em: $BACKUP_DIR${NC}"
+echo ""
+
+# PASSO 1: Resolver o merge conflict
+echo -e "${BLUE}🔧 PASSO 1: Resolvendo merge conflict...${NC}"
+git checkout --theirs templates/admin/grupos_lista.html
+git add templates/admin/grupos_lista.html
+echo -e "${GREEN}✓ Conflito resolvido${NC}"
+echo ""
+
+# PASSO 2: Commit da resolução
+echo -e "${BLUE}🔧 PASSO 2: Fazendo commit...${NC}"
+git commit -m "Resolve merge conflict in grupos_lista.html" 2>/dev/null || echo "Nada para commitar"
+echo -e "${GREEN}✓ Resolução commitada${NC}"
+echo ""
+
+# PASSO 3: Puxar atualizações
+echo -e "${BLUE}🔄 PASSO 3: Puxando atualizações...${NC}"
+git pull origin main
+echo -e "${GREEN}✓ Código atualizado${NC}"
+echo ""
+
+# PASSO 4: Verificar código
+echo -e "${BLUE}🔍 PASSO 4: Verificando...${NC}"
+echo ""
+
+if grep -q "<<<<<<< " templates/admin/grupos_lista.html; then
+    echo -e "${YELLOW}Removendo marcadores restantes...${NC}"
+    sed -i '/<<<<<<< Updated upstream/d' templates/admin/grupos_lista.html
+    sed -i '/=======$/d' templates/admin/grupos_lista.html
+    sed -i '/>>>>>>> Stashed changes/d' templates/admin/grupos_lista.html
+    echo -e "${GREEN}✓ Marcadores removidos${NC}"
+else
+    echo -e "${GREEN}✓ Sem marcadores de conflito${NC}"
+fi
+
+if grep -q "function confirmarExclusao" templates/admin/grupos_lista.html; then
+    echo -e "${GREEN}✓ Função confirmarExclusao encontrada${NC}"
+fi
+
+if grep -q "csrf_token" templates/admin/grupos_lista.html; then
+    echo -e "${GREEN}✓ CSRF token encontrado${NC}"
+fi
+echo ""
+
+# PASSO 5: Reiniciar serviço
+echo -e "${BLUE}🔄 PASSO 5: Reiniciando serviço...${NC}"
+if command -v supervisorctl &> /dev/null; then
+    sudo supervisorctl restart assessment
+    echo -e "${GREEN}✓ Serviço reiniciado${NC}"
+    sleep 2
+    sudo supervisorctl status assessment
+elif [ -f "/etc/systemd/system/assessment.service" ]; then
+    sudo systemctl restart assessment
+    echo -e "${GREEN}✓ Serviço reiniciado${NC}"
+    sleep 2
+    sudo systemctl status assessment --no-pager
+fi
+echo ""
+
+echo "======================================================================"
+echo -e "${GREEN}✓✓✓ CONCLUÍDO! ✓✓✓${NC}"
+echo "======================================================================"
+echo ""
+echo "🧪 TESTE AGORA:"
+echo "  1. Aguarde 5 segundos"
+echo "  2. Acesse /admin/grupos"
+echo "  3. Pressione Ctrl+Shift+R (limpar cache)"
+echo "  4. Clique em 'Excluir'"
+echo "  → Deve aparecer popup de confirmação"
+echo ""
+EOF_SCRIPT
+
+================================================================================
+EXECUTAR O SCRIPT:
+================================================================================
+
+chmod +x RESOLVER_CONFLITO_E_ATUALIZAR.sh
+./RESOLVER_CONFLITO_E_ATUALIZAR.sh
+
+================================================================================
+FIM
+================================================================================
+
+IMPORTANTE:
+- Copie TUDO desde "cat > " até "EOF_SCRIPT" (incluindo)
+- Cole no terminal do servidor
+- Depois execute: chmod +x e ./RESOLVER...
+
