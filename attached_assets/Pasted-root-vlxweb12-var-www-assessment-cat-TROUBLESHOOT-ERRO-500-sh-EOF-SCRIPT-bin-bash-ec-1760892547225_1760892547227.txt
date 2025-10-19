@@ -1,0 +1,68 @@
+root@vlxweb12:/var/www/assessment# cat > TROUBLESHOOT_ERRO_500.sh << 'EOF_SCRIPT'
+#!/bin/bash
+
+echo "======================================================================"
+echo "TROUBLESHOOTING: Erro 500 em /admin/grupos"
+echo "======================================================================"
+echo ""
+
+cd /var/www/assessment
+
+echo "1. ÚLTIMAS 100 LINHAS DO LOG DE ERRO:"
+echo "======================================================================"
+if [ -f "/var/log/supervisor/assessment-stderr.log" ]; then
+    tail -100 /var/log/supervisor/assessment-stderr.log
+elif [ -f "/var/log/assessment/error.log" ]; then
+    tail -100 /var/log/assessment/error.log
+else
+    echo "Log não encontrado"
+fi
+echo ""
+
+echo "2. ACESSAR /admin/grupos E VER ERRO EM TEMPO REAL:"
+echo "======================================================================"
+echo "Deixe este comando rodando e acesse /admin/grupos no navegador"
+echo ""
+
+if [ -f "/var/log/supervisor/assessment-stderr.log" ]; then
+    tail -f /var/log/supervisor/assessment-stderr.log
+elif [ -f "/var/log/assessment/error.log" ]; then
+    tail -f /var/log/assessment/error.log
+else
+    echo "Log não encontrado"
+    echo "Tente: journalctl -u assessment -f"
+fi
+EOF_SCRIPT
+
+chmod +x TROUBLESHOOT_ERRO_500.sh
+./TROUBLESHOOT_ERRO_500.sh
+======================================================================
+TROUBLESHOOTING: Erro 500 em /admin/grupos
+======================================================================
+
+1. ÚLTIMAS 100 LINHAS DO LOG DE ERRO:
+======================================================================
+Log não encontrado
+
+2. ACESSAR /admin/grupos E VER ERRO EM TEMPO REAL:
+======================================================================
+Deixe este comando rodando e acesse /admin/grupos no navegador
+
+Log não encontrado
+Tente: journalctl -u assessment -f
+root@vlxweb12:/var/www/assessment# ./TROUBLESHOOT_ERRO_500.sh
+======================================================================
+TROUBLESHOOTING: Erro 500 em /admin/grupos
+======================================================================
+
+1. ÚLTIMAS 100 LINHAS DO LOG DE ERRO:
+======================================================================
+Log não encontrado
+
+2. ACESSAR /admin/grupos E VER ERRO EM TEMPO REAL:
+======================================================================
+Deixe este comando rodando e acesse /admin/grupos no navegador
+
+Log não encontrado
+Tente: journalctl -u assessment -f
+root@vlxweb12:/var/www/assessment#
