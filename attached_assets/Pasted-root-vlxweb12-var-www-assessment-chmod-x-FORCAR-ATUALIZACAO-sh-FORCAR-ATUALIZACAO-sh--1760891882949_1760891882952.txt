@@ -1,0 +1,91 @@
+root@vlxweb12:/var/www/assessment# chmod +x FORCAR_ATUALIZACAO.sh
+./FORCAR_ATUALIZACAO.sh
+======================================================================
+FORÇAR ATUALIZAÇÃO DO CÓDIGO
+======================================================================
+
+✓ Backup: backups/force_update_20251019_163739
+
+🔧 Configurando Git...
+✓ Git configurado
+
+🔧 Resetando para versão remota...
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 5 (delta 2), reused 5 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (5/5), 2.94 KiB | 2.94 MiB/s, done.
+From https://github.com/GruppenIT/assessment
+   b2d3ef4..21db09f  main       -> origin/main
+HEAD is now at 21db09f Fix group deletion bug and update deployment script
+✓ Código resetado
+
+======================================================================
+📄 FUNÇÃO JavaScript NO ARQUIVO:
+======================================================================
+function confirmarExclusao(grupoNome, tipoId) {
+    if (confirm(`Tem certeza que deseja excluir o grupo "${grupoNome}"?\n\nEsta ação é irreversível e excluirá TODOS os assessments públicos deste grupo!`)) {
+        // Criar formulário com CSRF token
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
+
+        // Adicionar CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
+
+======================================================================
+
+🔍 Verificações:
+
+✓ Sem conflito
+✓ Função existe
+✓ CSRF existe
+✓ Botão existe
+
+Código do botão:
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick='confirmarExclusao({{ grupo.nome|tojson }}, {{ grupo.tipo_id }})'>
+                                                <i class="fas fa-trash me-1"></i>Excluir
+                                            </button>
+                                            {% endif %}
+
+🔄 Reiniciando...
+assessment: stopped
+assessment: started
+assessment                       RUNNING   pid 416814, uptime 0:00:04
+
+======================================================================
+✓✓✓ CONCLUÍDO! ✓✓✓
+======================================================================
+
+🧪 TESTE (IMPORTANTE - CACHE DO NAVEGADOR):
+
+  1. AGUARDE 10 SEGUNDOS
+
+  2. Abra ABA ANÔNIMA:
+     Chrome: Ctrl+Shift+N
+     Firefox: Ctrl+Shift+P
+
+  3. OU limpe cache COMPLETO:
+     F12 → Clique direito no reload → Empty Cache and Hard Reload
+
+  4. Console (F12), digite:
+     typeof confirmarExclusao
+
+  5. Deve retornar: 'function'
+     Se 'undefined' → Cache não limpo
+
+  6. Clique 'Excluir'
+
+root@vlxweb12:/var/www/assessment
