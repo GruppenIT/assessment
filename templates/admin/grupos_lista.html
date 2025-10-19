@@ -233,6 +233,14 @@ function confirmarExclusao(grupoNome, tipoId) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/admin/grupos/${encodeURIComponent(grupoNome)}/${tipoId}/delete`;
+        
+        // Adicionar CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+        
         document.body.appendChild(form);
         form.submit();
     }
